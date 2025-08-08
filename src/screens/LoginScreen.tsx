@@ -1,5 +1,5 @@
 // In src/screens/LoginScreen.js
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { View, StyleSheet, Alert } from "react-native";
 import { useNavigation, NavigationProp } from "@react-navigation/native";
 import * as WebBrowser from "expo-web-browser";
@@ -7,9 +7,16 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { RootStackParamList } from "../navigation/AppNavigator";
 import apiClient from "../api/client"; // Ensure you have this file
 import GoogleLoginButton from "../components/GoogleLoginButton"; // Import the new component
+import FacebookLoginButton from "../components/FacebookLoginButton";
+import {
+  LoginManager,
+  AccessToken,
+  GraphRequest,
+  GraphRequestManager,
+} from 'react-native-fbsdk-next';
+
 
 WebBrowser.maybeCompleteAuthSession();
-
 const LoginScreen = () => {
   const [loading, setLoading] = useState(false);
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
@@ -70,10 +77,51 @@ const LoginScreen = () => {
       setLoading(false);
     }
   }, [navigation]);
+  // login with Facebook
+  const handleFacebookLogin = async () => {
+    try {
+      setLoading(true);
+      const loginResult = await LoginManager.logInWithPermissions(['public_profile', 'email']);
+      if (loginResult.isCancelled) {
+        Alert.alert('Thông báo', 'Đăng nhập đã bị hủy.');
+        setLoading(false);
+        return;
+      }
+      const data = await AccessToken.getCurrentAccessToken();
+      if (!data) {
+        Alert.alert('Lỗi', 'Không thể lấy được token truy cập.');
+        setLoading(false);
+        return;
+      }
+      const facebookAccessToken = data.accessToken;
 
+      // Gửi accessToken Facebook lên backend để lấy accessToken riêng
+      const backendUrl = process.env.EXPO_PUBLIC_BASE_URL;
+      if (!backendUrl) {
+        throw new Error(
+          "EXPO_PUBLIC_BASE_URL is not defined. Please check your environment variables."
+        );
+      }
+      const response = await apiClient.post("/auth/facebook/token", {
+        access_token: facebookAccessToken,
+      });
+      const { token, user } = response.data as { token: string; user: any };
+
+      await AsyncStorage.setItem("appToken", token);
+      await AsyncStorage.setItem("userData", JSON.stringify(user));
+
+      navigation.navigate("Home", { token, user });
+    } catch (error) {
+      console.error('Error during Facebook login:', error);
+      Alert.alert('Lỗi', `Đăng nhập thất bại: ${error}`);
+    } finally {
+      setLoading(false);
+    }
+  };
   return (
     <View style={styles.container}>
       <GoogleLoginButton loading={loading} onPress={handleGoogleSignIn} />
+      <FacebookLoginButton onLogin={handleFacebookLogin} />
     </View>
   );
 };

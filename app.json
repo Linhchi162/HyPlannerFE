@@ -15,6 +15,24 @@
     },
     "ios": {
       "supportsTablet": true,
+      "infoPlist": {
+        "NSUserTrackingUsageDescription": "This identifier will be used to deliver personalized ads to you.",
+        "SKAdNetworkItems": [
+          {
+            "SKAdNetworkIdentifier": "v9wttpbfk9.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "n38lu8286q.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "v9wttpbfk9.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "n38lu8286q.skadnetwork"
+          }
+        ],
+        "ITSAppUsesNonExemptEncryption": false
+      },
       "bundleIdentifier": "com.yourcompany.hyplanner"
     },
     "android": {
@@ -23,11 +41,29 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
+      "permissions": [
+        "android.permission.INTERNET"
+      ],
       "package": "com.yourcompany.hyplanner"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
+    "plugins": [
+      [
+        "react-native-fbsdk-next",
+        {
+          "appID": "774731648409660",
+          "clientToken": "6ff21504109111eed93d39f4072ba52b",
+          "displayName": "Hỷ Planner",
+          "scheme": "fb774731648409660",
+          "advertiserIDCollectionEnabled": false,
+          "autoLogAppEventsEnabled": false,
+          "isAutoInitEnabled": true,
+          "iosUserTrackingPermission": "This identifier will be used to deliver personalized ads to you."
+        }
+      ]
+    ],
     "extra": {
       "eas": {
         "projectId": "8a14e1f2-0834-484c-984b-850febe4a8ff"
