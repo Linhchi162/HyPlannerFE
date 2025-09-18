@@ -20,7 +20,7 @@ import {
   Dialog,
   Button,
 } from 'react-native-paper'
-import { Entypo, Feather, MaterialIcons } from '@expo/vector-icons';
+import { AntDesign, Entypo, Feather, MaterialIcons } from '@expo/vector-icons';
 import { SwipeListView } from 'react-native-swipe-list-view'
 import { responsiveFont, responsiveHeight, responsiveWidth } from '../../assets/styles/utils/responsive';
 import { NavigationProp, useNavigation } from '@react-navigation/native';
@@ -33,6 +33,7 @@ import * as Clipboard from 'expo-clipboard';
 import { deleteTask, markTaskCompleted } from '../service/taskService';
 import { getWeddingEvent, leaveWeddingEvent } from '../service/weddingEventService';
 import Hashids from 'hashids';
+import BudgetProgressBar from '../components/BudgetProgressBar';
 
 export default function TaskListScreen() {
   const [modalVisible, setModalVisible] = useState(false);
@@ -73,6 +74,7 @@ export default function TaskListScreen() {
   }, [dispatch]);
   //////////////////////////////////////////////
   const eventId = useSelector((state: RootState) => state.weddingEvent.getWeddingEvent.weddingEvent._id);
+  const totalBudget = useSelector((state: RootState) => state.weddingEvent.getWeddingEvent.weddingEvent.budget);
   // Fetch phases từ API khi mount
   useEffect(() => {
     const fetchPhases = async () => {
@@ -97,6 +99,10 @@ export default function TaskListScreen() {
         id: task._id,
         text: task.taskName,
         completed: task.completed,
+        note: task.taskNote,
+        assignee: task.member,
+        expectedBudget: task.expectedBudget,
+        actualBudget: task.actualBudget,
       })),
     }));
     setStages(newStages);
@@ -127,7 +133,26 @@ export default function TaskListScreen() {
   )
   const progress = totalTasks > 0 ? completedTasks / totalTasks : 0
   const progressPercentage = (progress * 100).toFixed(1)
+  // Tính toán ngân sách dự kiến và thực tế
+  const totalExpectedBudget = phases.reduce(
+    (acc, phase) =>
+      acc +
+      phase.tasks.reduce(
+        (taskAcc: number, task: any) => taskAcc + (task.expectedBudget || 0),
+        0
+      ),
+    0
+  );
 
+  const totalActualBudget = phases.reduce(
+    (acc, phase) =>
+      acc +
+      phase.tasks.reduce(
+        (taskAcc: number, task: any) => taskAcc + (task.actualBudget || 0),
+        0
+      ),
+    0
+  );
   // Xử lý sự kiện mở/đóng accordion
   const handleAccordionPress = (id: string) => {
     setExpandedAccordions((prev) =>
@@ -242,10 +267,50 @@ export default function TaskListScreen() {
                   <Text style={{ fontWeight: "bold" }}>Tên công việc: </Text>
                   {selectedTask.text}
                 </Text>
+                {/* Ghi chú */}
+                <Text style={styles.modalText}>
+                  <Text style={{ fontWeight: "bold" }}>Ghi chú: </Text>
+                  {selectedTask.note || "Không có ghi chú"}
+                </Text>
+                {/* Trạng thái */}
                 <Text style={styles.modalText}>
                   <Text style={{ fontWeight: "bold" }}>Trạng thái: </Text>
                   {selectedTask.completed ? "Đã hoàn thành" : "Chưa hoàn thành"}
                 </Text>
+                {/* Ngân sách dự kiến */}
+                <Text style={styles.modalText}>
+                  <Text style={{ fontWeight: "bold" }}>Ngân sách dự kiến: </Text>
+                  {selectedTask.expectedBudget ? selectedTask.expectedBudget.toLocaleString() + " VNĐ" : "Chưa có"}
+                </Text>
+                {/* Ngân sách thực tế */}
+                <Text style={styles.modalText}>
+                  <Text style={{ fontWeight: "bold" }}>Ngân sách thực tế: </Text>
+                  {selectedTask.actualBudget ? selectedTask.actualBudget.toLocaleString() + " VNĐ" : "Chưa có"}
+                </Text>
+                {/* Người thực hiện */}
+                <Text style={styles.modalText}>
+                  <Text style={{ fontWeight: "bold" }}>Người thực hiện:</Text>
+                </Text>
+                {selectedTask.assignee.length > 0 ? (
+                  <FlatList
+                    data={selectedTask.assignee}
+                    keyExtractor={(item) => item._id}
+                    renderItem={({ item }) => (
+                      <View style={styles.assigneeContainer}>
+                        <Image
+                          source={{ uri: item.picture }}
+                          style={styles.assigneeAvatar}
+                        />
+                        <View>
+                          <Text style={styles.assigneeName}>{item.fullName}</Text>
+                          <Text style={styles.assigneeEmail}>{item.email}</Text>
+                        </View>
+                      </View>
+                    )}
+                  />
+                ) : (
+                  <Text style={styles.modalText}>Không có người thực hiện</Text>
+                )}
               </>
             )}
             <View style={styles.modalButtonRow}>
@@ -253,7 +318,7 @@ export default function TaskListScreen() {
                 onPress={() => setTaskDetailModalVisible(false)}
                 style={styles.cancelButton}
               >
-                <Text style={{ color: "#fff" }}>Đóng</Text>
+                <Text style={{ color: "#fff", textAlign: "center" }}>Đóng</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -340,24 +405,32 @@ export default function TaskListScreen() {
 
 
   const ListHeader = memo(() => (
-    <View style={styles.progressSection}>
-      <View>
-        <ProgressBar
-          progress={progress}
-          color="#D95D74"
-          style={styles.progressBar}
-        />
-        <View style={{ position: 'absolute', right: -8, top: -6 }}>
-          <Icon source="heart" color="#D95D74" size={24} />
+    <>
+      <View style={styles.progressSection}>
+        <View>
+          <ProgressBar
+            progress={progress}
+            color="#D95D74"
+            style={styles.progressBar}
+          />
+          <View style={{ position: 'absolute', right: -8, top: -6 }}>
+            <Icon source="heart" color="#D95D74" size={24} />
+          </View>
         </View>
+        <View style={styles.progressInfo}>
+          <Text style={styles.progressText}>
+            Đã hoàn thành {progressPercentage}% ( Tổng {completedTasks}/
+            {totalTasks} )
+          </Text>
+        </View>
+        <BudgetProgressBar
+          totalBudget={totalBudget}
+          totalExpectedBudget={totalExpectedBudget}
+          totalActualBudget={totalActualBudget}
+        />
       </View>
-      <View style={styles.progressInfo}>
-        <Text style={styles.progressText}>
-          Đã hoàn thành {progressPercentage}% ( Tổng {completedTasks}/
-          {totalTasks} )
-        </Text>
-      </View>
-    </View>
+
+    </>
   ));
 
   const ListFooter = () => {
@@ -495,6 +568,12 @@ export default function TaskListScreen() {
                 <MaterialIcons name="content-copy" size={22} color="#fff" />
               </TouchableOpacity>
             </View>
+            <View style={{ flexDirection: 'row', justifyContent: 'center', marginVertical: responsiveHeight(10), paddingHorizontal: responsiveWidth(10) }}>
+              <AntDesign name="exclamationcircleo" size={16} color="#D95D74" style={{ marginRight: 5, marginTop: 3 }} />
+              <Text style={styles.noteText}>
+                <Text style={{ fontWeight: "bold" }}>Lưu ý:</Text> Vui lòng chỉ chia sẻ link mời này với những người mà bạn tin tưởng!
+              </Text>
+            </View>
             <TouchableOpacity onPress={() => setShowAddMemberModal(false)} style={[styles.cancelButton, { width: '100%' }]}>
               <Text style={{ color: '#fff', textAlign: 'center' }}>Hủy</Text>
             </TouchableOpacity>
@@ -552,7 +631,7 @@ export default function TaskListScreen() {
       />
       <AddMemberModal />
       <LeaveEventModal />
-      <RenderTaskDetailModal/>
+      <RenderTaskDetailModal />
       {loading ? (
         <View style={styles.loadingOverlay}>
           <ActivityIndicator size="large" color="#D95D74" />
@@ -597,7 +676,7 @@ const styles = StyleSheet.create({
   },
   progressInfo: {
     alignItems: 'center',
-    marginTop: responsiveHeight(15),
+    marginVertical: responsiveHeight(13),
   },
   progressText: {
     fontFamily: 'Montserrat-Medium',
@@ -706,8 +785,12 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontWeight: 'bold',
-    fontSize: 16,
-    marginBottom: 12
+    fontSize: responsiveFont(14),
+    marginBottom: 12,
+    textAlign: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#8a8485ff',
+    paddingBottom: 8
   },
   datePickerButton: {
     borderWidth: 1,
@@ -717,14 +800,17 @@ const styles = StyleSheet.create({
     marginBottom: 12
   },
   modalButtonRow: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
+    marginTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#8a8485ff',
+    paddingTop: 12,
   },
   cancelButton: {
     padding: 10,
     backgroundColor: '#D95D74',
     borderRadius: 5,
     marginRight: 10,
+    width: "100%",
   },
   addButton: {
     padding: 10,
@@ -761,7 +847,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e0e0e0',
     overflow: 'hidden',
-    marginBottom: 20,
+    marginBottom: 10,
   },
   inviteLinkText: {
     flex: 1,
@@ -788,6 +874,30 @@ const styles = StyleSheet.create({
   },
   modalText: {
     fontSize: responsiveFont(12),
+    marginBottom: 10,
+  },
+  noteText: {
+    fontSize: responsiveFont(10),
+    color: '#5b5858ff',
+  },
+  assigneeContainer: {
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 8,
+  },
+  assigneeAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 12,
+  },
+  assigneeName: {
+    fontSize: responsiveFont(12),
+    fontWeight: "bold",
+    color: "#333",
+  },
+  assigneeEmail: {
+    fontSize: responsiveFont(10),
+    color: "#6B7280",
   },
 });

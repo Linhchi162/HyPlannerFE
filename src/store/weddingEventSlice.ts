@@ -11,6 +11,7 @@ export interface WeddingEvent {
   creatorId: string;
   brideName: string;
   groomName: string;
+  budget: number;
   timeToMarried: string; // ISO string format
   member: Member[];
 }
@@ -51,6 +52,7 @@ const initialState: WeddingEventState = {
       creatorId: "",
       brideName: "",
       groomName: "",
+      budget: 0,
       timeToMarried: "",
       member: [],
     },

@@ -26,10 +26,11 @@ const AddWeddingAppBar = ({ onBack }: AddWeddingAppBarProps) => {
 export default function AddWeddingInfo() {
     const [brideName, setBrideName] = useState('');
     const [groomName, setGroomName] = useState('');
-    // const [budget, setBudget] = useState('');
+    const [budget, setBudget] = useState<number | null>(null);
     const [date, setDate] = useState<Date | undefined>(undefined);
+    const [budgetError, setBudgetError] = useState<string>(""); // Lưu thông báo lỗi    
     const [showDatePicker, setShowDatePicker] = useState(false);
-    const isFormValid = brideName.trim() && groomName.trim() && date;
+    const isFormValid = brideName.trim() && groomName.trim() && date && budget !== null && budget > 0;
     const navigation = useNavigation<NavigationProp<RootStackParamList>>();
     const dispatch = useDispatch<AppDispatch>();
     const userId = '6892b8a2aa0f1640e5c173f2'; //Fix cứng
@@ -39,11 +40,16 @@ export default function AddWeddingInfo() {
     };
 
     const handleCreateWeddingEvent = async () => {
+        if (budget === null || budget <= 0) {
+            setBudgetError("Ngân sách không hợp lệ");
+            return;
+        }
         try {
             await createWeddingEvent({
                 creatorId: userId,
                 brideName,
                 groomName,
+                budget,
                 timeToMarried: date ? date.toISOString() : ''
             }, dispatch);
             navigation.reset({
@@ -54,7 +60,9 @@ export default function AddWeddingInfo() {
             console.error("Error creating wedding event:", error);
         }
     };
-
+    const formatNumber = (value: number): string => {
+        return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    };
     return (
         <View style={styles.container}>
             <AddWeddingAppBar onBack={() => navigation.goBack()} />
@@ -95,17 +103,27 @@ export default function AddWeddingInfo() {
                                 />
                             </View>
                         </View>
-                        {/* <View style={styles.inputWrapperFull}>
-                        <Text style={styles.label}>Ngân sách dự kiến*</Text>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Nhập ngân sách dự kiến"
-                            value={budget}
-                            onChangeText={setBudget}
-                            keyboardType="numeric"
-                            placeholderTextColor="#B0B0B0"
-                        />
-                    </View> */}
+                        <View style={styles.inputWrapperFull}>
+                            <Text style={styles.label}>Ngân sách dự kiến*</Text>
+                            <TextInput
+                                style={styles.input}
+                                placeholder="Nhập ngân sách dự kiến"
+                                value={budget !== null ? formatNumber(budget) : ""} // Hiển thị giá trị dưới dạng chuỗi
+                                onChangeText={(value) => {
+                                    const numericValue = parseInt(value.replace(/\./g, ""), 10);
+                                    if (!isNaN(numericValue)) {
+                                        setBudget(numericValue); // Cập nhật state nếu giá trị hợp lệ
+                                        setBudgetError(""); // Xóa thông báo lỗi nếu có
+                                    } else {
+                                        setBudget(null); // Đặt lại nếu giá trị không hợp lệ
+                                        setBudgetError("Ngân sách phải là số và lớn hơn 0"); // Hiển thị thông báo lỗi
+                                    }
+                                }}
+                                keyboardType="numeric"
+                                placeholderTextColor="#B0B0B0"
+                            />
+                            {budgetError ? <Text style={styles.errorText}>{budgetError}</Text> : null}
+                        </View>
                         <View style={styles.inputWrapperFull}>
                             <Text style={styles.label}>Ngày tổ chức đám cưới (Dự kiến)*</Text>
                             <TouchableOpacity
@@ -223,5 +241,11 @@ const styles = StyleSheet.create({
     createButtonText: {
         fontSize: responsiveFont(14),
         fontWeight: '700',
+    },
+    errorText: {
+        color: "red",
+        fontSize: responsiveFont(11),
+        marginTop: 4,
+        fontFamily: "Montserrat-Regular",
     },
 });

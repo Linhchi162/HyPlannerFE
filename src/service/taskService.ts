@@ -35,7 +35,7 @@ export const getTasks = async (taskId: string, dispatch: Dispatch) => {
 
 export const createTask = async (
   phaseId: string,
-  taskData: { taskName: string; taskNote: string; member?: string[] },
+  taskData: { taskName: string; taskNote: string; member?: string[]; expectedBudget: number; actualBudget?: number },
   dispatch: Dispatch
 ) => {
   dispatch(createTaskStart());
@@ -72,7 +72,7 @@ export const deleteTask = async (taskId: string, dispatch: Dispatch) => {
 
 export const editTask = async (
   taskId: string,
-  taskData: { taskName: string; taskNote: string; member?: string[] },
+  taskData: { taskName: string; taskNote: string; member?: string[]; expectedBudget: number; actualBudget?: number },
   dispatch: Dispatch
 ) => {
   dispatch(editTaskStart());

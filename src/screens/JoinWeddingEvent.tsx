@@ -30,16 +30,7 @@ export default function JoinWeddingEvent() {
     const [showError, setShowError] = useState(false);
     const navigation = useNavigation<NavigationProp<RootStackParamList>>();
     const dispatch = useDispatch<AppDispatch>();
-    // const handleJoinEvent = async () => {
-    //     if (!isFormValid) return;
-    //     // Handle join event logic here
-    //     try {
-    //         await joinWeddingEvent(code, "6892b8a2aa0f1640e5c173f2", dispatch);
-    //         navigation.navigate("TaskList");
-    //     } catch (error) {
-    //         console.error("Failed to join wedding event:", error);
-    //     }
-    // }
+    
     const userId = "68958dd1b6d033a5f26fb42d"; // Thay thế bằng userId thực tế của bạn
     const handleJoinEvent = async () => {
         setShowConfirm(false);

@@ -1,6 +1,6 @@
-import { FlatList, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { FlatList, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Appbar, Avatar, Icon, IconButton, List, TextInput } from "react-native-paper";
-import { Entypo } from "@expo/vector-icons";
+import { Entypo, FontAwesome5 } from "@expo/vector-icons";
 import { useCallback, useState } from "react";
 import React from "react";
 import { responsiveFont, responsiveHeight, responsiveWidth } from "../../assets/styles/utils/responsive";
@@ -37,6 +37,10 @@ export default function CreateNewTaskScreen() {
     const [taskName, setTaskName] = useState('');
     const [notes, setNotes] = useState('');
     const [taskNameError, setTaskNameError] = useState('');
+    const [expectedBudget, setExpectedBudget] = useState<number | null>(null); // Giá trị ban đầu là null
+    const [actualBudget, setActualBudget] = useState<number | null>(null);
+    const [budgetError, setBudgetError] = useState<string>(""); // Lưu thông báo lỗi    
+
     const [members, setMembers] = useState<Member[]>([]);
     const navigation = useNavigation<NavigationProp<RootStackParamList>>();
     const dispatch = useDispatch<AppDispatch>();
@@ -50,11 +54,17 @@ export default function CreateNewTaskScreen() {
                 setTaskNameError('Tên công việc không được để trống');
                 return;
             } setTaskNameError('');
+            if (expectedBudget === null || expectedBudget <= 0) {
+                setBudgetError("Ngân sách không được để trống hoặc nhỏ hơn 0");
+                return;
+            }
             // Call API
             const taskData = {
                 taskName,
                 taskNote: notes,
                 member: members.map(m => m._id),
+                expectedBudget,
+                actualBudget: actualBudget === null ? 0 : actualBudget, // Nếu actualBudget là null, gửi 0
             };
             await createTask(phaseId, taskData, dispatch);
             await getPhases(eventId, dispatch);
@@ -67,109 +77,186 @@ export default function CreateNewTaskScreen() {
     const handleSelectMembers = useCallback((selectedMembers: Member[]) => {
         setMembers(selectedMembers); // Cập nhật danh sách thành viên
     }, []);
+    const formatNumber = (value: number): string => {
+        return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    };
     return (
         <View style={styles.safeArea}>
-            <CreateTaskAppbar
-                onBack={navigation.goBack}
-                onCheck={handleCreateTask}
-            />
-            <View
-                style={[styles.scrollView, styles.contentContainer]}
+            <KeyboardAvoidingView
+                style={styles.safeArea}
+                behavior={Platform.OS === "ios" ? "padding" : "height"}
             >
-                {/* Phần Tên công việc */}
-                <View style={styles.section}>
-                    <View style={styles.sectionHeader}>
-                        <Icon source="heart" color="#F9CBD6" size={24} />
-                        <Text style={styles.sectionTitle}>Tên công việc</Text>
-                    </View>
-                    <TextInput
-                        mode="outlined"
-                        placeholder="Nhập tên công việc"
-                        value={taskName}
-                        onChangeText={setTaskName}
-                        style={styles.textInput}
-                        outlineStyle={styles.textInputOutline}
-                        theme={{
-                            colors: {
-                                primary: '#D95D74',
-                                onSurfaceVariant: '#AAAAAA',
-                            },
-                        }}
-                        error={taskName.trim() === ''}
-                    />
-                    {taskNameError ? (
-                        <Text style={{ color: 'red', marginTop: 4, marginLeft: 4 }}>{taskNameError}</Text>
-                    ) : null}
-                </View>
+                <CreateTaskAppbar
+                    onBack={navigation.goBack}
+                    onCheck={handleCreateTask}
+                />
+                <FlatList
+                    data={[]} // Không có dữ liệu, chỉ dùng để hiển thị nội dung
+                    keyExtractor={(_, index) => index.toString()}
+                    renderItem={() => null}
+                    ListHeaderComponent={
+                        <View
+                            style={[styles.scrollView, styles.contentContainer]}
+                        >
 
-                {/* Phần Ghi chú */}
-                <View style={styles.section}>
-                    <View style={styles.sectionHeader}>
-                        <Icon source="message-text" color="#F9CBD6" size={24} />
-                        <Text style={styles.sectionTitle}>Ghi chú</Text>
-                    </View>
-                    <TextInput
-                        mode="outlined"
-                        placeholder="Nhập ghi chú"
-                        value={notes}
-                        onChangeText={setNotes}
-                        multiline
-                        numberOfLines={4}
-                        style={[styles.textInput, styles.textArea]}
-                        outlineStyle={styles.textInputOutline}
-                        theme={{
-                            colors: {
-                                primary: '#D95D74',
-                                onSurfaceVariant: '#AAAAAA',
-                            },
-                        }}
-                    />
-                </View>
+                            {/* Phần Tên công việc */}
+                            <View style={styles.section}>
+                                <View style={styles.sectionHeader}>
+                                    <Icon source="heart" color="#F9CBD6" size={24} />
+                                    <Text style={styles.sectionTitle}>Tên công việc*</Text>
+                                </View>
+                                <TextInput
+                                    mode="outlined"
+                                    placeholder="Nhập tên công việc"
+                                    value={taskName}
+                                    onChangeText={setTaskName}
+                                    style={styles.textInput}
+                                    outlineStyle={styles.textInputOutline}
+                                    theme={{
+                                        colors: {
+                                            primary: '#D95D74',
+                                            onSurfaceVariant: '#AAAAAA',
+                                        },
+                                    }}
+                                    error={taskName.trim() === ''}
+                                />
+                                {taskNameError && (
+                                    <Text style={{ color: 'red', marginTop: 4, marginLeft: 4 }}>{taskNameError}</Text>
+                                )}
+                            </View>
 
-                {/* Phần Thành viên đảm nhận */}
-                <View style={styles.section}>
-                    <View style={[styles.sectionHeader, { justifyContent: 'space-between' }]}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                            <Icon source="account-group" color="#F9CBD6" size={24} />
-                            <Text style={styles.sectionTitle}>Thành viên đảm nhận</Text>
-                        </View>
-                        <IconButton
-                            icon="plus"
-                            iconColor="#FF8DA4"
-                            size={24}
-                            onPress={() => navigation.navigate('AddMember', {
-                                onSelect: handleSelectMembers,
-                                existingMembers: members,
-                            })}
-                        />
-                    </View>
+                            {/* Phần Ghi chú */}
+                            <View style={styles.section}>
+                                <View style={styles.sectionHeader}>
+                                    <Icon source="message-text" color="#F9CBD6" size={24} />
+                                    <Text style={styles.sectionTitle}>Ghi chú</Text>
+                                </View>
+                                <TextInput
+                                    mode="outlined"
+                                    placeholder="Nhập ghi chú"
+                                    value={notes}
+                                    onChangeText={setNotes}
+                                    multiline
+                                    numberOfLines={4}
+                                    style={[styles.textInput, styles.textArea]}
+                                    outlineStyle={styles.textInputOutline}
+                                    theme={{
+                                        colors: {
+                                            primary: '#D95D74',
+                                            onSurfaceVariant: '#AAAAAA',
+                                        },
+                                    }}
+                                />
+                            </View>
+                            <View style={styles.section}>
+                                <View style={styles.sectionHeader}>
+                                    {/* <Icon source="message-text" color="#F9CBD6" size={24} /> */}
+                                    <FontAwesome5 name="coins" color="#F9CBD6" size={24} />
+                                    <Text style={styles.sectionTitle}>Ngân sách dự kiến*</Text>
+                                </View>
+                                <TextInput
+                                    mode="outlined"
+                                    placeholder="Nhập ngân sách dự kiến"
+                                    value={expectedBudget !== null ? formatNumber(expectedBudget) : ""}
+                                    onChangeText={(value) => {
+                                        const numericValue = parseInt(value.replace(/\./g, ""), 10); // Loại bỏ dấu chấm
+                                        if (!isNaN((numericValue))) {
+                                            setExpectedBudget(Number(numericValue)); // Lưu giá trị thực (không có dấu chấm)
+                                        }
+                                    }}
+                                    style={[styles.textInput]}
+                                    outlineStyle={styles.textInputOutline}
+                                    keyboardType="numeric"
+                                    theme={{
+                                        colors: {
+                                            primary: '#D95D74',
+                                            onSurfaceVariant: '#AAAAAA',
+                                        },
+                                    }}
+                                />
+                                {budgetError && (
+                                    <Text style={{ color: 'red', marginTop: 4, marginLeft: 4 }}>{budgetError}</Text>
+                                )}
+                            </View>
+                            <View style={styles.section}>
+                                <View style={styles.sectionHeader}>
+                                    <FontAwesome5 name="coins" color="#F9CBD6" size={24} />
+                                    <Text style={styles.sectionTitle}>Ngân sách thực tế</Text>
+                                </View>
+                                <TextInput
+                                    mode="outlined"
+                                    placeholder="Nhập ngân sách thực tế"
+                                    value={actualBudget !== null ? formatNumber(actualBudget) : ""}
+                                    onChangeText={(value) => {
+                                        if (value === "") {
+                                            setActualBudget(null); // Nếu giá trị rỗng, đặt lại thành null
+                                        } else {
+                                            const numericValue = parseInt(value.replace(/\./g, ""), 10); // Loại bỏ dấu chấm
+                                            if (!isNaN(numericValue)) {
+                                                setActualBudget(numericValue); // Lưu giá trị thực (không có dấu chấm)
+                                            }
+                                        }
+                                    }}
+                                    style={[styles.textInput]}
+                                    outlineStyle={styles.textInputOutline}
+                                    theme={{
+                                        colors: {
+                                            primary: '#D95D74',
+                                            onSurfaceVariant: '#AAAAAA',
+                                        },
+                                    }}
+                                />
+                            </View>
 
-                    <FlatList
-                        data={members}
-                        keyExtractor={(item) => item._id}
-                        style={styles.memberListScroll}
-                        showsVerticalScrollIndicator={false}
-                        ListEmptyComponent={<EmptyMemberComponent />}
-                        renderItem={({ item: member }) => (
-                            <View style={styles.memberContainer}>
-                                <List.Item
-                                    title={member.fullName}
-                                    description={member.email}
-                                    titleStyle={styles.memberTitle}
-                                    descriptionStyle={styles.memberDescription}
-                                    left={() => (
-                                        <Avatar.Image
-                                            size={48}
-                                            source={{ uri: member.picture }}
-                                        />
+
+                            {/* Phần Thành viên đảm nhận */}
+                            <View style={styles.section}>
+                                <View style={[styles.sectionHeader, { justifyContent: 'space-between' }]}>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                        <Icon source="account-group" color="#F9CBD6" size={24} />
+                                        <Text style={styles.sectionTitle}>Thành viên đảm nhận</Text>
+                                    </View>
+                                    <IconButton
+                                        icon="plus"
+                                        iconColor="#FF8DA4"
+                                        size={24}
+                                        onPress={() => navigation.navigate('AddMember', {
+                                            onSelect: handleSelectMembers,
+                                            existingMembers: members,
+                                        })}
+                                    />
+                                </View>
+
+                                <FlatList
+                                    data={members}
+                                    keyExtractor={(item) => item._id}
+                                    style={styles.memberListScroll}
+                                    showsVerticalScrollIndicator={false}
+                                    ListEmptyComponent={<EmptyMemberComponent />}
+                                    renderItem={({ item: member }) => (
+                                        <View style={styles.memberContainer}>
+                                            <List.Item
+                                                title={member.fullName}
+                                                description={member.email}
+                                                titleStyle={styles.memberTitle}
+                                                descriptionStyle={styles.memberDescription}
+                                                left={() => (
+                                                    <Avatar.Image
+                                                        size={48}
+                                                        source={{ uri: member.picture }}
+                                                    />
+                                                )}
+                                            />
+                                        </View>
                                     )}
                                 />
                             </View>
-                        )}
-                    />
-                </View>
-            </View>
-        </View>
+                        </View>
+                    }
+                />
+
+            </KeyboardAvoidingView >
+        </View >
     );
 }
 

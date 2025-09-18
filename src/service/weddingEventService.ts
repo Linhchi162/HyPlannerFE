@@ -37,7 +37,7 @@ export const getWeddingEvent = async (
 };
 
 export const createWeddingEvent = async (
-  weddingData: { creatorId: string; brideName: string; groomName: string; timeToMarried: string },
+  weddingData: { creatorId: string; brideName: string; groomName: string; budget: number; timeToMarried: string },
   dispatch: Dispatch
 ) => {
   dispatch(createWeddingEventStart());
