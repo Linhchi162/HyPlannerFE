@@ -30,6 +30,7 @@ import AddMemberScreen from "../screens/AddMemberScreen";
 import AddWeddingInfo from "../screens/AddWeddingInfo";
 import JoinWeddingEvent from "../screens/JoinWeddingEvent";
 import { Member } from "../store/weddingEventSlice";
+import BudgetListScreen from "../screens/BudgetListScreen";
 
 const scheme = process.env.EXPO_PUBLIC_SCHEME;
 
@@ -44,6 +45,7 @@ export type RootStackParamList = {
   Profile: undefined;
   BeginScreen: undefined;
   TaskList: undefined;
+  BudgetList: undefined;
   AddTask: { phaseId: string };
   EditTask: { taskId: string };
   AddMember: { existingMembers?: Member[], onSelect?: (selectedMembers: Member[]) => void }; // Thêm kiểu cho AddMember
@@ -234,6 +236,11 @@ const AppNavigator = () => (
       <Stack.Screen
         name="Profile"
         component={ProfileScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen // chỉ cho creator vào
+        name="BudgetList"
+        component={BudgetListScreen}
         options={{ headerShown: false }}
       />
       <Stack.Screen
