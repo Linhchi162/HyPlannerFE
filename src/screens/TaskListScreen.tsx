@@ -33,7 +33,6 @@ import * as Clipboard from 'expo-clipboard';
 import { deleteTask, markTaskCompleted } from '../service/taskService';
 import { getWeddingEvent, leaveWeddingEvent } from '../service/weddingEventService';
 import Hashids from 'hashids';
-import BudgetProgressBar from '../components/BudgetProgressBar';
 
 export default function TaskListScreen() {
   const [modalVisible, setModalVisible] = useState(false);
@@ -59,8 +58,9 @@ export default function TaskListScreen() {
   );
   // const phaseLoading = useSelector((state: RootState) => state.phases.getPhases.isLoading);
   const [loading, setLoading] = useState(false);
-  const userId = "6892b8a2aa0f1640e5c173f2"; //fix cứng tạm thời
-  const role: "participant" | "creator" = "creator"; // fix cứng tạm thời
+  const userId = "68958dd1b6d033a5f26fb42d"; //fix cứng tạm thời
+  // const role: "participant" | "creator" = "creator"; // fix cứng tạm thời
+  const creatorId = useSelector((state: RootState) => state.weddingEvent.getWeddingEvent.weddingEvent.creatorId);
   // Phần này sẽ bỏ vào trang home để fetch data về wedding info trước khi vào trang tasklist
   useEffect(() => {
     const fetchWeddingInfo = async () => {
@@ -134,25 +134,7 @@ export default function TaskListScreen() {
   const progress = totalTasks > 0 ? completedTasks / totalTasks : 0
   const progressPercentage = (progress * 100).toFixed(1)
   // Tính toán ngân sách dự kiến và thực tế
-  const totalExpectedBudget = phases.reduce(
-    (acc, phase) =>
-      acc +
-      phase.tasks.reduce(
-        (taskAcc: number, task: any) => taskAcc + (task.expectedBudget || 0),
-        0
-      ),
-    0
-  );
-
-  const totalActualBudget = phases.reduce(
-    (acc, phase) =>
-      acc +
-      phase.tasks.reduce(
-        (taskAcc: number, task: any) => taskAcc + (task.actualBudget || 0),
-        0
-      ),
-    0
-  );
+  
   // Xử lý sự kiện mở/đóng accordion
   const handleAccordionPress = (id: string) => {
     setExpandedAccordions((prev) =>
@@ -277,16 +259,14 @@ export default function TaskListScreen() {
                   <Text style={{ fontWeight: "bold" }}>Trạng thái: </Text>
                   {selectedTask.completed ? "Đã hoàn thành" : "Chưa hoàn thành"}
                 </Text>
-                {/* Ngân sách dự kiến */}
-                <Text style={styles.modalText}>
+                {/* <Text style={styles.modalText}>
                   <Text style={{ fontWeight: "bold" }}>Ngân sách dự kiến: </Text>
                   {selectedTask.expectedBudget ? selectedTask.expectedBudget.toLocaleString() + " VNĐ" : "Chưa có"}
                 </Text>
-                {/* Ngân sách thực tế */}
                 <Text style={styles.modalText}>
                   <Text style={{ fontWeight: "bold" }}>Ngân sách thực tế: </Text>
                   {selectedTask.actualBudget ? selectedTask.actualBudget.toLocaleString() + " VNĐ" : "Chưa có"}
-                </Text>
+                </Text> */}
                 {/* Người thực hiện */}
                 <Text style={styles.modalText}>
                   <Text style={{ fontWeight: "bold" }}>Người thực hiện:</Text>
@@ -342,7 +322,7 @@ export default function TaskListScreen() {
           title="Danh sách công việc"
           titleStyle={styles.appbarTitle}
         />
-        {role === 'creator' ? (
+        {userId === creatorId ? (
           <TouchableOpacity onPress={onAdd} style={{ padding: 8, marginRight: 8 }}>
             <Feather name="user-plus" size={24} color="#000000" style={{ backgroundColor: '#edc2cbff', borderRadius: 8, padding: 7 }} />
           </TouchableOpacity>
@@ -423,11 +403,6 @@ export default function TaskListScreen() {
             {totalTasks} )
           </Text>
         </View>
-        <BudgetProgressBar
-          totalBudget={totalBudget}
-          totalExpectedBudget={totalExpectedBudget}
-          totalActualBudget={totalActualBudget}
-        />
       </View>
 
     </>
@@ -523,12 +498,12 @@ export default function TaskListScreen() {
                 />
               )}
 
-              <View style={styles.modalButtonRow}>
-                <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.cancelButton}>
-                  <Text style={{ color: '#fff' }}>Hủy</Text>
+              <View style={[styles.modalButtonRow, { flexDirection: 'row', justifyContent: 'center' }]}>
+                <TouchableOpacity onPress={() => setModalVisible(false)} style={[styles.cancelButton, {flex: 1}]}>
+                  <Text style={{ color: '#fff', textAlign:'center' }}>Hủy</Text>
                 </TouchableOpacity>
-                <TouchableOpacity onPress={handleAddStage} style={styles.addButton}>
-                  <Text style={{ color: '#fff' }}>Thêm</Text>
+                <TouchableOpacity onPress={handleAddStage} style={[styles.addButton, {flex: 1}]}>
+                  <Text style={{ color: '#fff', textAlign:'center' }}>Thêm</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -810,7 +785,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#D95D74',
     borderRadius: 5,
     marginRight: 10,
-    width: "100%",
   },
   addButton: {
     padding: 10,

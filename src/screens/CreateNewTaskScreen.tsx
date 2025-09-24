@@ -48,22 +48,21 @@ export default function CreateNewTaskScreen() {
     const route = useRoute<RouteProp<RootStackParamList, 'AddTask'>>();
     const { phaseId } = route.params;
     const eventId = "68c29283931d7e65bd3ad689"; // lưu ý đây là fix cứng tạm thời sau khi hoàn thành login và chọn sự kiện
+    const userId = "6892b8a2aa0f1640e5c173f2"; //fix cứng tạm thời
+    const creatorId = useSelector((state: RootState) => state.weddingEvent.getWeddingEvent.weddingEvent.creatorId);
+
     const handleCreateTask = async () => {
         try {
             if (taskName.trim() === '') {
                 setTaskNameError('Tên công việc không được để trống');
                 return;
             } setTaskNameError('');
-            if (expectedBudget === null || expectedBudget <= 0) {
-                setBudgetError("Ngân sách không được để trống hoặc nhỏ hơn 0");
-                return;
-            }
             // Call API
             const taskData = {
                 taskName,
                 taskNote: notes,
                 member: members.map(m => m._id),
-                expectedBudget,
+                expectedBudget: expectedBudget === null ? 0 : expectedBudget, // Nếu expectedBudget là null, gửi 0
                 actualBudget: actualBudget === null ? 0 : actualBudget, // Nếu actualBudget là null, gửi 0
             };
             await createTask(phaseId, taskData, dispatch);
@@ -148,66 +147,73 @@ export default function CreateNewTaskScreen() {
                                     }}
                                 />
                             </View>
-                            <View style={styles.section}>
-                                <View style={styles.sectionHeader}>
-                                    {/* <Icon source="message-text" color="#F9CBD6" size={24} /> */}
-                                    <FontAwesome5 name="coins" color="#F9CBD6" size={24} />
-                                    <Text style={styles.sectionTitle}>Ngân sách dự kiến*</Text>
-                                </View>
-                                <TextInput
-                                    mode="outlined"
-                                    placeholder="Nhập ngân sách dự kiến"
-                                    value={expectedBudget !== null ? formatNumber(expectedBudget) : ""}
-                                    onChangeText={(value) => {
-                                        const numericValue = parseInt(value.replace(/\./g, ""), 10); // Loại bỏ dấu chấm
-                                        if (!isNaN((numericValue))) {
-                                            setExpectedBudget(Number(numericValue)); // Lưu giá trị thực (không có dấu chấm)
-                                        }
-                                    }}
-                                    style={[styles.textInput]}
-                                    outlineStyle={styles.textInputOutline}
-                                    keyboardType="numeric"
-                                    theme={{
-                                        colors: {
-                                            primary: '#D95D74',
-                                            onSurfaceVariant: '#AAAAAA',
-                                        },
-                                    }}
-                                />
-                                {budgetError && (
-                                    <Text style={{ color: 'red', marginTop: 4, marginLeft: 4 }}>{budgetError}</Text>
-                                )}
-                            </View>
-                            <View style={styles.section}>
-                                <View style={styles.sectionHeader}>
-                                    <FontAwesome5 name="coins" color="#F9CBD6" size={24} />
-                                    <Text style={styles.sectionTitle}>Ngân sách thực tế</Text>
-                                </View>
-                                <TextInput
-                                    mode="outlined"
-                                    placeholder="Nhập ngân sách thực tế"
-                                    value={actualBudget !== null ? formatNumber(actualBudget) : ""}
-                                    onChangeText={(value) => {
-                                        if (value === "") {
-                                            setActualBudget(null); // Nếu giá trị rỗng, đặt lại thành null
-                                        } else {
-                                            const numericValue = parseInt(value.replace(/\./g, ""), 10); // Loại bỏ dấu chấm
-                                            if (!isNaN(numericValue)) {
-                                                setActualBudget(numericValue); // Lưu giá trị thực (không có dấu chấm)
-                                            }
-                                        }
-                                    }}
-                                    style={[styles.textInput]}
-                                    outlineStyle={styles.textInputOutline}
-                                    theme={{
-                                        colors: {
-                                            primary: '#D95D74',
-                                            onSurfaceVariant: '#AAAAAA',
-                                        },
-                                    }}
-                                />
-                            </View>
-
+                            {userId === creatorId && (
+                                <>
+                                    <View style={styles.section}>
+                                        <View style={styles.sectionHeader}>
+                                            {/* <Icon source="message-text" color="#F9CBD6" size={24} /> */}
+                                            <FontAwesome5 name="coins" color="#F9CBD6" size={24} />
+                                            <Text style={styles.sectionTitle}>Ngân sách dự kiến</Text>
+                                        </View>
+                                        <TextInput
+                                            mode="outlined"
+                                            placeholder="Nhập ngân sách dự kiến"
+                                            value={expectedBudget !== null ? formatNumber(expectedBudget) : ""}
+                                            onChangeText={(value) => {
+                                                if (value === "") {
+                                                    setExpectedBudget(null); // Nếu giá trị rỗng, đặt lại thành null
+                                                } else {
+                                                    const numericValue = parseInt(value.replace(/\./g, ""), 10); // Loại bỏ dấu chấm
+                                                    if (!isNaN(numericValue)) {
+                                                        setExpectedBudget(numericValue); // Lưu giá trị thực (không có dấu chấm)
+                                                    }
+                                                }
+                                            }}
+                                            style={[styles.textInput]}
+                                            outlineStyle={styles.textInputOutline}
+                                            keyboardType="numeric"
+                                            theme={{
+                                                colors: {
+                                                    primary: '#D95D74',
+                                                    onSurfaceVariant: '#AAAAAA',
+                                                },
+                                            }}
+                                        />
+                                        {budgetError && (
+                                            <Text style={{ color: 'red', marginTop: 4, marginLeft: 4 }}>{budgetError}</Text>
+                                        )}
+                                    </View>
+                                    <View style={styles.section}>
+                                        <View style={styles.sectionHeader}>
+                                            <FontAwesome5 name="coins" color="#F9CBD6" size={24} />
+                                            <Text style={styles.sectionTitle}>Ngân sách thực tế</Text>
+                                        </View>
+                                        <TextInput
+                                            mode="outlined"
+                                            placeholder="Nhập ngân sách thực tế"
+                                            value={actualBudget !== null ? formatNumber(actualBudget) : ""}
+                                            onChangeText={(value) => {
+                                                if (value === "") {
+                                                    setActualBudget(null); // Nếu giá trị rỗng, đặt lại thành null
+                                                } else {
+                                                    const numericValue = parseInt(value.replace(/\./g, ""), 10); // Loại bỏ dấu chấm
+                                                    if (!isNaN(numericValue)) {
+                                                        setActualBudget(numericValue); // Lưu giá trị thực (không có dấu chấm)
+                                                    }
+                                                }
+                                            }}
+                                            style={[styles.textInput]}
+                                            outlineStyle={styles.textInputOutline}
+                                            theme={{
+                                                colors: {
+                                                    primary: '#D95D74',
+                                                    onSurfaceVariant: '#AAAAAA',
+                                                },
+                                            }}
+                                        />
+                                    </View>
+                                </>
+                            )}
 
                             {/* Phần Thành viên đảm nhận */}
                             <View style={styles.section}>
