@@ -5,8 +5,8 @@ export interface Task {
   _id: string;
   taskName: string;
   taskNote: string;
-  expectedBudget: number;
-  actualBudget?: number;
+  // expectedBudget: number;
+  // actualBudget?: number;
   member: Member[];
   completed: boolean;
 }

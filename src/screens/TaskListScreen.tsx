@@ -33,7 +33,118 @@ import * as Clipboard from 'expo-clipboard';
 import { deleteTask, markTaskCompleted } from '../service/taskService';
 import { getWeddingEvent, leaveWeddingEvent } from '../service/weddingEventService';
 import Hashids from 'hashids';
-import BudgetProgressBar from '../components/BudgetProgressBar';
+
+type ListFooterProps = {
+  modalVisible: boolean;
+  setModalVisible: React.Dispatch<React.SetStateAction<boolean>>;
+  showStartPicker: boolean;
+  setShowStartPicker: React.Dispatch<React.SetStateAction<boolean>>;
+  showEndPicker: boolean;
+  setShowEndPicker: React.Dispatch<React.SetStateAction<boolean>>;
+  startDate: Date | undefined;
+  setStartDate: React.Dispatch<React.SetStateAction<Date | undefined>>;
+  endDate: Date | undefined;
+  setEndDate: React.Dispatch<React.SetStateAction<Date | undefined>>;
+  lastPhaseEndDate: Date;
+  formatDate: (dateString: string) => string;
+  handleAddStage: () => void;
+};
+
+const ListFooter = memo(({
+  modalVisible,
+  setModalVisible,
+  showStartPicker,
+  setShowStartPicker,
+  showEndPicker,
+  setShowEndPicker,
+  startDate,
+  setStartDate,
+  endDate,
+  setEndDate,
+  lastPhaseEndDate,
+  formatDate,
+  handleAddStage,
+}: ListFooterProps) => {
+
+  return (
+    <>
+      <TouchableOpacity onPress={() => setModalVisible(true)} style={styles.addStageButton}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', alignSelf: 'center' }}>
+          <Entypo name="plus" size={24} />
+          <Text style={styles.addStageButtonLabel}>Thêm giai đoạn</Text>
+        </View>
+      </TouchableOpacity>
+      <Modal
+        visible={modalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalTitle}>Thêm giai đoạn mới</Text>
+            <TouchableOpacity
+              onPress={() => setShowStartPicker(true)}
+              style={styles.datePickerButton}
+            >
+              <Text>
+                {startDate
+                  ? `Ngày bắt đầu: ${formatDate(startDate.toISOString())}`
+                  : 'Chọn ngày bắt đầu'}
+              </Text>
+            </TouchableOpacity>
+            {showStartPicker && (
+              <DateTimePicker
+                value={startDate || lastPhaseEndDate}
+                mode="date"
+                display="default"
+                minimumDate={lastPhaseEndDate}
+                onChange={(_, date) => {
+                  setShowStartPicker(false);
+                  if (date) setStartDate(date);
+                }}
+              />
+            )}
+
+            <TouchableOpacity
+              onPress={() => setShowEndPicker(true)}
+              style={styles.datePickerButton}
+            >
+              <Text>
+                {endDate
+                  ? `Ngày kết thúc: ${formatDate(endDate.toISOString())}`
+                  : 'Chọn ngày kết thúc'}
+              </Text>
+            </TouchableOpacity>
+            {showEndPicker && (
+              <DateTimePicker
+                //lastPhaseEndDate + 2 days at value
+                value={endDate || new Date(lastPhaseEndDate.getTime() + 2 * 24 * 60 * 60 * 1000)}
+                mode="date"
+                display="default"
+                minimumDate={startDate || lastPhaseEndDate}
+                onChange={(_, date) => {
+                  setShowEndPicker(false);
+                  if (date) setEndDate(date);
+                }}
+              />
+            )}
+
+            <View style={[styles.modalButtonRow, { flexDirection: 'row', justifyContent: 'center' }]}>
+              <TouchableOpacity onPress={() => setModalVisible(false)} style={[styles.cancelButton, { flex: 1 }]}>
+                <Text style={{ color: '#fff', textAlign: 'center' }}>Hủy</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleAddStage} style={[styles.addButton, { flex: 1 }]}>
+                <Text style={{ color: '#fff', textAlign: 'center' }}>Thêm</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    </>
+  )
+})
+
 
 export default function TaskListScreen() {
   const [modalVisible, setModalVisible] = useState(false);
@@ -60,7 +171,8 @@ export default function TaskListScreen() {
   // const phaseLoading = useSelector((state: RootState) => state.phases.getPhases.isLoading);
   const [loading, setLoading] = useState(false);
   const userId = "6892b8a2aa0f1640e5c173f2"; //fix cứng tạm thời
-  const role: "participant" | "creator" = "creator"; // fix cứng tạm thời
+  // const role: "participant" | "creator" = "creator"; // fix cứng tạm thời
+  const creatorId = useSelector((state: RootState) => state.weddingEvent.getWeddingEvent.weddingEvent.creatorId);
   // Phần này sẽ bỏ vào trang home để fetch data về wedding info trước khi vào trang tasklist
   useEffect(() => {
     const fetchWeddingInfo = async () => {
@@ -74,7 +186,6 @@ export default function TaskListScreen() {
   }, [dispatch]);
   //////////////////////////////////////////////
   const eventId = useSelector((state: RootState) => state.weddingEvent.getWeddingEvent.weddingEvent._id);
-  const totalBudget = useSelector((state: RootState) => state.weddingEvent.getWeddingEvent.weddingEvent.budget);
   // Fetch phases từ API khi mount
   useEffect(() => {
     const fetchPhases = async () => {
@@ -101,8 +212,8 @@ export default function TaskListScreen() {
         completed: task.completed,
         note: task.taskNote,
         assignee: task.member,
-        expectedBudget: task.expectedBudget,
-        actualBudget: task.actualBudget,
+        // expectedBudget: task.expectedBudget,
+        // actualBudget: task.actualBudget,
       })),
     }));
     setStages(newStages);
@@ -134,25 +245,7 @@ export default function TaskListScreen() {
   const progress = totalTasks > 0 ? completedTasks / totalTasks : 0
   const progressPercentage = (progress * 100).toFixed(1)
   // Tính toán ngân sách dự kiến và thực tế
-  const totalExpectedBudget = phases.reduce(
-    (acc, phase) =>
-      acc +
-      phase.tasks.reduce(
-        (taskAcc: number, task: any) => taskAcc + (task.expectedBudget || 0),
-        0
-      ),
-    0
-  );
 
-  const totalActualBudget = phases.reduce(
-    (acc, phase) =>
-      acc +
-      phase.tasks.reduce(
-        (taskAcc: number, task: any) => taskAcc + (task.actualBudget || 0),
-        0
-      ),
-    0
-  );
   // Xử lý sự kiện mở/đóng accordion
   const handleAccordionPress = (id: string) => {
     setExpandedAccordions((prev) =>
@@ -173,6 +266,32 @@ export default function TaskListScreen() {
     await markTaskCompleted(taskId, !currentCompleted, dispatch);
     await getPhases(eventId, dispatch);
   }
+
+  const handleAddStage = async () => {
+    if (!startDate || !endDate) return;
+    try {
+      await createPhase(
+        eventId,
+        {
+          phaseTimeStart: startDate.toISOString(),
+          phaseTimeEnd: endDate.toISOString(),
+        },
+        dispatch
+      );
+      setModalVisible(false);
+      setStartDate(undefined);
+      setEndDate(undefined);
+      // Sau khi tạo thành công, tự động reload danh sách phases
+      await getPhases(eventId, dispatch);
+    } catch (error) {
+      // Xử lý lỗi nếu cần
+      console.error('Error creating phase:', error);
+    }
+  };
+  // Lấy ngày kết thúc của phase trước đó (nếu có)
+  const lastPhaseEndDate = phases.length > 0
+    ? new Date(phases[phases.length - 1].phaseTimeEnd)
+    : new Date();
 
   const renderHiddenItem = (data: any, rowMap: any) => {
     const showConfirm = (taskId: string) => {
@@ -277,16 +396,14 @@ export default function TaskListScreen() {
                   <Text style={{ fontWeight: "bold" }}>Trạng thái: </Text>
                   {selectedTask.completed ? "Đã hoàn thành" : "Chưa hoàn thành"}
                 </Text>
-                {/* Ngân sách dự kiến */}
-                <Text style={styles.modalText}>
+                {/* <Text style={styles.modalText}>
                   <Text style={{ fontWeight: "bold" }}>Ngân sách dự kiến: </Text>
                   {selectedTask.expectedBudget ? selectedTask.expectedBudget.toLocaleString() + " VNĐ" : "Chưa có"}
                 </Text>
-                {/* Ngân sách thực tế */}
                 <Text style={styles.modalText}>
                   <Text style={{ fontWeight: "bold" }}>Ngân sách thực tế: </Text>
                   {selectedTask.actualBudget ? selectedTask.actualBudget.toLocaleString() + " VNĐ" : "Chưa có"}
-                </Text>
+                </Text> */}
                 {/* Người thực hiện */}
                 <Text style={styles.modalText}>
                   <Text style={{ fontWeight: "bold" }}>Người thực hiện:</Text>
@@ -342,7 +459,7 @@ export default function TaskListScreen() {
           title="Danh sách công việc"
           titleStyle={styles.appbarTitle}
         />
-        {role === 'creator' ? (
+        {userId === creatorId ? (
           <TouchableOpacity onPress={onAdd} style={{ padding: 8, marginRight: 8 }}>
             <Feather name="user-plus" size={24} color="#000000" style={{ backgroundColor: '#edc2cbff', borderRadius: 8, padding: 7 }} />
           </TouchableOpacity>
@@ -423,120 +540,11 @@ export default function TaskListScreen() {
             {totalTasks} )
           </Text>
         </View>
-        <BudgetProgressBar
-          totalBudget={totalBudget}
-          totalExpectedBudget={totalExpectedBudget}
-          totalActualBudget={totalActualBudget}
-        />
       </View>
 
     </>
   ));
 
-  const ListFooter = () => {
-    const handleAddStage = async () => {
-      if (!startDate || !endDate) return;
-      try {
-        await createPhase(
-          eventId,
-          {
-            phaseTimeStart: startDate.toISOString(),
-            phaseTimeEnd: endDate.toISOString(),
-          },
-          dispatch
-        );
-        setModalVisible(false);
-        setStartDate(undefined);
-        setEndDate(undefined);
-        // Sau khi tạo thành công, tự động reload danh sách phases
-        await getPhases(eventId, dispatch);
-      } catch (error) {
-        // Xử lý lỗi nếu cần
-        console.error('Error creating phase:', error);
-      }
-    };
-    // Lấy ngày kết thúc của phase trước đó (nếu có)
-    const lastPhaseEndDate = phases.length > 0
-      ? new Date(phases[phases.length - 1].phaseTimeEnd)
-      : new Date();
-    return (
-      <>
-        <TouchableOpacity onPress={() => setModalVisible(true)} style={styles.addStageButton}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', alignSelf: 'center' }}>
-            <Entypo name="plus" size={24} />
-            <Text style={styles.addStageButtonLabel}>Thêm giai đoạn</Text>
-          </View>
-        </TouchableOpacity>
-        <Modal
-          visible={modalVisible}
-          transparent
-          animationType="slide"
-          onRequestClose={() => setModalVisible(false)}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContainer}>
-              <Text style={styles.modalTitle}>Thêm giai đoạn mới</Text>
-              <TouchableOpacity
-                onPress={() => setShowStartPicker(true)}
-                style={styles.datePickerButton}
-              >
-                <Text>
-                  {startDate
-                    ? `Ngày bắt đầu: ${formatDate(startDate.toISOString())}`
-                    : 'Chọn ngày bắt đầu'}
-                </Text>
-              </TouchableOpacity>
-              {showStartPicker && (
-                <DateTimePicker
-                  value={startDate || lastPhaseEndDate}
-                  mode="date"
-                  display="default"
-                  minimumDate={lastPhaseEndDate}
-                  onChange={(_, date) => {
-                    setShowStartPicker(false);
-                    if (date) setStartDate(date);
-                  }}
-                />
-              )}
-
-              <TouchableOpacity
-                onPress={() => setShowEndPicker(true)}
-                style={styles.datePickerButton}
-              >
-                <Text>
-                  {endDate
-                    ? `Ngày kết thúc: ${formatDate(endDate.toISOString())}`
-                    : 'Chọn ngày kết thúc'}
-                </Text>
-              </TouchableOpacity>
-              {showEndPicker && (
-                <DateTimePicker
-                  //lastPhaseEndDate + 2 days at value
-                  value={endDate || new Date(lastPhaseEndDate.getTime() + 2 * 24 * 60 * 60 * 1000)}
-                  mode="date"
-                  display="default"
-                  minimumDate={startDate || lastPhaseEndDate}
-                  onChange={(_, date) => {
-                    setShowEndPicker(false);
-                    if (date) setEndDate(date);
-                  }}
-                />
-              )}
-
-              <View style={styles.modalButtonRow}>
-                <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.cancelButton}>
-                  <Text style={{ color: '#fff' }}>Hủy</Text>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={handleAddStage} style={styles.addButton}>
-                  <Text style={{ color: '#fff' }}>Thêm</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-        </Modal>
-      </>
-    )
-  }
   const AddMemberModal = () => {
     const hashids = new Hashids(process.env.SECRET_KEY_SALT, 6);
     const inviteCode = hashids.encodeHex(eventId);
@@ -642,7 +650,23 @@ export default function TaskListScreen() {
           renderItem={renderStage}
           keyExtractor={(item) => item.id}
           ListHeaderComponent={ListHeader}
-          ListFooterComponent={ListFooter}
+          ListFooterComponent={
+            <ListFooter
+              modalVisible={modalVisible}
+              setModalVisible={setModalVisible}
+              showStartPicker={showStartPicker}
+              setShowStartPicker={setShowStartPicker}
+              showEndPicker={showEndPicker}
+              setShowEndPicker={setShowEndPicker}
+              startDate={startDate}
+              setStartDate={setStartDate}
+              endDate={endDate}
+              setEndDate={setEndDate}
+              lastPhaseEndDate={lastPhaseEndDate}
+              formatDate={formatDate}
+              handleAddStage={handleAddStage}
+            />
+          }
           contentContainerStyle={styles.contentContainer}
           ListEmptyComponent={PhaseEmpty}
         />
@@ -810,7 +834,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#D95D74',
     borderRadius: 5,
     marginRight: 10,
-    width: "100%",
   },
   addButton: {
     padding: 10,

@@ -67,11 +67,8 @@ const BudgetProgressBar: React.FC<BudgetProgressBarProps> = ({
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        borderTopWidth: 1,
         borderBottomWidth: 1,
-        borderTopColor: "#E5E7EB",
         borderBottomColor: "#E5E7EB",
-        paddingVertical: responsiveHeight(10),
         backgroundColor: "#FFFFFF",
     },
     title: {

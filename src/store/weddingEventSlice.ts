@@ -14,6 +14,7 @@ export interface WeddingEvent {
   budget: number;
   timeToMarried: string; // ISO string format
   member: Member[];
+  groupActivities?: string[]; // Thêm trường groupActivities nếu cần thiết
 }
 interface GetWeddingEventState {
   isLoading: boolean;

@@ -39,6 +39,9 @@ import AddMemberScreen from "../screens/AddMemberScreen";
 import AddWeddingInfo from "../screens/AddWeddingInfo";
 import JoinWeddingEvent from "../screens/JoinWeddingEvent";
 import { Member } from "../store/weddingEventSlice";
+import BudgetListScreen from "../screens/BudgetListScreen";
+import CreateNewBudgetScreen from "../screens/CreateNewBudgetScreen";
+import EditBudgetScreen from "../screens/EditBudgetScreen";
 
 const scheme = process.env.EXPO_PUBLIC_SCHEME;
 
@@ -56,12 +59,12 @@ export type RootStackParamList = {
   Profile: undefined;
   BeginScreen: undefined;
   TaskList: { eventId: string };
+  BudgetList: undefined;
   AddTask: { phaseId: string };
   EditTask: { taskId: string };
-  AddMember: {
-    existingMembers?: Member[];
-    onSelect?: (selectedMembers: Member[]) => void;
-  }; // Thêm kiểu cho AddMember
+  AddBudget: { groupActivityId: string };
+  EditBudget: { activityId: string };
+  AddMember: { existingMembers?: Member[], onSelect?: (selectedMembers: Member[]) => void }; // Thêm kiểu cho AddMember
   AddWeddingInfo: undefined; //nếu role là người tạo
   JoinWedding: undefined; //nếu role là người tham gia
 };
@@ -275,6 +278,11 @@ const AppNavigator = () => (
         component={ProfileScreen}
         options={{ headerShown: false }}
       />
+      <Stack.Screen // chỉ cho creator vào
+        name="BudgetList"
+        component={BudgetListScreen}
+        options={{ headerShown: false }}
+      />
       <Stack.Screen
         name="TaskList"
         component={TaskListScreen}
@@ -305,6 +313,17 @@ const AppNavigator = () => (
         component={JoinWeddingEvent}
         options={{ headerShown: false }}
       />
+      <Stack.Screen
+        name="AddBudget"
+        component={CreateNewBudgetScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="EditBudget"
+        component={EditBudgetScreen}
+        options={{ headerShown: false }}
+      />
+
     </Stack.Navigator>
   </NavigationContainer>
 );
