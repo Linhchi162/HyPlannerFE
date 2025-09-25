@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -7,11 +7,17 @@ import {
   StyleSheet,
   SafeAreaView,
   ScrollView,
+  Alert,
+  ActivityIndicator,
 } from "react-native";
 import { Eye, EyeOff, Check, Shield } from "lucide-react-native";
 import { RootStackParamList } from "../navigation/AppNavigator";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { useNavigation } from "@react-navigation/core";
+import { useRoute, RouteProp } from "@react-navigation/native";
+import apiClient from "../api/client";
+
+type ChangePasswordRouteProp = RouteProp<RootStackParamList, "ChangePassword">;
 
 export default function ChangePasswordScreen() {
   const [newPassword, setNewPassword] = useState("");
@@ -19,6 +25,34 @@ export default function ChangePasswordScreen() {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+
+  const [isLoading, setIsLoading] = useState(false); // Thêm loading state
+  const route = useRoute<ChangePasswordRouteProp>();
+
+  const { email, token } = route.params;
+
+  const handleResetPassword = async () => {
+    if (!isFormValid) return;
+
+    setIsLoading(true);
+    try {
+      await apiClient.post("/auth/reset-password", {
+        email,
+        token,
+        password: newPassword, // newPassword từ state
+      });
+      navigation.navigate("PasswordUpdated");
+    } catch (error) {
+      Alert.alert(
+        "Lỗi",
+        typeof error === "object" && error !== null && "message" in error
+          ? String((error as { message?: unknown }).message)
+          : "Không thể đặt lại mật khẩu. Vui lòng thử lại."
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Password validation checks
   const hasMinLength = newPassword.length >= 8;
@@ -136,16 +170,17 @@ export default function ChangePasswordScreen() {
             <TouchableOpacity
               style={[
                 styles.saveButton,
-                isFormValid && styles.saveButtonActive,
+                isFormValid && !isLoading && styles.saveButtonActive,
+                isLoading && { opacity: 0.6 },
               ]}
-              disabled={!isFormValid}
-              onPress={() => {
-                if (isFormValid) {
-                  navigation.navigate("PasswordUpdated");
-                }
-              }}
+              disabled={!isFormValid || isLoading}
+              onPress={handleResetPassword} // Gọi hàm mới
             >
-              <Text style={styles.saveButtonText}>Lưu mật khẩu</Text>
+              {isLoading ? (
+                <ActivityIndicator color="white" />
+              ) : (
+                <Text style={styles.saveButtonText}>Lưu mật khẩu</Text>
+              )}
             </TouchableOpacity>
 
             {/* Info Box */}

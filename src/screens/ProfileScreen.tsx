@@ -25,6 +25,7 @@ import {
 } from "lucide-react-native";
 import { useSelector, useDispatch } from "react-redux";
 import { selectCurrentUser, logout } from "../store/authSlice";
+import type { RootStackParamList } from "../navigation/AppNavigator";
 
 // Bảng màu từ thiết kế
 const COLORS = {
@@ -78,11 +79,6 @@ type UserData = {
 };
 
 import type { StackNavigationProp } from "@react-navigation/stack";
-
-type RootStackParamList = {
-  Login: undefined;
-  // Add other screens here if needed
-};
 
 const ProfileScreen = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
@@ -147,22 +143,41 @@ const ProfileScreen = () => {
           <ProfileItem
             icon={User}
             label="Tên đăng nhập"
-            value={user.fullName} // <-- Dữ liệu động
-            onPress={() => console.log("Chỉnh sửa tên")}
+            value={user.fullName}
+            onPress={() =>
+              navigation.navigate("EditProfileScreen", {
+                // Sửa lại tên màn hình nếu cần
+                label: "Chỉnh sửa Tên",
+                currentValue: user.fullName,
+                field: "fullName",
+              })
+            }
           />
           <View style={styles.separator} />
           <ProfileItem
             icon={Mail}
             label="Email"
-            value={user.email} // <-- Dữ liệu động
-            onPress={() => console.log("Chỉnh sửa email")}
+            value={user.email}
+            onPress={() =>
+              navigation.navigate("EditProfileScreen", {
+                label: "Chỉnh sửa Email",
+                currentValue: user.email,
+                field: "email",
+              })
+            }
           />
           <View style={styles.separator} />
           <ProfileItem
             icon={Lock}
             label="Mật khẩu"
             value="••••••••"
-            onPress={() => console.log("Chỉnh sửa mật khẩu")}
+            onPress={() =>
+              navigation.navigate("EditProfileScreen", {
+                label: "Thay đổi Mật khẩu",
+                currentValue: "", // Không truyền mật khẩu hiện tại
+                field: "password",
+              })
+            }
           />
           <View style={styles.separator} />
           <View style={styles.itemContainer}>
@@ -201,7 +216,13 @@ const ProfileScreen = () => {
             icon={Cake}
             label="Ngày sinh"
             value="01/01/2000"
-            onPress={() => console.log("Chỉnh sửa ngày sinh")}
+            onPress={() =>
+              navigation.navigate("EditProfileScreen", {
+                label: "Chỉnh sửa Ngày sinh",
+                currentValue: "01/01/2000",
+                field: "birthDate",
+              })
+            }
           />
         </View>
 

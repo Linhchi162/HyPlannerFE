@@ -113,8 +113,8 @@ const HomeScreen = () => {
         <View style={styles.greetingCard}>
           <Text style={styles.greetingTitle}>Xin chào, Hau & Nhu</Text>
           <Text style={styles.greetingText}>
-            Đếm ngược ngày cưới còn 62 ngày.{"\n"}
-            Hãy thiết kế đám cưới của riêng bạn ngay bây giờ!
+            Hãy thiết kế đám cưới của riêng bạn ngay bây giờ!{"\n"}
+            Đếm ngược ngày cưới còn lại:
           </Text>
           <View style={styles.countdownContainer}>
             <Text style={styles.countdownNumber}>62</Text>
@@ -185,7 +185,10 @@ const HomeScreen = () => {
             </TouchableOpacity>
           )}
 
-          <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate("ChooseStyle")}>
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => navigation.navigate("ChooseStyle")}
+          >
             <View style={styles.menuItemLeft}>
               <View style={styles.menuIcon}>
                 <Shirt size={16} color="white" />
@@ -198,7 +201,10 @@ const HomeScreen = () => {
             <ChevronRight size={20} color="#9ca3af" />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.menuItem}>
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => navigation.navigate("InvitationLettersScreen")}
+          >
             <View style={styles.menuItemLeft}>
               <View style={styles.menuIcon}>
                 <Mail size={16} color="white" />
@@ -234,11 +240,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 8,
   },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: "600",
-    color: "#e91e63",
-  },
   profileImageContainer: {
     width: 40,
     height: 40,
@@ -257,12 +258,14 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   greetingTitle: {
+    fontFamily: "Montserrat-SemiBold",
     fontSize: 18,
     fontWeight: "500",
     color: "#1f2937",
     marginBottom: 12,
   },
   greetingText: {
+    fontFamily: "Montserrat-Medium",
     color: "#6b7280",
     fontSize: 14,
     lineHeight: 20,
@@ -274,13 +277,15 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   countdownNumber: {
+    fontFamily: "Montserrat-Medium",
     fontSize: 36,
     fontWeight: "bold",
     color: "#ff6b9d",
   },
   countdownLabel: {
+    fontFamily: "Montserrat-Medium",
     color: "#6b7280",
-    fontSize: 14,
+    fontSize: 24,
   },
   imageSection: {
     marginHorizontal: 16,
@@ -301,6 +306,7 @@ const styles = StyleSheet.create({
     height: width * 0.8, // Responsive height based on screen width
   },
   imageCaption: {
+    fontFamily: "Montserrat-Medium",
     textAlign: "center",
     color: "#6b7280",
     fontSize: 14,
@@ -336,11 +342,13 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   menuTitle: {
+    fontFamily: "Montserrat-SemiBold",
     fontWeight: "500",
     color: "#1f2937",
     fontSize: 16,
   },
   menuSubtitle: {
+    fontFamily: "Montserrat-Medium",
     fontSize: 12,
     color: "#6b7280",
   },

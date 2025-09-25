@@ -6,7 +6,7 @@ export interface Member {
   fullName: string;
   email: string;
   picture?: string;
-} 
+}
 export interface WeddingEvent {
   _id: string;
   brideName: string;
@@ -136,6 +136,14 @@ const weddingEventSlice = createSlice({
       state.leaveWeddingEvent.error = true;
       state.leaveWeddingEvent.errorMsg = action.payload;
     },
+    setWeddingEventFromCheck: (state, action: PayloadAction<WeddingEvent>) => {
+      // Nó ghi dữ liệu vào đúng vị trí của state 'getWeddingEvent'
+      state.getWeddingEvent.weddingEvent = action.payload;
+      // Đồng thời reset lại trạng thái loading/error của 'get' để đảm bảo nhất quán
+      state.getWeddingEvent.isLoading = false;
+      state.getWeddingEvent.error = false;
+      state.getWeddingEvent.errorMsg = "";
+    },
   },
 });
 export const {
@@ -145,6 +153,7 @@ export const {
   getWeddingEventStart,
   getWeddingEventSuccess,
   getWeddingEventFailure,
+  setWeddingEventFromCheck,
   joinWeddingEventStart,
   joinWeddingEventSuccess,
   joinWeddingEventFailure,

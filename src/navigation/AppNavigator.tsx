@@ -26,6 +26,8 @@ import PasswordUpdatedScreen from "../screens/PasswordUpdatedScreen";
 import InviteOrCreateScreen from "../screens/InviteOrCreateScreen";
 import HomeScreen from "../screens/HomeScreen";
 import ProfileScreen from "../screens/ProfileScreen";
+import EditProfileScreen from "../screens/EditProfileScreen";
+import InvitationLettersScreen from "../screens/InvitationLetterScreen";
 import MoodBoardsScreen from "../screens/MoodBoardsScreen";
 import NotificationsScreen from "../screens/NotificationsScreen";
 
@@ -64,12 +66,23 @@ export type RootStackParamList = {
   Login: undefined;
   Register: undefined;
   ForgotPassword: undefined;
-  OTP: { email: string };
+  OTP: {
+    email?: string;
+    newEmail?: string;
+    // Làm cho tham số 'from' an toàn hơn bằng cách chỉ định các giá trị có thể có
+    from?: "register" | "forgot-password" | "change-email";
+  };
   ChangePassword: { email: string; token: string };
   PasswordUpdated: undefined;
   InviteOrCreate: undefined;
   Main: NavigatorScreenParams<MainTabParamList>;
   Profile: undefined;
+  EditProfileScreen: {
+    label: string;
+    currentValue: string;
+    field: string;
+  };
+  InvitationLettersScreen: undefined;
   BeginScreen: undefined;
   TaskList: { eventId: string };
   BudgetList: undefined;
@@ -77,7 +90,10 @@ export type RootStackParamList = {
   EditTask: { taskId: string; eventId: string };
   AddBudget: { groupActivityId: string; eventId: string };
   EditBudget: { activityId: string; eventId: string };
-  AddMember: { existingMembers?: Member[]; onSelect?: (selectedMembers: Member[]) => void };
+  AddMember: {
+    existingMembers?: Member[];
+    onSelect?: (selectedMembers: Member[]) => void;
+  };
   AddWeddingInfo: undefined;
   JoinWedding: undefined;
 
@@ -145,15 +161,20 @@ const MainTabNavigator = () => {
       screenOptions={({ route }) => ({
         tabBarIcon: ({ color, size, focused }) => {
           const iconSize = focused ? 26 : 22;
-          if (route.name === "Home") return <Home color={color} size={iconSize} />;
-          if (route.name === "Notifications") return <Bell color={color} size={iconSize} />;
-          if (route.name === "MoodBoard") return <Heart color={color} size={iconSize} />;
-          if (route.name === "ProfileTab") return <User color={color} size={iconSize} />;
+          if (route.name === "Home")
+            return <Home color={color} size={iconSize} />;
+          if (route.name === "Notifications")
+            return <Bell color={color} size={iconSize} />;
+          if (route.name === "MoodBoard")
+            return <Heart color={color} size={iconSize} />;
+          if (route.name === "ProfileTab")
+            return <User color={color} size={iconSize} />;
           return null;
         },
         tabBarActiveTintColor: "#ff6b9d",
         tabBarInactiveTintColor: "#9ca3af",
         tabBarLabelStyle: {
+          fontFamily: "Montserrat-Medium",
           fontSize: 12,
           fontWeight: "600",
           marginTop: -2,
@@ -302,6 +323,17 @@ const AppNavigator = () => (
         options={{ headerShown: false }}
       />
 
+      <Stack.Screen
+        name="EditProfileScreen"
+        component={EditProfileScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="InvitationLettersScreen"
+        component={InvitationLettersScreen}
+        options={{ headerShown: false }}
+      />
+
       {/* ===== Tasks & Budget ===== */}
       <Stack.Screen
         name="TaskList"
@@ -420,9 +452,8 @@ const AppNavigator = () => (
 const headerStyles = StyleSheet.create({
   title: {
     fontSize: 22,
-    fontWeight: "bold",
+    fontFamily: "Agbalumo",
     color: "#ff6b9d", // Updated to match tab bar active color
-    fontFamily: "serif",
   },
   avatar: {
     width: 40,

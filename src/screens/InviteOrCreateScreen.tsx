@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -7,13 +7,61 @@ import {
   StyleSheet,
   StatusBar,
   SafeAreaView,
+  ActivityIndicator,
+  Alert,
 } from "react-native";
 import { Heart, Plus, Key } from "lucide-react-native";
 import { useNavigation, type NavigationProp } from "@react-navigation/native";
 import type { RootStackParamList } from "../navigation/AppNavigator";
+import { setWeddingEventFromCheck } from "../store/weddingEventSlice";
+import { useDispatch } from "react-redux";
+import apiClient from "../api/client"; // <-- Import apiClient
 
 export default function InviteOrCreateScreen() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const dispatch = useDispatch();
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const checkEventStatus = async () => {
+      try {
+        // Gọi API để kiểm tra
+        const response = await apiClient.get("/weddingEvents/check-user");
+        const { hasEvent, event } = response.data;
+
+        // Nếu người dùng đã có sự kiện
+        if (hasEvent) {
+          // 1. Lưu thông tin sự kiện vào Redux
+          dispatch(setWeddingEventFromCheck(event));
+          // 2. Chuyển hướng thẳng đến màn hình chính
+          // Dùng reset để người dùng không thể quay lại màn hình này
+          navigation.reset({
+            index: 0,
+            routes: [{ name: "Main" }],
+          });
+        } else {
+          // Nếu không có sự kiện, ẩn loading và hiển thị màn hình
+          setIsLoading(false);
+        }
+      } catch (error) {
+        console.error("Failed to check user event status:", error);
+        Alert.alert("Lỗi", "Không thể kiểm tra dữ liệu, vui lòng thử lại.");
+        setIsLoading(false); // Ẩn loading dù có lỗi
+      }
+    };
+
+    checkEventStatus();
+  }, [dispatch, navigation]); // <-- Dependency array
+
+  // Hiển thị màn hình loading trong khi đang kiểm tra
+  if (isLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#ec4899" />
+        <Text style={styles.loadingText}>Đang kiểm tra dữ liệu...</Text>
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -209,5 +257,16 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#6b7280",
     lineHeight: 20,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#fdf2f8",
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: "#ec4899",
   },
 });

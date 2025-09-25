@@ -18,12 +18,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import apiClient from "../api/client";
 import { useDispatch } from "react-redux";
 import { setCredentials } from "../store/authSlice";
-
-type RootStackParamList = {
-  Login: undefined;
-  Main: { screen: string; params?: { token: string; user: any } };
-  InviteOrCreate: undefined;
-};
+import type { RootStackParamList } from "../navigation/AppNavigator";
 
 const isValidEmail = (email: string) => {
   const emailRegex = /\S+@\S+\.\S+/;
@@ -79,21 +74,16 @@ export default function RegistrationScreen() {
         }
       );
 
-      const { token, user } = response.data;
-
-      // Dispatch credentials vào Redux store (giữ nguyên)
-      dispatch(setCredentials({ user, token }));
-
-      // 4. Chuyển hướng đến màn hình InviteOrCreate
-      // Dùng reset để người dùng không thể quay lại màn hình đăng ký
-      navigation.reset({
-        index: 0,
-        routes: [{ name: "InviteOrCreate" }], // <-- THAY ĐỔI Ở ĐÂY
-      });
+      // BƯỚC 2: Nếu thành công, chuyển đến màn hình OTP
+      Alert.alert("Thành công", `Mã xác thực đã được gửi đến ${email}.`);
+      navigation.navigate("OTP", { email, from: "register" }); // Thêm 'from' để OTPScreen biết đây là luồng đăng ký
     } catch (error) {
       console.error("Registration error:", error);
-      const message = "Đã có lỗi xảy ra. Vui lòng thử lại.";
-      Alert.alert("Đăng ký thất bại", message);
+      const errorMessage =
+        typeof error === "object" && error !== null && "message" in error
+          ? (error as { message?: string }).message
+          : undefined;
+      Alert.alert("Đăng ký thất bại", errorMessage || "Đã có lỗi xảy ra.");
     } finally {
       setLoading(false);
     }

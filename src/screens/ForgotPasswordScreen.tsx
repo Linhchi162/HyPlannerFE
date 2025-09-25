@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react"; // Thêm React
 import {
   View,
   Text,
@@ -7,25 +7,41 @@ import {
   StyleSheet,
   SafeAreaView,
   Alert,
+  ActivityIndicator, // Thêm ActivityIndicator
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
-import { Bold } from "lucide-react-native";
 import { useNavigation } from "@react-navigation/native";
+import type { RootStackParamList } from "../navigation/AppNavigator";
+import { StackNavigationProp } from "@react-navigation/stack";
+import apiClient from "../api/client"; // Import apiClient
 
 export default function ForgotPasswordScreen() {
   const [email, setEmail] = useState("");
+  const [isLoading, setIsLoading] = useState(false); // Thêm loading state
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
 
-  const navigation = useNavigation();
-
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!email) {
       Alert.alert("Lỗi", "Vui lòng nhập email của bạn");
       return;
     }
 
-    // Handle form submission
-    console.log("Email submitted:", email);
-    navigation.navigate("OTP");
+    setIsLoading(true);
+    try {
+      const response = await apiClient.post("/auth/forgot-password", {
+        email,
+      });
+      Alert.alert("Thành công", response.data.message);
+      navigation.navigate("OTP", { email });
+    } catch (error) {
+      Alert.alert(
+        "Lỗi",
+        (error instanceof Error && error.message) ||
+          "Đã có lỗi xảy ra, vui lòng thử lại."
+      );
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -51,12 +67,16 @@ export default function ForgotPasswordScreen() {
         </View>
 
         <TouchableOpacity
-          style={[styles.button, { opacity: email ? 1 : 0.6 }]}
+          style={[styles.button, { opacity: !email || isLoading ? 0.6 : 1 }]}
           onPress={handleSubmit}
           activeOpacity={0.7}
-          disabled={!email}
+          disabled={!email || isLoading}
         >
-          <Text style={styles.buttonText}>Tiếp theo</Text>
+          {isLoading ? (
+            <ActivityIndicator color="#000" />
+          ) : (
+            <Text style={styles.buttonText}>Tiếp theo</Text>
+          )}
         </TouchableOpacity>
       </View>
     </SafeAreaView>
