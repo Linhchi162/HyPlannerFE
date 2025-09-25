@@ -21,16 +21,21 @@ import { RootStackParamList } from "../navigation/AppNavigator";
 type CreateTaskAppbarProps = {
   onBack: () => void;
   onCheck: () => void;
+  loading?: boolean;
 };
 
-const CreateTaskAppbar = React.memo(({ onBack, onCheck }: CreateTaskAppbarProps) => (
+const CreateTaskAppbar = React.memo(({ onBack, onCheck, loading }: CreateTaskAppbarProps) => (
   <Appbar.Header style={styles.appbarHeader}>
     <TouchableOpacity onPress={onBack} style={{ padding: 8, marginRight: 8 }}>
       <Entypo name="chevron-left" size={24} color="#000000" />
     </TouchableOpacity>
     <Appbar.Content title="Chỉnh sửa công việc" titleStyle={styles.appbarTitle} />
-    <TouchableOpacity onPress={onCheck} style={{ padding: 8, marginRight: 8 }}>
-      <Entypo name="check" size={24} color="#000000" />
+    <TouchableOpacity onPress={onCheck} disabled={loading} style={{ padding: 8, marginRight: 8 }}>
+      {loading ? (
+        <ActivityIndicator size={24} color="#D95D74" />
+      ) : (
+        <Entypo name="check" size={24} color="#000000" />
+      )}
     </TouchableOpacity>
   </Appbar.Header>
 ));
@@ -56,8 +61,10 @@ export default function EditTaskScreen() {
   // const [budgetError, setBudgetError] = useState<string>("");
   const [taskNameError, setTaskNameError] = useState('');
   const [members, setMembers] = useState<Member[]>(memberInTask);
-  const eventId = "68c29283931d7e65bd3ad689"; // Fix cứng tạm thời
+  // const eventId = "68c29283931d7e65bd3ad689"; // Fix cứng tạm thời
+  const { eventId } = route.params;
   const [loadingTask, setLoadingTask] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
   // const userId = "6892b8a2aa0f1640e5c173f2"; //fix cứng tạm thời
   // const creatorId = useSelector((state: RootState) => state.weddingEvent.getWeddingEvent.weddingEvent.creatorId);
   useEffect(() => {
@@ -93,6 +100,7 @@ export default function EditTaskScreen() {
         setTaskNameError('Tên công việc không được để trống');
         return;
       } setTaskNameError('');
+      setActionLoading(true);
       await editTask(
         taskId,
         {
@@ -105,6 +113,7 @@ export default function EditTaskScreen() {
         dispatch
       );
       await getPhases(eventId, dispatch);
+      setActionLoading(false);
       navigation.goBack();
     } catch (error) {
       console.error("Error saving task:", error);
@@ -115,7 +124,7 @@ export default function EditTaskScreen() {
   };
   return (
     <View style={styles.safeArea}>
-      <CreateTaskAppbar onBack={navigation.goBack} onCheck={handleSave} />
+      <CreateTaskAppbar onBack={navigation.goBack} onCheck={handleSave} loading={actionLoading} />
       {loadingTask ? (
         <ActivityIndicator size="large" color="#D95D74" />
       ) : (
@@ -173,74 +182,6 @@ export default function EditTaskScreen() {
                   }}
                 />
               </View>
-
-              {/* Tiền */}
-              {/* {userId === creatorId && (
-                <>
-                  <View style={styles.section}>
-                    <View style={styles.sectionHeader}>
-                      <FontAwesome5 name="coins" color="#F9CBD6" size={24} />
-                      <Text style={styles.sectionTitle}>Ngân sách dự kiến</Text>
-                    </View>
-                    <TextInput
-                      mode="outlined"
-                      placeholder="Nhập ngân sách dự kiến"
-                      value={expectedBudget !== null ? formatNumber(expectedBudget) : ""}
-                      onChangeText={(value) => {
-                        if (value === "") {
-                          setExpectedBudget(null);
-                        } else {
-                          const numericValue = parseInt(value.replace(/\./g, ""), 10);
-                          if (!isNaN(numericValue)) {
-                            setExpectedBudget(numericValue);
-                          }
-                        }
-                      }}
-                      style={[styles.textInput]}
-                      outlineStyle={styles.textInputOutline}
-                      keyboardType="numeric"
-                      theme={{
-                        colors: {
-                          primary: '#D95D74',
-                          onSurfaceVariant: '#AAAAAA',
-                        },
-                      }}
-                    />
-                    {budgetError && (
-                      <Text style={{ color: 'red', marginTop: 4, marginLeft: 4 }}>{budgetError}</Text>
-                    )}
-                  </View>
-                  <View style={styles.section}>
-                    <View style={styles.sectionHeader}>
-                      <FontAwesome5 name="coins" color="#F9CBD6" size={24} />
-                      <Text style={styles.sectionTitle}>Ngân sách thực tế</Text>
-                    </View>
-                    <TextInput
-                      mode="outlined"
-                      placeholder="Nhập ngân sách thực tế"
-                      value={actualBudget !== null ? formatNumber(actualBudget) : ""}
-                      onChangeText={(value) => {
-                        if (value === "") {
-                          setActualBudget(null);
-                        } else {
-                          const numericValue = parseInt(value.replace(/\./g, ""), 10);
-                          if (!isNaN(numericValue)) {
-                            setActualBudget(numericValue);
-                          }
-                        }
-                      }}
-                      style={[styles.textInput]}
-                      outlineStyle={styles.textInputOutline}
-                      theme={{
-                        colors: {
-                          primary: '#D95D74',
-                          onSurfaceVariant: '#AAAAAA',
-                        },
-                      }}
-                    />
-                  </View>
-                </>
-              )} */}
 
               {/* Thành viên đảm nhận */}
               <View style={styles.section}>

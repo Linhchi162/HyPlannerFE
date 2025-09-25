@@ -13,9 +13,14 @@ interface GetGroupActivitiesState {
   error: boolean;
   errorMsg: string;
 }
+interface CreateGroupActivityState {
+  isLoading: boolean;
+  error: boolean;
+  errorMsg: string;
+}
 interface GroupActivitySliceState {
   getGroupActivities: GetGroupActivitiesState;
-  createGroupActivity: GetGroupActivitiesState;
+  createGroupActivity: CreateGroupActivityState;
 }
 const initialState: GroupActivitySliceState = {
   getGroupActivities: {
@@ -25,7 +30,7 @@ const initialState: GroupActivitySliceState = {
     errorMsg: "",
   },
   createGroupActivity: {
-    groupActivities: [],
+    // groupActivities: [],
     isLoading: false,
     error: false,
     errorMsg: "",
@@ -53,9 +58,9 @@ const groupActivitySlice = createSlice({
     createGroupActivityStart: (state) => {
       state.createGroupActivity.isLoading = true;
     },
-    createGroupActivitySuccess: (state, action: PayloadAction<GroupActivity>) => {
+    createGroupActivitySuccess: (state) => {
       state.createGroupActivity.isLoading = false;
-      state.createGroupActivity.groupActivities.push(action.payload);
+      // state.createGroupActivity.groupActivities.push(action.payload);
       state.createGroupActivity.error = false;
     },
     createGroupActivityFailure: (state, action: PayloadAction<string>) => {

@@ -1,4 +1,5 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { Activity } from "./activitySlice";
 
 export interface Member {
   _id: string;
@@ -8,13 +9,14 @@ export interface Member {
 } 
 export interface WeddingEvent {
   _id: string;
-  creatorId: string;
   brideName: string;
-  groomName: string;
   budget: number;
-  timeToMarried: string; // ISO string format
-  member: Member[];
+  groomName: string;
   groupActivities?: string[]; // Thêm trường groupActivities nếu cần thiết
+  member: Member[];
+  creatorId: string;
+  phases?: string[];
+  timeToMarried: string; // ISO string format
 }
 interface GetWeddingEventState {
   isLoading: boolean;
@@ -50,12 +52,14 @@ const initialState: WeddingEventState = {
     errorMsg: "",
     weddingEvent: {
       _id: "",
-      creatorId: "",
       brideName: "",
-      groomName: "",
       budget: 0,
-      timeToMarried: "",
+      groomName: "",
+      groupActivities: [],
       member: [],
+      creatorId: "",
+      phases: [],
+      timeToMarried: "",
     },
   },
   createWeddingEvent: {

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
   View,
   Text,
@@ -10,7 +10,7 @@ import {
   Image,
   Dimensions,
 } from "react-native";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { selectCurrentUser } from "../store/authSlice";
 import { jwtDecode } from "jwt-decode";
 import { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
@@ -31,8 +31,11 @@ import {
   Heart,
   Bell,
   User,
+  Wallet,
 } from "lucide-react-native";
 import { useState } from "react";
+import { getWeddingEvent } from "../service/weddingEventService";
+import { AppDispatch, RootState } from "../store";
 
 const { width, height } = Dimensions.get("window");
 
@@ -70,7 +73,20 @@ const HomeScreen = () => {
     const imageIndex = Math.round(scrollPosition / width);
     setCurrentImageIndex(imageIndex);
   };
+  const dispatch = useDispatch<AppDispatch>();
 
+  useEffect(() => {
+    const fetchWeddingInfo = async () => {
+      if (!user) return;
+      try {
+        await getWeddingEvent(user.id, dispatch);
+      } catch (error) {
+        console.error("Error fetching wedding info:", error);
+      }
+    };
+    fetchWeddingInfo();
+  }, [dispatch]);
+  const creatorId = useSelector((state: RootState) => state.weddingEvent.getWeddingEvent.weddingEvent.creatorId);
   if (!user) {
     return (
       <SafeAreaView style={styles.container}>
@@ -157,6 +173,24 @@ const HomeScreen = () => {
             </View>
             <ChevronRight size={20} color="#9ca3af" />
           </TouchableOpacity>
+          {/* chỉ cho creator */}
+          {user.id === creatorId && (
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => navigation.navigate("BudgetList")}
+            >
+              <View style={styles.menuItemLeft}>
+                <View style={styles.menuIcon}>
+                  <Wallet size={16} color="white" />
+                </View>
+                <View style={styles.menuTextContainer}>
+                  <Text style={styles.menuTitle}>Ngân sách của bạn</Text>
+                  <Text style={styles.menuSubtitle}>Danh sách ngân sách</Text>
+                </View>
+              </View>
+              <ChevronRight size={20} color="#9ca3af" />
+            </TouchableOpacity>
+          )}
 
           <TouchableOpacity style={styles.menuItem}>
             <View style={styles.menuItemLeft}>

@@ -1,5 +1,5 @@
 import { FlatList, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { Appbar, Avatar, Icon, IconButton, List, TextInput } from "react-native-paper";
+import { ActivityIndicator, Appbar, Avatar, Icon, IconButton, List, TextInput } from "react-native-paper";
 import { Entypo, FontAwesome5 } from "@expo/vector-icons";
 import { useCallback, useState } from "react";
 import React from "react";
@@ -15,10 +15,11 @@ import { Member } from "../store/weddingEventSlice";
 type CreateTaskAppbarProps = {
     onBack: () => void;
     onCheck: () => void;
+    loading?: boolean;
 };
 
 // Component Appbar riêng, dùng React.memo để tránh re-render
-const CreateTaskAppbar = React.memo(({ onBack, onCheck }: CreateTaskAppbarProps) => (
+const CreateTaskAppbar = React.memo(({ onBack, onCheck, loading }: CreateTaskAppbarProps) => (
     <Appbar.Header style={styles.appbarHeader}>
         <TouchableOpacity onPress={onBack} style={{ padding: 8, marginRight: 8 }}>
             <Entypo name="chevron-left" size={24} color="#000000" />
@@ -27,8 +28,12 @@ const CreateTaskAppbar = React.memo(({ onBack, onCheck }: CreateTaskAppbarProps)
             title="Tạo công việc mới"
             titleStyle={styles.appbarTitle}
         />
-        <TouchableOpacity onPress={onCheck} style={{ padding: 8, marginRight: 8 }}>
-            <Entypo name="check" size={24} color="#000000" />
+        <TouchableOpacity onPress={onCheck} disabled={loading} style={{ padding: 8, marginRight: 8 }}>
+            {loading ? (
+                <ActivityIndicator size={24} color="#D95D74" />
+            ) : (
+                <Entypo name="check" size={24} color="#000000" />
+            )}
         </TouchableOpacity>
     </Appbar.Header>
 ));
@@ -47,7 +52,9 @@ export default function CreateNewTaskScreen() {
     // take phaseId from route params
     const route = useRoute<RouteProp<RootStackParamList, 'AddTask'>>();
     const { phaseId } = route.params;
-    const eventId = "68c29283931d7e65bd3ad689"; // lưu ý đây là fix cứng tạm thời sau khi hoàn thành login và chọn sự kiện
+    const [loading, setLoading] = useState(false);
+    const { eventId } = route.params;
+    // const eventId = "68c29283931d7e65bd3ad689"; // lưu ý đây là fix cứng tạm thời sau khi hoàn thành login và chọn sự kiện
     // const userId = "6892b8a2aa0f1640e5c173f2"; //fix cứng tạm thời
     // const creatorId = useSelector((state: RootState) => state.weddingEvent.getWeddingEvent.weddingEvent.creatorId);
 
@@ -65,8 +72,10 @@ export default function CreateNewTaskScreen() {
                 // expectedBudget: expectedBudget === null ? 0 : expectedBudget, // Nếu expectedBudget là null, gửi 0
                 // actualBudget: actualBudget === null ? 0 : actualBudget, // Nếu actualBudget là null, gửi 0
             };
+            setLoading(true);
             await createTask(phaseId, taskData, dispatch);
             await getPhases(eventId, dispatch);
+            setLoading(false);
             // Navigate back to TaskList after creation
             navigation.goBack();
         } catch (error) {
@@ -88,6 +97,7 @@ export default function CreateNewTaskScreen() {
                 <CreateTaskAppbar
                     onBack={navigation.goBack}
                     onCheck={handleCreateTask}
+                    loading={loading}
                 />
                 <FlatList
                     data={[]} // Không có dữ liệu, chỉ dùng để hiển thị nội dung
@@ -147,72 +157,6 @@ export default function CreateNewTaskScreen() {
                                     }}
                                 />
                             </View>
-                            {/* {userId === creatorId && (
-                                <>
-                                    <View style={styles.section}>
-                                        <View style={styles.sectionHeader}>
-                                            <FontAwesome5 name="coins" color="#F9CBD6" size={24} />
-                                            <Text style={styles.sectionTitle}>Ngân sách dự kiến</Text>
-                                        </View>
-                                        <TextInput
-                                            mode="outlined"
-                                            placeholder="Nhập ngân sách dự kiến"
-                                            value={expectedBudget !== null ? formatNumber(expectedBudget) : ""}
-                                            onChangeText={(value) => {
-                                                if (value === "") {
-                                                    setExpectedBudget(null); 
-                                                } else {
-                                                    const numericValue = parseInt(value.replace(/\./g, ""), 10); 
-                                                    if (!isNaN(numericValue)) {
-                                                        setExpectedBudget(numericValue); 
-                                                    }
-                                                }
-                                            }}
-                                            style={[styles.textInput]}
-                                            outlineStyle={styles.textInputOutline}
-                                            keyboardType="numeric"
-                                            theme={{
-                                                colors: {
-                                                    primary: '#D95D74',
-                                                    onSurfaceVariant: '#AAAAAA',
-                                                },
-                                            }}
-                                        />
-                                        {budgetError && (
-                                            <Text style={{ color: 'red', marginTop: 4, marginLeft: 4 }}>{budgetError}</Text>
-                                        )}
-                                    </View>
-                                    <View style={styles.section}>
-                                        <View style={styles.sectionHeader}>
-                                            <FontAwesome5 name="coins" color="#F9CBD6" size={24} />
-                                            <Text style={styles.sectionTitle}>Ngân sách thực tế</Text>
-                                        </View>
-                                        <TextInput
-                                            mode="outlined"
-                                            placeholder="Nhập ngân sách thực tế"
-                                            value={actualBudget !== null ? formatNumber(actualBudget) : ""}
-                                            onChangeText={(value) => {
-                                                if (value === "") {
-                                                    setActualBudget(null);
-                                                } else {
-                                                    const numericValue = parseInt(value.replace(/\./g, ""), 10); 
-                                                    if (!isNaN(numericValue)) {
-                                                        setActualBudget(numericValue); 
-                                                    }
-                                                }
-                                            }}
-                                            style={[styles.textInput]}
-                                            outlineStyle={styles.textInputOutline}
-                                            theme={{
-                                                colors: {
-                                                    primary: '#D95D74',
-                                                    onSurfaceVariant: '#AAAAAA',
-                                                },
-                                            }}
-                                        />
-                                    </View>
-                                </>
-                            )} */}
 
                             {/* Phần Thành viên đảm nhận */}
                             <View style={styles.section}>

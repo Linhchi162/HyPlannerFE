@@ -1,5 +1,5 @@
 import { FlatList, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { Appbar, Avatar, Icon, IconButton, List, RadioButton, TextInput } from "react-native-paper";
+import { ActivityIndicator, Appbar, Avatar, Icon, IconButton, List, RadioButton, TextInput } from "react-native-paper";
 import { Entypo, FontAwesome5 } from "@expo/vector-icons";
 import { useCallback, useState } from "react";
 import React from "react";
@@ -13,10 +13,11 @@ import { getGroupActivities } from "../service/groupActivityService";
 type CreateTaskAppbarProps = {
     onBack: () => void;
     onCheck: () => void;
+    loading?: boolean;
 };
 
 // Component Appbar riêng, dùng React.memo để tránh re-render
-const CreateTaskAppbar = React.memo(({ onBack, onCheck }: CreateTaskAppbarProps) => (
+const CreateTaskAppbar = React.memo(({ onBack, onCheck, loading }: CreateTaskAppbarProps) => (
     <Appbar.Header style={styles.appbarHeader}>
         <TouchableOpacity onPress={onBack} style={{ padding: 8, marginRight: 8 }}>
             <Entypo name="chevron-left" size={24} color="#000000" />
@@ -26,7 +27,9 @@ const CreateTaskAppbar = React.memo(({ onBack, onCheck }: CreateTaskAppbarProps)
             titleStyle={styles.appbarTitle}
         />
         <TouchableOpacity onPress={onCheck} style={{ padding: 8, marginRight: 8 }}>
-            <Entypo name="check" size={24} color="#000000" />
+            {loading ? <ActivityIndicator color="#000000" /> : (
+                <Entypo name="check" size={24} color="#000000" />
+            )}
         </TouchableOpacity>
     </Appbar.Header>
 ));
@@ -45,7 +48,9 @@ export default function CreateNewBudgetScreen() {
     // take groupActivityId from route params
     const route = useRoute<RouteProp<RootStackParamList, 'AddBudget'>>();
     const { groupActivityId } = route.params;
-    const eventId = "68c29283931d7e65bd3ad689"; // lưu ý đây là fix cứng tạm thời sau khi hoàn thành login và chọn sự kiện
+    const { eventId } = route.params;
+    const [actionLoading, setActionLoading] = useState(false);
+    // const eventId = "68c29283931d7e65bd3ad689"; // lưu ý đây là fix cứng tạm thời sau khi hoàn thành login và chọn sự kiện
     // const userId = "6892b8a2aa0f1640e5c173f2"; //fix cứng tạm thời
     // const creatorId = useSelector((state: RootState) => state.weddingEvent.getWeddingEvent.weddingEvent.creatorId);
 
@@ -63,8 +68,10 @@ export default function CreateNewBudgetScreen() {
                 actualBudget: actualBudget === null ? 0 : actualBudget, // Nếu actualBudget là null, gửi 0
                 payer: payer,
             };
+            setActionLoading(true);
             await createActivity(groupActivityId, activityData, dispatch);
             await getGroupActivities(eventId, dispatch);
+            setActionLoading(false);
             // Navigate back to BudgetList after creation
             navigation.goBack();
         } catch (error) {
@@ -84,6 +91,7 @@ export default function CreateNewBudgetScreen() {
                 <CreateTaskAppbar
                     onBack={navigation.goBack}
                     onCheck={handleCreateBudget}
+                    loading={actionLoading}
                 />
                 <FlatList
                     data={[]} // Không có dữ liệu, chỉ dùng để hiển thị nội dung

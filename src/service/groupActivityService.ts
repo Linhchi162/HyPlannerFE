@@ -9,9 +9,10 @@ import {
   getGroupActivitiesSuccess,
   GroupActivity,
 } from "../store/groupActivitySlice";
+import apiClient from "../api/client";
 
 // const API_BASE_URL = "http://192.168.2.77:8082";
-const API_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_SCHEME;
+// const API_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_SCHEME;
 
 export const getGroupActivities = async (
   eventId: string,
@@ -19,8 +20,8 @@ export const getGroupActivities = async (
 ) => {
   dispatch(getGroupActivitiesStart());
   try {
-    const response = await axios.get(
-      `${API_BASE_URL}/groupActivities/getAllActivities/${eventId}`
+    const response = await apiClient.get(
+      `/groupActivities/getAllActivities/${eventId}`
     );
     dispatch(getGroupActivitiesSuccess(response.data as GroupActivity[]));
   } catch (error: any) {
@@ -39,11 +40,11 @@ export const createGroupActivity = async (
 ) => {
   dispatch(createGroupActivityStart());
   try {
-    const response = await axios.post(
-      `${API_BASE_URL}/groupActivities/createGroupActivity/${eventId}`,
+    await apiClient.post(
+      `/groupActivities/createGroupActivity/${eventId}`,
       { groupName }
     );
-    dispatch(createGroupActivitySuccess(response.data as GroupActivity));
+    dispatch(createGroupActivitySuccess());
   } catch (error: any) {
     const message =
       error.response && error.response.data && error.response.data.message

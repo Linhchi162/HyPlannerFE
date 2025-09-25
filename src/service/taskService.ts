@@ -15,13 +15,14 @@ import {
   getTaskInfoSuccess,
 
 } from "../store/taskSlice";
+import apiClient from "../api/client";
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_SCHEME;
+// const API_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_SCHEME;
 
 export const getTasks = async (taskId: string, dispatch: Dispatch) => {
   dispatch(getTaskInfoStart());
   try {
-    const response = await axios.get(`${API_BASE_URL}/tasks/getTask/${taskId}`);
+    const response = await apiClient.get(`/tasks/getTask/${taskId}`);
     dispatch(getTaskInfoSuccess(response.data as any));
   } catch (error: any) {
     const message =
@@ -40,8 +41,8 @@ export const createTask = async (
 ) => {
   dispatch(createTaskStart());
   try {
-    const response = await axios.post(
-      `${API_BASE_URL}/tasks/createTask/${phaseId}`,
+    const response = await apiClient.post(
+      `/tasks/createTask/${phaseId}`,
       taskData
     );
     dispatch(createTaskSuccess(response.data as any));
@@ -58,7 +59,7 @@ export const createTask = async (
 export const deleteTask = async (taskId: string, dispatch: Dispatch) => {
   dispatch(deleteTaskStart());
   try {
-    await axios.delete(`${API_BASE_URL}/tasks/deleteTask/${taskId}`);
+    await apiClient.delete(`/tasks/deleteTask/${taskId}`);
     dispatch(deleteTaskSuccess());
   } catch (error: any) {
     const message =
@@ -77,7 +78,7 @@ export const editTask = async (
 ) => {
   dispatch(editTaskStart());
   try {
-    await axios.put(`${API_BASE_URL}/tasks/updateTask/${taskId}`, taskData);
+    await apiClient.put(`/tasks/updateTask/${taskId}`, taskData);
     dispatch(editTaskSuccess());
   } catch (error: any) {
     const message =
@@ -96,7 +97,7 @@ export const markTaskCompleted = async (
 ) => {
   dispatch(editTaskStart());
   try {
-    await axios.put(`${API_BASE_URL}/tasks/markCompleted/${taskId}`, {
+    await apiClient.put(`/tasks/markCompleted/${taskId}`, {
       completed,
     });
     dispatch(editTaskSuccess());
