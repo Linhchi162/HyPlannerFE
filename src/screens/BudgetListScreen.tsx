@@ -8,6 +8,7 @@ import {
     Image,
     TextInput,
     ActivityIndicator,
+    SafeAreaView,
 } from 'react-native'
 import {
     Appbar,
@@ -37,6 +38,7 @@ import BudgetProgressBar from '../components/BudgetProgressBar';
 import { createGroupActivity, getGroupActivities } from '../service/groupActivityService';
 import { get } from 'axios';
 import { deleteActivity } from '../service/activityService';
+import { selectCurrentUser } from '../store/authSlice';
 
 type ListFooterProps = {
     modalVisible: boolean;
@@ -44,13 +46,15 @@ type ListFooterProps = {
     groupName: string;
     setGroupName: React.Dispatch<React.SetStateAction<string>>;
     handleAddGroupActivity: () => void;
+    loading?: boolean;
 };
 const ListFooter = memo(({
     modalVisible,
     setModalVisible,
     groupName,
     setGroupName,
-    handleAddGroupActivity
+    handleAddGroupActivity,
+    loading
 }: ListFooterProps) => {
     return (
         <>
@@ -86,7 +90,9 @@ const ListFooter = memo(({
                                 <Text style={{ color: '#fff', textAlign: 'center' }}>Hủy</Text>
                             </TouchableOpacity>
                             <TouchableOpacity onPress={handleAddGroupActivity} style={[styles.addButton, { flex: 1 }]}>
-                                <Text style={{ color: '#fff', textAlign: 'center' }}>Thêm</Text>
+                                {loading ? <ActivityIndicator color="#fff" /> : (
+                                    <Text style={{ color: '#fff', textAlign: 'center' }}>Thêm</Text>
+                                )}
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -108,7 +114,6 @@ export default function BudgetListScreen() {
     const [confirmVisible, setConfirmVisible] = useState(false);
     const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
     // Leave event confirmation
-    const [showLeaveModal, setShowLeaveModal] = useState(false);
     // State cho modal chi tiết công việc
     const [selectedTask, setSelectedTask] = useState<any>(null); // Task được chọn
     const [taskDetailModalVisible, setTaskDetailModalVisible] = useState(false); // Trạng thái hiển thị modal
@@ -118,7 +123,24 @@ export default function BudgetListScreen() {
     );
     // const phaseLoading = useSelector((state: RootState) => state.phases.getPhases.isLoading);
     const [loading, setLoading] = useState(false);
-    const userId = "6892b8a2aa0f1640e5c173f2"; //fix cứng tạm thời
+    const [actionLoading, setActionLoading] = useState(false);
+    // const userId = "6892b8a2aa0f1640e5c173f2"; //fix cứng tạm thời
+    const user = useSelector(selectCurrentUser);
+    if (!user) {
+        return (
+            <SafeAreaView style={{
+                flex: 1,
+                backgroundColor: "#ffffff",
+            }}>
+                <View
+                    style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+                >
+                    <Text>Đang tải thông tin...</Text>
+                </View>
+            </SafeAreaView>
+        );
+    }
+    const userId = user.id;
     // Phần này sẽ bỏ vào trang home để fetch data về wedding info trước khi vào trang tasklist
     useEffect(() => {
         const fetchWeddingInfo = async () => {
@@ -207,22 +229,10 @@ export default function BudgetListScreen() {
         )
     }
 
-    // Xử lý sự kiện chọn công việc
-    // const handleTaskToggle = async (taskId: string) => {
-    //     let currentCompleted = false;
-    //     for (const stage of stages) {
-    //         const found = stage.tasks.find((task: any) => task.id === taskId);
-    //         if (found) {
-    //             currentCompleted = found.completed;
-    //             break;
-    //         }
-    //     }
-    //     await markTaskCompleted(taskId, !currentCompleted, dispatch);
-    //     await getPhases(eventId, dispatch);
-    // }
     const handleAddGroupActivity = async () => {
         if (!groupName.trim()) return;
         try {
+            setActionLoading(true);
             await createGroupActivity(
                 eventId,
                 groupName,
@@ -232,6 +242,7 @@ export default function BudgetListScreen() {
             setGroupName("");
             // Sau khi tạo thành công, tự động reload danh sách phases
             await getGroupActivities(eventId, dispatch);
+            setActionLoading(false);
         } catch (error) {
             // Xử lý lỗi nếu cần
             console.error('Error creating phase:', error);
@@ -245,10 +256,12 @@ export default function BudgetListScreen() {
 
         const handleConfirmDelete = async () => {
             if (selectedTaskId) {
+                setActionLoading(true);
                 await deleteActivity(selectedTaskId, dispatch);
                 await getGroupActivities(eventId, dispatch);
                 setConfirmVisible(false);
                 setSelectedTaskId(null);
+                setActionLoading(false);
             }
         };
 
@@ -256,7 +269,7 @@ export default function BudgetListScreen() {
             <View style={styles.rowBack}>
                 <TouchableOpacity
                     style={[styles.backRightBtn, styles.backRightBtnLeft]}
-                    onPress={() => navigation.navigate('EditBudget', { activityId: data.item.id })}
+                    onPress={() => navigation.navigate('EditBudget', { activityId: data.item.id, eventId: eventId })}
                 >
                     <Text style={styles.backTextWhite}>Sửa</Text>
                 </TouchableOpacity>
@@ -275,7 +288,7 @@ export default function BudgetListScreen() {
                         <Dialog.Actions>
                             {/* có thể thêm màu vào button sau */}
                             <Button onPress={() => setConfirmVisible(false)}>Hủy</Button>
-                            <Button onPress={handleConfirmDelete}>Xóa</Button>
+                            <Button onPress={handleConfirmDelete} loading={actionLoading} disabled={actionLoading}>Xóa</Button>
                         </Dialog.Actions>
                     </Dialog>
                 </Portal>
@@ -409,7 +422,7 @@ export default function BudgetListScreen() {
                 <TouchableOpacity
                     style={{ backgroundColor: '#FFF' }}
                     onPress={() =>
-                        navigation.navigate('AddBudget', { groupActivityId: stage.id })
+                        navigation.navigate('AddBudget', { groupActivityId: stage.id, eventId: eventId })
                     }>
                     <View style={styles.addTaskButton}>
                         <Entypo name="plus" size={24} />
@@ -445,69 +458,6 @@ export default function BudgetListScreen() {
         </>
     ));
 
-    // const ListFooter = () => {
-    //     const handleAddGroupActivity = async () => {
-    //         if (!groupName.trim()) return;
-    //         try {
-    //             await createGroupActivity(
-    //                 eventId,
-    //                 groupName,
-    //                 dispatch
-    //             );
-    //             setModalVisible(false);
-    //             setGroupName("");
-    //             // Sau khi tạo thành công, tự động reload danh sách phases
-    //             await getGroupActivities(eventId, dispatch);
-    //         } catch (error) {
-    //             // Xử lý lỗi nếu cần
-    //             console.error('Error creating phase:', error);
-    //         }
-    //     };
-
-    //     return (
-    //         <>
-    //             <TouchableOpacity onPress={() => setModalVisible(true)} style={styles.addStageButton}>
-    //                 <View style={{ flexDirection: 'row', alignItems: 'center', alignSelf: 'center' }}>
-    //                     <Entypo name="plus" size={24} />
-    //                     <Text style={styles.addStageButtonLabel}>Thêm nhóm ngân sách</Text>
-    //                 </View>
-    //             </TouchableOpacity>
-    //             <Modal
-    //                 visible={modalVisible}
-    //                 transparent
-    //                 animationType="slide"
-    //                 onRequestClose={() => setModalVisible(false)}
-    //             >
-    //                 <View style={styles.modalOverlay}>
-    //                     <View style={styles.modalContainer}>
-    //                         <Text style={styles.modalTitle}>Thêm nhóm ngân sách mới</Text>
-    //                         <TextInput
-    //                             placeholder="Tên nhóm ngân sách"
-    //                             value={groupName}
-    //                             onChangeText={setGroupName}
-    //                             style={{
-    //                                 borderWidth: 1,
-    //                                 borderColor: '#ccc',
-    //                                 borderRadius: 8,
-    //                                 padding: 10,
-    //                                 marginTop: 16,
-    //                             }}
-    //                         />
-    //                         <View style={[styles.modalButtonRow, { flexDirection: 'row', justifyContent: 'center' }]}>
-    //                             <TouchableOpacity onPress={() => setModalVisible(false)} style={[styles.cancelButton, { flex: 1 }]}>
-    //                                 <Text style={{ color: '#fff', textAlign: 'center' }}>Hủy</Text>
-    //                             </TouchableOpacity>
-    //                             <TouchableOpacity onPress={handleAddGroupActivity} style={[styles.addButton, { flex: 1 }]}>
-    //                                 <Text style={{ color: '#fff', textAlign: 'center' }}>Thêm</Text>
-    //                             </TouchableOpacity>
-    //                         </View>
-    //                     </View>
-    //                 </View>
-    //             </Modal>
-    //         </>
-    //     )
-    // }
-
     return (
         <View style={styles.safeArea}>
             <BudgetListAppbar
@@ -531,6 +481,7 @@ export default function BudgetListScreen() {
                             groupName={groupName}
                             setGroupName={setGroupName}
                             handleAddGroupActivity={handleAddGroupActivity}
+                            loading={actionLoading}
                         />
                     }
                     contentContainerStyle={styles.contentContainer}

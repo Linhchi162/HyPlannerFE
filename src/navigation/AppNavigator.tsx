@@ -60,10 +60,10 @@ export type RootStackParamList = {
   BeginScreen: undefined;
   TaskList: { eventId: string };
   BudgetList: undefined;
-  AddTask: { phaseId: string };
-  EditTask: { taskId: string };
-  AddBudget: { groupActivityId: string };
-  EditBudget: { activityId: string };
+  AddTask: { phaseId: string, eventId: string };
+  EditTask: { taskId: string, eventId: string };
+  AddBudget: { groupActivityId: string, eventId: string };
+  EditBudget: { activityId: string, eventId: string };
   AddMember: { existingMembers?: Member[], onSelect?: (selectedMembers: Member[]) => void }; // Thêm kiểu cho AddMember
   AddWeddingInfo: undefined; //nếu role là người tạo
   JoinWedding: undefined; //nếu role là người tham gia

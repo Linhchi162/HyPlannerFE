@@ -8,6 +8,7 @@ import {
   Image,
   TextInput,
   ActivityIndicator,
+  SafeAreaView,
 } from 'react-native'
 import {
   Appbar,
@@ -33,6 +34,7 @@ import * as Clipboard from 'expo-clipboard';
 import { deleteTask, markTaskCompleted } from '../service/taskService';
 import { getWeddingEvent, leaveWeddingEvent } from '../service/weddingEventService';
 import Hashids from 'hashids';
+import { selectCurrentUser } from '../store/authSlice';
 
 type ListFooterProps = {
   modalVisible: boolean;
@@ -48,6 +50,7 @@ type ListFooterProps = {
   lastPhaseEndDate: Date;
   formatDate: (dateString: string) => string;
   handleAddStage: () => void;
+  loading?: boolean;
 };
 
 const ListFooter = memo(({
@@ -64,6 +67,7 @@ const ListFooter = memo(({
   lastPhaseEndDate,
   formatDate,
   handleAddStage,
+  loading
 }: ListFooterProps) => {
 
   return (
@@ -135,7 +139,9 @@ const ListFooter = memo(({
                 <Text style={{ color: '#fff', textAlign: 'center' }}>Hủy</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={handleAddStage} style={[styles.addButton, { flex: 1 }]}>
-                <Text style={{ color: '#fff', textAlign: 'center' }}>Thêm</Text>
+                {loading ? <ActivityIndicator color="#fff" /> : (
+                  <Text style={{ color: '#fff', textAlign: 'center' }}>Thêm</Text>
+                )}
               </TouchableOpacity>
             </View>
           </View>
@@ -168,9 +174,26 @@ export default function TaskListScreen() {
   const phases = useSelector(
     (state: RootState) => state.phases.getPhases.phases
   );
-  // const phaseLoading = useSelector((state: RootState) => state.phases.getPhases.isLoading);
+  // const loading = useSelector((state: RootState) => state.phases.getPhases.isLoading);
   const [loading, setLoading] = useState(false);
-  const userId = "6892b8a2aa0f1640e5c173f2"; //fix cứng tạm thời
+  const [actionLoading, setActionLoading] = useState(false);
+  // const userId = "6892b8a2aa0f1640e5c173f2"; //fix cứng tạm thời
+  const user = useSelector(selectCurrentUser);
+  if (!user) {
+    return (
+      <SafeAreaView style={{
+        flex: 1,
+        backgroundColor: "#ffffff",
+      }}>
+        <View
+          style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+        >
+          <Text>Đang tải thông tin...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+  const userId = user.id;
   // const role: "participant" | "creator" = "creator"; // fix cứng tạm thời
   const creatorId = useSelector((state: RootState) => state.weddingEvent.getWeddingEvent.weddingEvent.creatorId);
   // Phần này sẽ bỏ vào trang home để fetch data về wedding info trước khi vào trang tasklist
@@ -189,17 +212,19 @@ export default function TaskListScreen() {
   // Fetch phases từ API khi mount
   useEffect(() => {
     const fetchPhases = async () => {
-      setLoading(true);
       try {
+        setLoading(true);
         await getPhases(eventId, dispatch);
+        setLoading(false);
       } catch (error) {
         console.error("Error fetching phases:", error);
       } finally {
-        setLoading(false);
+        // setLoading(false);
       }
     };
     fetchPhases();
   }, [dispatch, eventId]);
+  // if phases
 
   // Đồng bộ phases từ Redux sang stages để hiển thị
   useEffect(() => {
@@ -270,6 +295,7 @@ export default function TaskListScreen() {
   const handleAddStage = async () => {
     if (!startDate || !endDate) return;
     try {
+      setActionLoading(true);
       await createPhase(
         eventId,
         {
@@ -283,6 +309,7 @@ export default function TaskListScreen() {
       setEndDate(undefined);
       // Sau khi tạo thành công, tự động reload danh sách phases
       await getPhases(eventId, dispatch);
+      setActionLoading(false);
     } catch (error) {
       // Xử lý lỗi nếu cần
       console.error('Error creating phase:', error);
@@ -301,8 +328,10 @@ export default function TaskListScreen() {
 
     const handleConfirmDelete = async () => {
       if (selectedTaskId) {
+        setActionLoading(true);
         await deleteTask(selectedTaskId, dispatch);
         await getPhases(eventId, dispatch);
+        setActionLoading(false);
         setConfirmVisible(false);
         setSelectedTaskId(null);
       }
@@ -312,7 +341,7 @@ export default function TaskListScreen() {
       <View style={styles.rowBack}>
         <TouchableOpacity
           style={[styles.backRightBtn, styles.backRightBtnLeft]}
-          onPress={() => navigation.navigate('EditTask', { taskId: data.item.id })}
+          onPress={() => navigation.navigate('EditTask', { taskId: data.item.id, eventId: eventId })}
         >
           <Text style={styles.backTextWhite}>Sửa</Text>
         </TouchableOpacity>
@@ -331,7 +360,7 @@ export default function TaskListScreen() {
             <Dialog.Actions>
               {/* có thể thêm màu vào button sau */}
               <Button onPress={() => setConfirmVisible(false)}>Hủy</Button>
-              <Button onPress={handleConfirmDelete}>Xóa</Button>
+              <Button onPress={handleConfirmDelete} loading={actionLoading} disabled={actionLoading}>Xóa</Button>
             </Dialog.Actions>
           </Dialog>
         </Portal>
@@ -497,7 +526,7 @@ export default function TaskListScreen() {
         <TouchableOpacity
           style={{ backgroundColor: '#FFF' }}
           onPress={() =>
-            navigation.navigate('AddTask', { phaseId: stage.id })
+            navigation.navigate('AddTask', { phaseId: stage.id, eventId: eventId })
           }>
           <View style={styles.addTaskButton}>
             <Entypo name="plus" size={24} />
@@ -665,6 +694,7 @@ export default function TaskListScreen() {
               lastPhaseEndDate={lastPhaseEndDate}
               formatDate={formatDate}
               handleAddStage={handleAddStage}
+              loading={actionLoading}
             />
           }
           contentContainerStyle={styles.contentContainer}

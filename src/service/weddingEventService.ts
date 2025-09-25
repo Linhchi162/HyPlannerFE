@@ -14,16 +14,18 @@ import {
   leaveWeddingEventStart,
   leaveWeddingEventSuccess,
 } from "../store/weddingEventSlice";
+import apiClient from "../api/client";
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_SCHEME;
+// const API_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_SCHEME;
+// const API_BASE_URL = "http://192.168.2.77:8082"
 
 export const getWeddingEvent = async (
-  creatorId: string,
+  userId: string,
   dispatch: Dispatch
 ) => {
   dispatch(getWeddingEventStart());
   try {
-    const response = await axios.get(`${API_BASE_URL}/weddingEvents/getUserWeddingEvents/${creatorId}`);
+    const response = await apiClient.get(`/weddingEvents/getUserWeddingEvents/${userId}`);
     dispatch(getWeddingEventSuccess(response.data as any));
   } catch (error: any) {
     console.log("Error object:", error);
@@ -42,7 +44,7 @@ export const createWeddingEvent = async (
 ) => {
   dispatch(createWeddingEventStart());
   try {
-    await axios.post(`${API_BASE_URL}/weddingEvents/createWeddingEvent`, weddingData);
+    await apiClient.post(`/weddingEvents/createWeddingEvent`, weddingData);
     dispatch(createWeddingEventSuccess());
   } catch (error: any) {
     const message =
@@ -61,7 +63,7 @@ export const joinWeddingEvent = async (
 ) => {
   dispatch(joinWeddingEventStart());
   try {
-    await axios.post(`${API_BASE_URL}/weddingEvents/addMember`, { code, userId });
+    await apiClient.post(`/weddingEvents/addMember`, { code, userId });
     dispatch(joinWeddingEventSuccess());
   } catch (error: any) {
     const message =
@@ -80,7 +82,7 @@ export const leaveWeddingEvent = async (
 ) => {
   dispatch(leaveWeddingEventStart());
   try {
-    await axios.post(`${API_BASE_URL}/weddingEvents/leaveWeddingEvent`, { eventId, userId });
+    await apiClient.post(`/weddingEvents/leaveWeddingEvent`, { eventId, userId });
     dispatch(leaveWeddingEventSuccess());
   } catch (error: any) {
     const message =

@@ -1,5 +1,10 @@
-// store/store.js
-import { configureStore } from '@reduxjs/toolkit';
+// // store/store.js
+import { configureStore, combineReducers } from '@reduxjs/toolkit';
+import phaseReducer from './phaseSlice';
+import taskReducer from './taskSlice';
+import weddingEventReducer from './weddingEventSlice';
+import groupActivityReducer from './groupActivitySlice';
+import activityReducer from './activitySlice';
 import authReducer from './authSlice';
 import {
   persistStore,
@@ -13,20 +18,25 @@ import {
 } from 'redux-persist';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Cấu hình Persist
+const rootReducer = combineReducers({
+  phases: phaseReducer,
+  tasks: taskReducer,
+  weddingEvent: weddingEventReducer,
+  groupActivities: groupActivityReducer,
+  activities: activityReducer,
+  auth: authReducer,
+});
+
 const persistConfig = {
-  key: 'root', // Key cho storage
+  key: 'root',
   storage: AsyncStorage,
-  whitelist: ['auth'], // Chỉ persist reducer 'auth'
+  whitelist: ['auth'], // chỉ persist auth
 };
 
-const persistedReducer = persistReducer(persistConfig, authReducer);
+const persistedReducer = persistReducer(persistConfig, rootReducer);
 
 export const store = configureStore({
-  reducer: {
-    auth: persistedReducer, // Sử dụng reducer đã được persist
-  },
-  // Middleware cần thiết để bỏ qua các action của redux-persist
+  reducer: persistedReducer,
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: {
@@ -35,5 +45,6 @@ export const store = configureStore({
     }),
 });
 
-// Xuất ra persistor để sử dụng trong App.js
 export const persistor = persistStore(store);
+export type RootState = ReturnType<typeof store.getState>;
+export type AppDispatch = typeof store.dispatch;

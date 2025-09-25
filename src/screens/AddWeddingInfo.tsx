@@ -1,14 +1,15 @@
 import React, { useState } from "react";
-import { StyleSheet, Text, TouchableOpacity, View, TextInput, ScrollView, KeyboardAvoidingView, Platform } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View, TextInput, ScrollView, KeyboardAvoidingView, Platform, SafeAreaView } from "react-native";
 import { Appbar } from "react-native-paper";
 import { Entypo } from '@expo/vector-icons';
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { responsiveFont, responsiveWidth, responsiveHeight } from "../../assets/styles/utils/responsive";
 import { NavigationProp, useNavigation } from "@react-navigation/native";
-import { RootStackParamList } from "../navigation/AppNavigator";
+import { MainTabParamList, RootStackParamList } from "../navigation/AppNavigator";
 import { createWeddingEvent } from "../service/weddingEventService";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "../store";
+import { selectCurrentUser } from "../store/authSlice";
 
 interface AddWeddingAppBarProps {
     onBack: () => void;
@@ -32,8 +33,24 @@ export default function AddWeddingInfo() {
     const [showDatePicker, setShowDatePicker] = useState(false);
     const isFormValid = brideName.trim() && groomName.trim() && date && budget !== null && budget > 0;
     const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+    // const tabNavigator = useNavigation<NavigationProp<MainTabParamList>>();
     const dispatch = useDispatch<AppDispatch>();
-    const userId = '6892b8a2aa0f1640e5c173f2'; //Fix cứng
+    const user = useSelector(selectCurrentUser);
+    if (!user) {
+        return (
+            <SafeAreaView style={{
+                flex: 1,
+                backgroundColor: "#ffffff",
+            }}>
+                <View
+                    style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+                >
+                    <Text>Đang tải thông tin...</Text>
+                </View>
+            </SafeAreaView>
+        );
+    }
+    const userId = user.id;
     const handleDateChange = (_: any, selectedDate?: Date) => {
         setShowDatePicker(false);
         if (selectedDate) setDate(selectedDate);
@@ -54,8 +71,8 @@ export default function AddWeddingInfo() {
             }, dispatch);
             navigation.reset({
                 index: 0,
-                routes: [{ name: "TaskList" }]
-            }); // Fix cứng sẽ chuyển về trang home sau
+                routes: [{ name: "Main" }], // Điều hướng đến 'Main', tự động hiển thị tab Home
+            });
         } catch (error) {
             console.error("Error creating wedding event:", error);
         }

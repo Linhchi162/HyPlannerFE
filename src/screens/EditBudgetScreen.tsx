@@ -23,16 +23,19 @@ import { getGroupActivities } from "../service/groupActivityService";
 type EditBudgetAppbarProps = {
     onBack: () => void;
     onCheck: () => void;
+    loading?: boolean;
 };
 
-const EditBudgetAppbar = React.memo(({ onBack, onCheck }: EditBudgetAppbarProps) => (
+const EditBudgetAppbar = React.memo(({ onBack, onCheck, loading }: EditBudgetAppbarProps) => (
     <Appbar.Header style={styles.appbarHeader}>
         <TouchableOpacity onPress={onBack} style={{ padding: 8, marginRight: 8 }}>
             <Entypo name="chevron-left" size={24} color="#000000" />
         </TouchableOpacity>
         <Appbar.Content title="Chỉnh sửa ngân sách" titleStyle={styles.appbarTitle} />
         <TouchableOpacity onPress={onCheck} style={{ padding: 8, marginRight: 8 }}>
-            <Entypo name="check" size={24} color="#000000" />
+            {loading ? <ActivityIndicator color="#000000" /> : (
+                <Entypo name="check" size={24} color="#000000" />
+            )}
         </TouchableOpacity>
     </Appbar.Header>
 ));
@@ -60,12 +63,10 @@ export default function EditBudgetScreen() {
     const [actualBudget, setActualBudget] = useState<number | null>(null);
     // const [budgetError, setBudgetError] = useState<string>("");
     //   const [members, setMembers] = useState<Member[]>(memberInTask);
-    const eventId = "68c29283931d7e65bd3ad689"; // Fix cứng tạm thời
+    // const eventId = "68c29283931d7e65bd3ad689"; // Fix cứng tạm thời
+    const { eventId } = route.params;
     const [loadingBudget, setLoadingBudget] = useState(false);
-    // const userId = "6892b8a2aa0f1640e5c173f2"; //fix cứng tạm thời
-    // const creatorId = useSelector((state: RootState) => state.weddingEvent.getWeddingEvent.weddingEvent.creatorId);
-
-
+    const [actionLoading, setActionLoading] = useState(false);
     useEffect(() => {
         const fetchBudget = async () => {
             setLoadingBudget(true);
@@ -96,6 +97,7 @@ export default function EditBudgetScreen() {
                 setActivityNameError('Tên ngân sách không được để trống');
                 return;
             } setActivityNameError('');
+            setActionLoading(true);
             await editActivity(
                 activityId,
                 {
@@ -108,6 +110,7 @@ export default function EditBudgetScreen() {
                 dispatch
             );
             await getGroupActivities(eventId, dispatch);
+            setActionLoading(false);
             navigation.goBack();
         } catch (error) {
             console.error("Error saving budget:", error);
@@ -118,7 +121,7 @@ export default function EditBudgetScreen() {
     };
     return (
         <View style={styles.safeArea}>
-            <EditBudgetAppbar onBack={navigation.goBack} onCheck={handleSave} />
+            <EditBudgetAppbar onBack={navigation.goBack} onCheck={handleSave} loading={actionLoading} />
             {loadingBudget ? (
                 <ActivityIndicator size="large" color="#D95D74" />
             ) : (
@@ -261,7 +264,7 @@ export default function EditBudgetScreen() {
                                         </View>
                                     </View>
                                 </RadioButton.Group>
-                            </View>                            
+                            </View>
                         </View>
                     }
                 />
