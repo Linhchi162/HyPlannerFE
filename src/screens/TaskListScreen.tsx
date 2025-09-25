@@ -807,7 +807,6 @@ export default function TaskListScreen() {
       <AddMemberModal />
       <LeaveEventModal />
       <RenderTaskDetailModal />
-      {loading ? (
       {loading || phases.length === 0 ? (
         <View style={styles.loadingOverlay}>
           <ActivityIndicator size="large" color="#D95D74" />
