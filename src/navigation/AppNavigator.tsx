@@ -58,6 +58,7 @@ import AccessoriesHairClipScreen from "../screens/AccessoriesHairClipScreen";
 import AccessoriesCrownScreen from "../screens/AccessoriesCrownScreen";
 import AlbumScreen from "../screens/AlbumScreen";
 import AlbumDetailScreen from "../screens/AlbumDetailScreen";
+import EditPhaseScreen from "../screens/EditPhase/EditPhaseScreen";
 
 const scheme = process.env.EXPO_PUBLIC_SCHEME;
 
@@ -96,6 +97,8 @@ export type RootStackParamList = {
   };
   AddWeddingInfo: undefined;
   JoinWedding: undefined;
+
+  EditPhaseScreen: { eventId: string; createdAt?: string };
 
   // ===== THÊM TYPE MÀN HÌNH MỚI =====
   RoleSelection: undefined;
@@ -338,6 +341,11 @@ const AppNavigator = () => (
       <Stack.Screen
         name="TaskList"
         component={TaskListScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="EditPhaseScreen"
+        component={EditPhaseScreen}
         options={{ headerShown: false }}
       />
       <Stack.Screen

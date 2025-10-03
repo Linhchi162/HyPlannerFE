@@ -60,6 +60,9 @@ type ListFooterProps = {
   formatDate: (dateString: string) => string;
   handleAddStage: () => void;
   loading?: boolean;
+  // phases?: any[];
+  eventId?: string;
+  createdAt?: Date;
 };
 
 const ListFooter = memo(
@@ -78,7 +81,11 @@ const ListFooter = memo(
     formatDate,
     handleAddStage,
     loading,
+    // phases,
+    eventId,
+    createdAt,
   }: ListFooterProps) => {
+    const navigation = useNavigation<NavigationProp<RootStackParamList>>();
     return (
       <>
         <TouchableOpacity
@@ -94,6 +101,21 @@ const ListFooter = memo(
           >
             <Entypo name="plus" size={24} />
             <Text style={styles.addStageButtonLabel}>Thêm giai đoạn</Text>
+          </View>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => navigation.navigate("EditPhaseScreen", { eventId: eventId || "", createdAt: createdAt?.toISOString() })}
+          style={styles.addStageButton}
+        >
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              alignSelf: "center",
+            }}
+          >
+            <Feather name="edit" size={20} />
+            <Text style={styles.addStageButtonLabel}>Chỉnh sửa giai đoạn</Text>
           </View>
         </TouchableOpacity>
         <Modal
@@ -886,6 +908,9 @@ export default function TaskListScreen() {
               formatDate={formatDate}
               handleAddStage={handleAddStage}
               loading={actionLoading}
+              // phases={phases}
+              eventId={eventId}
+              createdAt={eventCreatedDate}
             />
           }
           contentContainerStyle={styles.contentContainer}

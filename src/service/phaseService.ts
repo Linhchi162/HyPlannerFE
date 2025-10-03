@@ -1,5 +1,5 @@
 import { Dispatch } from "@reduxjs/toolkit";
-import { createPhaseFailure, createPhaseStart, createPhaseSuccess, getPhasesFailure, getPhasesStart, getPhasesSuccess, Phase } from "../store/phaseSlice";
+import { createPhaseFailure, createPhaseStart, createPhaseSuccess, deletePhaseFailure, deletePhaseStart, deletePhaseSuccess, getPhasesFailure, getPhasesStart, getPhasesSuccess, Phase, updatePhaseFailure, updatePhaseStart, updatePhaseSuccess } from "../store/phaseSlice";
 import axios from "axios";
 import apiClient from "../api/client";
 import { taskListData } from "src/sampleData/SampleData";
@@ -34,6 +34,38 @@ export const createPhase = async (eventId: string, phaseData: { phaseTimeStart: 
                 : "Error creating phase";
         dispatch(createPhaseFailure(message));
     }
+};
+
+export const updatePhase = async (
+  phaseId: string,
+  phaseData: { phaseTimeStart: string; phaseTimeEnd: string },
+  dispatch: Dispatch
+) => {
+  dispatch(updatePhaseStart());
+  try {
+    await apiClient.put(`/phases/updatePhase/${phaseId}`, phaseData);
+    dispatch(updatePhaseSuccess());
+  } catch (error: any) {
+    const message =
+      error.response && error.response.data && error.response.data.message
+        ? error.response.data.message
+        : "Error updating phase";
+    dispatch(updatePhaseFailure(message));
+  }
+};
+
+export const deletePhase = async (phaseId: string, dispatch: Dispatch) => {
+  dispatch(deletePhaseStart());
+  try {
+    await apiClient.delete(`/phases/deletePhase/${phaseId}`);
+    dispatch(deletePhaseSuccess());
+  } catch (error: any) {
+    const message =
+      error.response && error.response.data && error.response.data.message
+        ? error.response.data.message
+        : "Error deleting phase";
+    dispatch(deletePhaseFailure(message));
+  }
 };
 
 export const insertSampleTasks = async (
