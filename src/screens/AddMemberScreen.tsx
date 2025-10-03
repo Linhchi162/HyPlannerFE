@@ -54,7 +54,7 @@ export default function AddMemberScreen() {
     useEffect(() => {
         setSelectedMembers(existingMembers);
     }, [existingMembers]);
-    
+
     const availableMembers = useMemo(() => {
         return recentMembers.filter((eventMember) => !existingMembers.some((taskMember) => taskMember._id === eventMember._id));
     }, [recentMembers, existingMembers]);
@@ -161,6 +161,16 @@ export default function AddMemberScreen() {
                 <FlatList
                     data={filteredMembers}
                     renderItem={renderMemberItem}
+                    ListEmptyComponent={<View style={{
+                        flex: 1,
+                        minHeight: responsiveHeight(350),
+                        justifyContent: "center",
+                        alignItems: "center"
+                    }}>
+                        <Text style={{ textAlign: "center" }}>
+                            Chưa có thành viên nào.{"\n"}Bạn hãy mời thêm thành viên nhé.
+                        </Text>
+                    </View>}
                     keyExtractor={(item) => item._id}
                     style={styles.flatList}
                 />

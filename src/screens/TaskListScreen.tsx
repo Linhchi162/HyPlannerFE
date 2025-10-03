@@ -60,7 +60,7 @@ type ListFooterProps = {
   formatDate: (dateString: string) => string;
   handleAddStage: () => void;
   loading?: boolean;
-  // phases?: any[];
+  phases?: any[];
   eventId?: string;
   createdAt?: Date;
 };
@@ -81,7 +81,7 @@ const ListFooter = memo(
     formatDate,
     handleAddStage,
     loading,
-    // phases,
+    phases,
     eventId,
     createdAt,
   }: ListFooterProps) => {
@@ -103,21 +103,23 @@ const ListFooter = memo(
             <Text style={styles.addStageButtonLabel}>Thêm giai đoạn</Text>
           </View>
         </TouchableOpacity>
-        <TouchableOpacity
-          onPress={() => navigation.navigate("EditPhaseScreen", { eventId: eventId || "", createdAt: createdAt?.toISOString() })}
-          style={styles.addStageButton}
-        >
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              alignSelf: "center",
-            }}
+        {phases && phases.length > 0 && (
+          <TouchableOpacity
+            onPress={() => navigation.navigate("EditPhaseScreen", { eventId: eventId || "", createdAt: createdAt?.toISOString() })}
+            style={styles.addStageButton}
           >
-            <Feather name="edit" size={20} />
-            <Text style={styles.addStageButtonLabel}>Chỉnh sửa giai đoạn</Text>
-          </View>
-        </TouchableOpacity>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                alignSelf: "center",
+              }}
+            >
+              <Feather name="edit" size={20} />
+              <Text style={styles.addStageButtonLabel}>Chỉnh sửa giai đoạn</Text>
+            </View>
+          </TouchableOpacity>
+        )}
         <Modal
           visible={modalVisible}
           transparent
@@ -908,7 +910,7 @@ export default function TaskListScreen() {
               formatDate={formatDate}
               handleAddStage={handleAddStage}
               loading={actionLoading}
-              // phases={phases}
+              phases={phases}
               eventId={eventId}
               createdAt={eventCreatedDate}
             />
