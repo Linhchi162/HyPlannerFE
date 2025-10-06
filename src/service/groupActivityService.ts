@@ -10,6 +10,7 @@ import {
   GroupActivity,
 } from "../store/groupActivitySlice";
 import apiClient from "../api/client";
+import { budgetListData } from "src/sampleData/SampleData";
 
 // const API_BASE_URL = "http://192.168.2.77:8082";
 // const API_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_SCHEME;
@@ -51,5 +52,29 @@ export const createGroupActivity = async (
         ? error.response.data.message
         : "Error creating group activity";
     dispatch(createGroupActivityFailure(message));
+  }
+};
+
+export const insertSampleGroupActivity = async (
+  eventId: string,
+) => {
+  try {
+    // Tạo data từ sampleData với creatorId
+    const budgetData = budgetListData();
+    
+    const response = await apiClient.post('/weddingEvents/checkAndInsertActivities', {
+      eventId,
+      groupActivitiesData: budgetData
+    });
+    
+    return response.data;
+  } catch (error: any) {
+    console.error("Insert Sample Group Activities Error:", error);
+    const message =
+      error.response && error.response.data && error.response.data.message
+        ? error.response.data.message
+        : "Error inserting sample group activities";
+    console.error("Insert Sample Group Activities Error:", message);
+    throw new Error(message);
   }
 };

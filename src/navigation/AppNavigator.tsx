@@ -73,6 +73,7 @@ import BrideAoDaiPatternScreen from "../screens/BrideAoDaiPatternScreen";
 import BrideHeadscarfScreen from "../screens/BrideHeadscarfScreen";
 import GroomEngagementOutfitScreen from "../screens/GroomEngagementOutfitScreen";
 import GroomEngagementAccessoriesScreen from "../screens/GroomEngagementAccessoriesScreen";
+import EditPhaseScreen from "../screens/EditPhase/EditPhaseScreen";
 
 const scheme = process.env.EXPO_PUBLIC_SCHEME;
 
@@ -111,6 +112,8 @@ export type RootStackParamList = {
   };
   AddWeddingInfo: undefined;
   JoinWedding: undefined;
+
+  EditPhaseScreen: { eventId: string; createdAt?: string };
 
   // ===== THÊM TYPE MÀN HÌNH MỚI =====
   RoleSelection: undefined;
@@ -371,6 +374,11 @@ const AppNavigator = () => (
       <Stack.Screen
         name="TaskList"
         component={TaskListScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="EditPhaseScreen"
+        component={EditPhaseScreen}
         options={{ headerShown: false }}
       />
       <Stack.Screen

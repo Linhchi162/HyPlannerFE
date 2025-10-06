@@ -17,6 +17,7 @@ export interface WeddingEvent {
   creatorId: string;
   phases?: string[];
   timeToMarried: string; // ISO string format
+  createdAt?: string;
 }
 interface GetWeddingEventState {
   isLoading: boolean;

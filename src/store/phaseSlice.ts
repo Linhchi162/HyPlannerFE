@@ -13,9 +13,16 @@ interface GetPhasesState {
   error: boolean;
   errorMsg: string;
 }
+interface UpdatePhaseState {
+  isLoading: boolean;
+  error: boolean;
+  errorMsg: string;
+}
 interface PhaseSliceState {
   getPhases: GetPhasesState;
   createPhase: GetPhasesState;
+  updatePhase: UpdatePhaseState;
+  deletePhase: UpdatePhaseState;
 }
 const initialState: PhaseSliceState = {
   getPhases: {
@@ -26,6 +33,16 @@ const initialState: PhaseSliceState = {
   },
   createPhase: {
     phases: [],
+    isLoading: false,
+    error: false,
+    errorMsg: "",
+  },
+  updatePhase: {
+    isLoading: false,
+    error: false,
+    errorMsg: "",
+  },
+  deletePhase: {
     isLoading: false,
     error: false,
     errorMsg: "",
@@ -63,8 +80,46 @@ const phaseSlice = createSlice({
       state.createPhase.error = true;
       state.createPhase.errorMsg = action.payload;
     },
+    // Update phase
+    updatePhaseStart: (state) => {
+      state.updatePhase.isLoading = true;
+    },
+    updatePhaseSuccess: (state) => {
+      state.updatePhase.isLoading = false;
+      state.updatePhase.error = false;
+    },
+    updatePhaseFailure: (state, action: PayloadAction<string>) => {
+      state.updatePhase.isLoading = false;
+      state.updatePhase.error = true;
+      state.updatePhase.errorMsg = action.payload;
+    },
+    // Delete phase
+    deletePhaseStart: (state) => {
+      state.deletePhase.isLoading = true;
+    },
+    deletePhaseSuccess: (state) => {
+      state.deletePhase.isLoading = false;
+      state.deletePhase.error = false;
+    },
+    deletePhaseFailure: (state, action: PayloadAction<string>) => {
+      state.deletePhase.isLoading = false;
+      state.deletePhase.error = true;
+      state.deletePhase.errorMsg = action.payload;
+    },
   },
 });
-export const { getPhasesStart, getPhasesSuccess, getPhasesFailure, createPhaseStart, createPhaseSuccess, createPhaseFailure } =
-  phaseSlice.actions;
+export const {
+  getPhasesStart,
+  getPhasesSuccess,
+  getPhasesFailure,
+  createPhaseStart,
+  createPhaseSuccess,
+  createPhaseFailure,
+  updatePhaseStart,
+  updatePhaseSuccess,
+  updatePhaseFailure,
+  deletePhaseStart,
+  deletePhaseSuccess,
+  deletePhaseFailure,
+} = phaseSlice.actions;
 export default phaseSlice.reducer;
