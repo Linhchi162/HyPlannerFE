@@ -70,7 +70,9 @@ const WeddingMaterialScreen = () => {
           <Text style={styles.headerSubtitle}>Chất liệu</Text>
         </View>
         <TouchableOpacity onPress={() => {
-          LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+          if (!menuVisible) {
+            LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+          }
           setMenuVisible(!menuVisible);
         }}>
           <Menu size={24} color="#1f2937" />

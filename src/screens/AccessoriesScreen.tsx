@@ -21,6 +21,7 @@ import { fonts } from '../theme/fonts';
 import * as weddingCostumeService from '../service/weddingCostumeService';
 import { Style } from '../store/weddingCostume';
 import { useSelection } from '../contexts/SelectionContext';
+import { getGridGap } from '../../assets/styles/utils/responsive';
 
 const { width } = Dimensions.get('window');
 
@@ -76,7 +77,9 @@ const AccessoriesScreen = () => {
           <Text style={styles.headerSubtitle}>Voan</Text>
         </View>
         <TouchableOpacity onPress={() => {
-          LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+          if (!menuVisible) {
+            LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+          }
           setMenuVisible(!menuVisible);
         }}>
           <Menu size={24} color="#1f2937" />
@@ -170,7 +173,7 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     paddingHorizontal: 16,
     paddingTop: 16,
-    gap: 8,
+    gap: getGridGap(),
   },
   actionButton: {
     backgroundColor: '#F9CBD6',

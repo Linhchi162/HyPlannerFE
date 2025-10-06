@@ -11,7 +11,8 @@ import {
   Platform,
 } from 'react-native';
 import { ChevronLeft } from 'lucide-react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useCallback } from 'react';
 import AlbumCard from '../components/AlbumCard';
 import * as userSelectionService from '../service/userSelectionService';
 import { Album } from '../service/userSelectionService';
@@ -20,12 +21,21 @@ import { fonts } from '../theme/fonts';
 const AlbumScreen = () => {
   const navigation = useNavigation();
   const [albums, setAlbums] = useState<Album[]>([]);
+  const [filter, setFilter] = useState<'all' | 'wedding-dress' | 'vest' | 'bride-engage' | 'groom-engage' | 'tone-color' | 'wedding-venue' | 'wedding-theme'>('all');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchAlbums();
   }, []);
+
+  // Refetch whenever screen gains focus to reflect newly created albums
+  useFocusEffect(
+    useCallback(() => {
+      fetchAlbums();
+      return () => {};
+    }, [])
+  );
 
   const fetchAlbums = async () => {
     setIsLoading(true);
@@ -48,37 +58,55 @@ const AlbumScreen = () => {
     navigation.navigate('AlbumDetail' as never, { album } as never);
   };
 
-  const getFirstImage = (album: Album): string => {
-    // Get first image from album selections
-    if (album.selections && album.selections.length > 0) {
-      const firstSelection = album.selections[0];
-      // Try to get image from various sources
-      if (firstSelection.styles && firstSelection.styles.length > 0) {
-        return firstSelection.styles[0].image || '';
-      }
-      if (firstSelection.accessories?.veils && firstSelection.accessories.veils.length > 0) {
-        return firstSelection.accessories.veils[0].image || '';
-      }
-      if (firstSelection.flowers && firstSelection.flowers.length > 0) {
-        return firstSelection.flowers[0].image || '';
-      }
-    }
-    return 'https://images.unsplash.com/photo-1519741497674-611481863552?w=500&h=500&fit=crop';
+  const getFirstImage = (_album: Album): string => {
+    // Always use default image; ignore album content preview
+    return '';
   };
+
+  const getAlbumType = (album: Album): 'wedding-dress' | 'vest' | 'bride-engage' | 'groom-engage' | 'tone-color' | 'wedding-venue' | 'wedding-theme' | 'unknown' => {
+    if (album.selections && album.selections.length > 0) {
+      const anySel: any = album.selections[0];
+      if (
+        anySel.type === 'wedding-dress' ||
+        anySel.type === 'vest' ||
+        anySel.type === 'bride-engage' ||
+        anySel.type === 'groom-engage' ||
+        anySel.type === 'tone-color' ||
+        anySel.type === 'wedding-venue' ||
+        anySel.type === 'wedding-theme'
+      ) return anySel.type;
+      // Infer by fields when type not populated
+      if (anySel.vestStyles || anySel.vestMaterials || anySel.vestColors || anySel.vestLapels || anySel.vestPockets || anySel.vestDecorations) return 'vest';
+      if (anySel.brideEngageStyles || anySel.brideEngageMaterials || anySel.brideEngagePatterns || anySel.brideEngageHeadwears) return 'bride-engage';
+      if (anySel.groomEngageOutfits || anySel.groomEngageAccessories) return 'groom-engage';
+      if (anySel.weddingToneColors || anySel.engageToneColors) return 'tone-color';
+      if (anySel.weddingVenues) return 'wedding-venue';
+      if (anySel.weddingThemes) return 'wedding-theme';
+      return 'wedding-dress';
+    }
+    return 'unknown';
+  };
+
+  const visibleAlbums = albums.filter((a) => {
+    if (filter === 'all') return true;
+    return getAlbumType(a) === filter;
+  });
 
   const topPad = Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 8 : 0;
 
   return (
     <SafeAreaView style={[styles.container, { paddingTop: topPad }] }>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.navigate('ChooseStyle' as never)}>
+        <TouchableOpacity onPress={() => navigation.navigate('Main', { screen: 'Home' })}>
           <ChevronLeft size={24} color="#1f2937" />
         </TouchableOpacity>
-        <Image
-          source={require('../../assets/images/logo.png')}
-          style={styles.logo}
-          resizeMode="contain"
-        />
+        <TouchableOpacity onPress={() => navigation.navigate('Main', { screen: 'Home' })}>
+          <Image
+            source={require('../../assets/images/logo.png')}
+            style={styles.logo}
+            resizeMode="contain"
+          />
+        </TouchableOpacity>
         <TouchableOpacity onPress={() => navigation.navigate('Profile' as never)}>
           <Image
             source={require('../../assets/images/default.png')}
@@ -91,6 +119,57 @@ const AlbumScreen = () => {
         style={styles.content}
         showsVerticalScrollIndicator={false}
       >
+        {/* Filter Bar */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterBar}>
+          <TouchableOpacity
+            style={[styles.filterChip, filter === 'all' && styles.filterChipActive]}
+            onPress={() => setFilter('all')}
+          >
+            <Text style={[styles.filterText, filter === 'all' && styles.filterTextActive]}>Tất cả</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.filterChip, filter === 'wedding-venue' && styles.filterChipActive]}
+            onPress={() => setFilter('wedding-venue')}
+          >
+            <Text style={[styles.filterText, filter === 'wedding-venue' && styles.filterTextActive]}>Địa điểm</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.filterChip, filter === 'wedding-theme' && styles.filterChipActive]}
+            onPress={() => setFilter('wedding-theme')}
+          >
+            <Text style={[styles.filterText, filter === 'wedding-theme' && styles.filterTextActive]}>Phong cách</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.filterChip, filter === 'wedding-dress' && styles.filterChipActive]}
+            onPress={() => setFilter('wedding-dress')}
+          >
+            <Text style={[styles.filterText, filter === 'wedding-dress' && styles.filterTextActive]}>Váy cưới</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.filterChip, filter === 'vest' && styles.filterChipActive]}
+            onPress={() => setFilter('vest')}
+          >
+            <Text style={[styles.filterText, filter === 'vest' && styles.filterTextActive]}>Vest</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.filterChip, filter === 'bride-engage' && styles.filterChipActive]}
+            onPress={() => setFilter('bride-engage')}
+          >
+            <Text style={[styles.filterText, filter === 'bride-engage' && styles.filterTextActive]}>Áo dài</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.filterChip, filter === 'groom-engage' && styles.filterChipActive]}
+            onPress={() => setFilter('groom-engage')}
+          >
+            <Text style={[styles.filterText, filter === 'groom-engage' && styles.filterTextActive]}>Trang phục</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.filterChip, filter === 'tone-color' && styles.filterChipActive]}
+            onPress={() => setFilter('tone-color')}
+          >
+            <Text style={[styles.filterText, filter === 'tone-color' && styles.filterTextActive]}>Tone màu</Text>
+          </TouchableOpacity>
+        </ScrollView>
         {isLoading ? (
           <View style={styles.loadingContainer}>
             <Text style={styles.loadingText}>Đang tải albums...</Text>
@@ -104,7 +183,7 @@ const AlbumScreen = () => {
           </View>
         ) : (
           <View style={styles.albumGrid}>
-            {albums.map((album) => (
+            {visibleAlbums.map((album) => (
               <AlbumCard
                 key={album._id}
                 id={album._id}
@@ -159,6 +238,29 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
+  },
+  filterBar: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 12,
+    paddingRight: 8,
+  },
+  filterChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: '#F3F4F6',
+  },
+  filterChipActive: {
+    backgroundColor: '#F9CBD6',
+  },
+  filterText: {
+    fontFamily: fonts.montserratMedium,
+    color: '#1f2937',
+    fontSize: 12,
+  },
+  filterTextActive: {
+    fontFamily: fonts.montserratSemiBold,
   },
   loadingContainer: {
     flex: 1,

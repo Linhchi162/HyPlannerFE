@@ -28,7 +28,7 @@ const menuItems: MenuItem[] = [
     id: '1',
     title: 'Địa điểm',
     backgroundColor: '#E9D5FF', // Light purple
-    screen: 'Venue',
+    screen: 'Location',
   },
   {
     id: '2',
@@ -71,7 +71,9 @@ const ChooseStyleScreen = () => {
       style={[styles.menuItem, { backgroundColor: item.backgroundColor }]}
       onPress={() => {
         if (item.id === '5') { // Lễ cưới
-          navigation.navigate('RoleSelection' as never);
+          navigation.navigate('RoleSelection' as never, { from: 'wedding' } as never);
+        } else if (item.id === '4') { // Lễ ăn hỏi
+          navigation.navigate('RoleSelection' as never, { from: 'engagement' } as never);
         } else if (item.id === '6') { // Mood board
           navigation.navigate('Album' as never);
         } else {

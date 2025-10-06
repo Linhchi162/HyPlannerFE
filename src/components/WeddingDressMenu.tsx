@@ -69,8 +69,8 @@ const WeddingDressMenu = ({ visible, currentScreen, onClose }: WeddingDressMenuP
 const styles = StyleSheet.create({
   menuWrapper: {
     position: 'absolute',
-    top: 64, // height of header
-    right: 16,
+    top: 96, // further offset below header
+    right: 8,
     zIndex: 1000,
   },
   menuContainer: {

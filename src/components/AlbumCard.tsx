@@ -3,15 +3,20 @@ import {
   TouchableOpacity,
   Text,
   StyleSheet,
-  Image,
   View,
   Dimensions,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { Plus } from 'lucide-react-native';
 import { fonts } from '../theme/fonts';
 
 const { width } = Dimensions.get('window');
+const DEFAULT_ALBUM_IMAGE_URL = 'https://www.brides.com/thmb/fZBzhWRjH5ZaCgOqjO7kc1ZJEsQ=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/recirc-texas-garden-glass-tent-wedding-couple-portrait-jose-villa-0924-cbc6f4f2a3c04ed59c464413e1fbc785.JPG';
 const CARD_WIDTH = (width - 48) / 2; // 2 columns with 16px padding on each side and 16px gap
+
+// Ensure consistent measurement when layout changes; if parent padding/gap differs on some screens,
+// we can clamp a minimum width to avoid rounding shrink issues
+const MIN_CARD_WIDTH = 150;
 
 interface AlbumCardProps {
   id: string;
@@ -39,9 +44,12 @@ const AlbumCard: React.FC<AlbumCardProps> = ({
   return (
     <TouchableOpacity style={styles.container} onPress={onPress}>
       <Image 
-        source={imageUrl ? { uri: imageUrl } : require('../../assets/images/default.png')}
+        source={imageUrl ? imageUrl : DEFAULT_ALBUM_IMAGE_URL}
         style={styles.image}
-        resizeMode="cover"
+        contentFit="cover"
+        cachePolicy="immutable"
+        transition={0}
+        placeholder={require('../../assets/images/default.png') as any}
       />
       <View style={styles.titleContainer}>
         <Text style={styles.title}>{title}</Text>
@@ -52,7 +60,9 @@ const AlbumCard: React.FC<AlbumCardProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    width: CARD_WIDTH,
+    width: Math.max(CARD_WIDTH, MIN_CARD_WIDTH),
+    minWidth: Math.max(CARD_WIDTH, MIN_CARD_WIDTH),
+    minHeight: Math.max(CARD_WIDTH, MIN_CARD_WIDTH),
     aspectRatio: 1,
     borderRadius: 16,
     marginBottom: 16,
@@ -68,13 +78,17 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   addNewContainer: {
-    width: CARD_WIDTH,
+    width: Math.max(CARD_WIDTH, MIN_CARD_WIDTH),
+    minWidth: Math.max(CARD_WIDTH, MIN_CARD_WIDTH),
+    minHeight: Math.max(CARD_WIDTH, MIN_CARD_WIDTH),
     aspectRatio: 1,
     borderRadius: 16,
     marginBottom: 16,
     backgroundColor: '#f3f4f6',
     justifyContent: 'center',
     alignItems: 'center',
+    overflow: 'hidden',
+    flexShrink: 0,
     borderWidth: 2,
     borderColor: '#e5e7eb',
     borderStyle: 'dashed',

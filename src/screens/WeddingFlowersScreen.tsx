@@ -19,7 +19,8 @@ import { fonts } from '../theme/fonts';
 import * as weddingCostumeService from '../service/weddingCostumeService';
 import { Style } from '../store/weddingCostume';
 import { useSelection } from '../contexts/SelectionContext';
-import { Alert } from 'react-native';
+import { getGridGap } from '../../assets/styles/utils/responsive';
+import CustomPopup from '../components/CustomPopup';
 
 const { width } = Dimensions.get('window');
 
@@ -29,6 +30,10 @@ const WeddingFlowersScreen = () => {
   const [error, setError] = useState<string | null>(null);
   const [flowers, setFlowers] = useState<Style[]>([]);
   const [isCreatingAlbum, setIsCreatingAlbum] = useState(false);
+  const [popupVisible, setPopupVisible] = useState(false);
+  const [popupType, setPopupType] = useState<'success' | 'error' | 'warning'>('success');
+  const [popupTitle, setPopupTitle] = useState('');
+  const [popupMessage, setPopupMessage] = useState('');
   const { selectedFlowers, toggleFlowerSelection, createAlbum } = useSelection();
 
   useEffect(() => {
@@ -64,24 +69,25 @@ const WeddingFlowersScreen = () => {
   const handleCreateAlbum = async () => {
     setIsCreatingAlbum(true);
     try {
-      await createAlbum();
-      Alert.alert(
-        'Thành công',
-        'Album đã được tạo thành công!',
-        [
-          {
-            text: 'OK',
-            onPress: () => navigation.navigate('Album' as never)
-          }
-        ]
-      );
+      await createAlbum('wedding-dress');
+      setPopupType('success');
+      setPopupTitle('Thành công');
+      setPopupMessage('Album đã được tạo thành công!');
+      setPopupVisible(true);
     } catch (error: any) {
-      Alert.alert(
-        'Lỗi',
-        error.message || 'Có lỗi xảy ra khi tạo album'
-      );
+      setPopupType('error');
+      setPopupTitle('Lỗi');
+      setPopupMessage(error.message || 'Có lỗi xảy ra khi tạo album');
+      setPopupVisible(true);
     } finally {
       setIsCreatingAlbum(false);
+    }
+  };
+
+  const handlePopupClose = () => {
+    setPopupVisible(false);
+    if (popupType === 'success') {
+      navigation.navigate('Album' as never);
     }
   };
 
@@ -134,6 +140,16 @@ const WeddingFlowersScreen = () => {
           <ChevronLeft size={16} color="#000000" style={{ transform: [{ rotate: '180deg' }] }} />
         </TouchableOpacity>
       </ScrollView>
+
+      {/* Custom Popup */}
+      <CustomPopup
+        visible={popupVisible}
+        type={popupType}
+        title={popupTitle}
+        message={popupMessage}
+        onClose={handlePopupClose}
+        buttonText="OK"
+      />
     </SafeAreaView>
   );
 };
@@ -188,7 +204,7 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     paddingHorizontal: 16,
     paddingTop: 16,
-    gap: 8,
+    gap: getGridGap(),
   },
   actionButton: {
     backgroundColor: '#F9CBD6',
