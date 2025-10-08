@@ -1,4 +1,4 @@
-import React, { memo, use, useEffect, useState } from "react";
+import React, { memo, useEffect, useState } from "react";
 import {
   StyleSheet,
   View,
@@ -33,7 +33,7 @@ import { RootStackParamList } from "../navigation/AppNavigator";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "../store";
-import { createPhase, getPhases } from "../service/phaseService";
+import { createPhase, getPhases, insertSampleTasks } from "../service/phaseService";
 import * as Clipboard from "expo-clipboard";
 import { deleteTask, markTaskCompleted } from "../service/taskService";
 import {
@@ -42,6 +42,8 @@ import {
 } from "../service/weddingEventService";
 import Hashids from "hashids";
 import { selectCurrentUser } from "../store/authSlice";
+import SuccessDialog from "src/components/SuccessDialog";
+import ErrorDialog from "src/components/ErrorDialog";
 
 type ListFooterProps = {
   modalVisible: boolean;
@@ -58,6 +60,9 @@ type ListFooterProps = {
   formatDate: (dateString: string) => string;
   handleAddStage: () => void;
   loading?: boolean;
+  phases?: any[];
+  eventId?: string;
+  createdAt?: Date;
 };
 
 const ListFooter = memo(
@@ -76,7 +81,11 @@ const ListFooter = memo(
     formatDate,
     handleAddStage,
     loading,
+    phases,
+    eventId,
+    createdAt,
   }: ListFooterProps) => {
+    const navigation = useNavigation<NavigationProp<RootStackParamList>>();
     return (
       <>
         <TouchableOpacity
@@ -94,6 +103,23 @@ const ListFooter = memo(
             <Text style={styles.addStageButtonLabel}>Thêm giai đoạn</Text>
           </View>
         </TouchableOpacity>
+        {phases && phases.length > 0 && (
+          <TouchableOpacity
+            onPress={() => navigation.navigate("EditPhaseScreen", { eventId: eventId || "", createdAt: createdAt?.toISOString() })}
+            style={styles.addStageButton}
+          >
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                alignSelf: "center",
+              }}
+            >
+              <Feather name="edit" size={20} />
+              <Text style={styles.addStageButtonLabel}>Chỉnh sửa giai đoạn</Text>
+            </View>
+          </TouchableOpacity>
+        )}
         <Modal
           visible={modalVisible}
           transparent
@@ -208,6 +234,13 @@ export default function TaskListScreen() {
   // State cho modal chi tiết công việc
   const [selectedTask, setSelectedTask] = useState<any>(null); // Task được chọn
   const [taskDetailModalVisible, setTaskDetailModalVisible] = useState(false); // Trạng thái hiển thị modal
+  // State cho việc chèn task mẫu
+  const [isInsertingTasks, setIsInsertingTasks] = useState(false);
+  // Dialog state
+  const [successDialogVisible, setSuccessDialogVisible] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+  const [errorDialogVisible, setErrorDialogVisible] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
   const dispatch = useDispatch<AppDispatch>();
   const phases = useSelector(
     (state: RootState) => state.phases.getPhases.phases
@@ -215,6 +248,7 @@ export default function TaskListScreen() {
   // const loading = useSelector((state: RootState) => state.phases.getPhases.isLoading);
   const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+
   // const userId = "6892b8a2aa0f1640e5c173f2"; //fix cứng tạm thời
   const user = useSelector(selectCurrentUser);
   if (!user) {
@@ -234,7 +268,6 @@ export default function TaskListScreen() {
     );
   }
   const userId = user.id || user._id;
-  // const role: "participant" | "creator" = "creator"; // fix cứng tạm thời
   const creatorId = useSelector(
     (state: RootState) =>
       state.weddingEvent.getWeddingEvent.weddingEvent.creatorId
@@ -364,6 +397,36 @@ export default function TaskListScreen() {
       console.error("Error creating phase:", error);
     }
   };
+  const eventCreatedDate = new Date(
+    useSelector((state: RootState) =>
+      state.weddingEvent.getWeddingEvent.weddingEvent.createdAt || new Date()
+    )
+  );
+  // Xử lý chèn checklist mẫu
+  const handleInsertSampleTasks = async () => {
+    try {
+      setIsInsertingTasks(true);
+      // Lấy ngày tạo event từ Redux store
+      // Gọi API để insert sample tasks với ngày tạo event
+      const result = await insertSampleTasks(eventId, userId, eventCreatedDate, dispatch);
+
+      if (result.hasData) {
+        alert("Sự kiện này đã có dữ liệu checklist rồi!");
+      } else {
+        await getPhases(eventId, dispatch);
+        // alert("Đã thêm checklist mẫu thành công!");
+        // console.log("Đã thêm checklist mẫu thành công!");
+        setSuccessMessage("Đã thêm checklist mẫu thành công!");
+        setSuccessDialogVisible(true);
+      }
+    } catch (error: any) {
+      console.error("Error inserting sample tasks:", error);
+      setErrorMessage("Có lỗi xảy ra khi thêm checklist mẫu: " + error.message);
+      setErrorDialogVisible(true);
+    } finally {
+      setIsInsertingTasks(false);
+    }
+  };
   // Lấy ngày kết thúc của phase trước đó (nếu có)
   const lastPhaseEndDate =
     phases.length > 0
@@ -489,14 +552,6 @@ export default function TaskListScreen() {
                   <Text style={{ fontWeight: "bold" }}>Trạng thái: </Text>
                   {selectedTask.completed ? "Đã hoàn thành" : "Chưa hoàn thành"}
                 </Text>
-                {/* <Text style={styles.modalText}>
-                  <Text style={{ fontWeight: "bold" }}>Ngân sách dự kiến: </Text>
-                  {selectedTask.expectedBudget ? selectedTask.expectedBudget.toLocaleString() + " VNĐ" : "Chưa có"}
-                </Text>
-                <Text style={styles.modalText}>
-                  <Text style={{ fontWeight: "bold" }}>Ngân sách thực tế: </Text>
-                  {selectedTask.actualBudget ? selectedTask.actualBudget.toLocaleString() + " VNĐ" : "Chưa có"}
-                </Text> */}
                 {/* Người thực hiện */}
                 <Text style={styles.modalText}>
                   <Text style={{ fontWeight: "bold" }}>Người thực hiện:</Text>
@@ -640,7 +695,7 @@ export default function TaskListScreen() {
       </List.Accordion>
     </View>
   );
-  const PhaseEmpty = () => {
+  const PhaseEmpty = (isInsertingTasks: boolean, handleInsertSampleTasks: () => void) => {
     return (
       <View style={styles.phaseEmptyContainer}>
         <Image
@@ -651,6 +706,28 @@ export default function TaskListScreen() {
         <Text style={styles.phaseEmptyText}>
           Không có giai đoạn nào.{"\n"}Bạn hãy thêm giai đoạn mới nhé !
         </Text>
+        {/* just for creator */}
+        {userId === creatorId && (
+          <View style={{ borderWidth: 1, borderColor: "#ddd", padding: 16, borderRadius: 8, borderStyle: "dashed" }}>
+            <Text>Hoặc bạn có thể sử dụng checklist của chúng tôi</Text>
+            <TouchableOpacity
+              style={{ borderRadius: 8, borderWidth: 1, marginTop: 10, padding: 8, backgroundColor: isInsertingTasks ? "#ddd" : "#FEF0F3", borderColor: "#D95D74" }}
+              onPress={handleInsertSampleTasks}
+              disabled={isInsertingTasks}
+            >
+              <View style={{ alignSelf: "center", flexDirection: "row", alignItems: "center" }}>
+                {isInsertingTasks ? (
+                  <ActivityIndicator size={24} color="#D95D74" />
+                ) : (
+                  <Entypo name="check" size={24} />
+                )}
+                <Text style={styles.addTaskButtonLabel}>
+                  {isInsertingTasks ? "Đang tải..." : "Sử dụng checklist mẫu"}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
     );
   };
@@ -833,12 +910,26 @@ export default function TaskListScreen() {
               formatDate={formatDate}
               handleAddStage={handleAddStage}
               loading={actionLoading}
+              phases={phases}
+              eventId={eventId}
+              createdAt={eventCreatedDate}
             />
           }
           contentContainerStyle={styles.contentContainer}
-          ListEmptyComponent={PhaseEmpty}
+          ListEmptyComponent={PhaseEmpty(isInsertingTasks, handleInsertSampleTasks)}
         />
       )}
+      <SuccessDialog
+        visible={successDialogVisible}
+        message={successMessage}
+        onDismiss={() => setSuccessDialogVisible(false)}
+      />
+
+      <ErrorDialog
+        visible={errorDialogVisible}
+        message={errorMessage}
+        onDismiss={() => setErrorDialogVisible(false)}
+      />
     </View>
   );
 }

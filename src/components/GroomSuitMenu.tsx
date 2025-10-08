@@ -1,38 +1,26 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { fonts } from '../theme/fonts';
 
-type AccessoriesMenuProps = {
+const { width } = Dimensions.get('window');
+
+interface GroomSuitMenuProps {
   visible: boolean;
-  currentScreen: string;
   onClose: () => void;
-};
+  currentScreen?: string;
+}
 
 const menuItems = [
-  {
-    id: '1',
-    title: 'Voan',
-    screen: 'Accessories'
-  },
-  {
-    id: '2',
-    title: 'Trang sức',
-    screen: 'AccessoriesJewelry'
-  },
-  {
-    id: '3',
-    title: 'Kẹp tóc',
-    screen: 'AccessoriesHairClip'
-  },
-  {
-    id: '4',
-    title: 'Vương miện',
-    screen: 'AccessoriesCrown'
-  },
+  { id: 'style', title: 'Kiểu dáng', screen: 'GroomSuit' },
+  { id: 'material', title: 'Chất liệu', screen: 'GroomMaterial' },
+  { id: 'color', title: 'Màu sắc', screen: 'GroomColor' },
+  { id: 'lapel', title: 'Phụ kiện - Ve áo', screen: 'GroomAccessoriesLapel' },
+  { id: 'pocket', title: 'Phụ kiện - Túi áo', screen: 'GroomAccessoriesPocketSquare' },
+  { id: 'decor', title: 'Phụ kiện - Trang trí', screen: 'GroomAccessoriesDecor' },
 ];
 
-const AccessoriesMenu = ({ visible, currentScreen, onClose }: AccessoriesMenuProps) => {
+const GroomSuitMenu: React.FC<GroomSuitMenuProps> = ({ visible, onClose, currentScreen }) => {
   const navigation = useNavigation();
 
   if (!visible) return null;
@@ -43,21 +31,13 @@ const AccessoriesMenu = ({ visible, currentScreen, onClose }: AccessoriesMenuPro
         {menuItems.map((item) => (
           <TouchableOpacity
             key={item.id}
-            style={[
-              styles.menuItemOuter,
-              currentScreen === item.screen && styles.menuItemActive
-            ]}
+            style={[styles.menuItemOuter, currentScreen === item.screen && styles.menuItemActive]}
             onPress={() => {
-              if (item.screen) {
-                navigation.navigate(item.screen as never);
-              }
+              if (item.screen) navigation.navigate(item.screen as never);
               onClose();
             }}
           >
-            <Text style={[
-              styles.menuItemText,
-              currentScreen === item.screen && styles.menuItemTextActive
-            ]}>
+            <Text style={[styles.menuItemText, currentScreen === item.screen && styles.menuItemTextActive]}>
               {item.title}
             </Text>
           </TouchableOpacity>
@@ -76,9 +56,10 @@ const styles = StyleSheet.create({
   },
   menuContainer: {
     backgroundColor: '#FEF0F3',
-    padding: 8,
-    gap: 4,
-    width: 160,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    gap: 8,
+    width: width * 0.4,
     borderRadius: 16,
   },
   menuItemOuter: {
@@ -88,10 +69,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     shadowColor: '#DDB2B1',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.2,
     shadowRadius: 2,
     elevation: 2,
@@ -110,4 +88,6 @@ const styles = StyleSheet.create({
   },
 });
 
-export default AccessoriesMenu;
+export default GroomSuitMenu;
+
+

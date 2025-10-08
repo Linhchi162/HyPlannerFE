@@ -8,6 +8,8 @@ import {
   Image,
   SafeAreaView,
   Dimensions,
+  StatusBar,
+  Platform,
 } from 'react-native';
 import { ChevronLeft, Menu } from 'lucide-react-native';
 import { LayoutAnimation } from 'react-native';
@@ -35,6 +37,8 @@ const WeddingDetailScreen = () => {
   const [details, setDetails] = useState<Detail[]>([]);
   const { selectedDetails, toggleDetailSelection } = useSelection();
 
+  const topPad = Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 8 : 0;
+
   useEffect(() => {
     weddingCostumeService.getAllDetails()
       .then(response => {
@@ -57,7 +61,7 @@ const WeddingDetailScreen = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { paddingTop: topPad }]}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
@@ -68,7 +72,9 @@ const WeddingDetailScreen = () => {
           <Text style={styles.headerSubtitle}>Chi tiết</Text>
         </View>
         <TouchableOpacity onPress={() => {
-          LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+          if (!menuVisible) {
+            LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+          }
           setMenuVisible(!menuVisible);
         }}>
           <Menu size={24} color="#1f2937" />

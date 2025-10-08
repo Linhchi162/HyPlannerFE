@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -11,20 +11,37 @@ import {
 import { ChevronLeft, Heart } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { fonts } from '../theme/fonts';
+// import removed: CustomPopup
 
 const { width, height } = Dimensions.get('window');
 
 const RoleSelectionScreen = () => {
   const navigation = useNavigation();
+  // popup removed
 
   const handleBrideSelection = () => {
-    navigation.navigate('WeddingDress' as never);
+    // If coming from engagement, navigate to Ao Dai; default to wedding dress
+    // @ts-ignore reading optional route param
+    const from: string | undefined = (navigation as any)?.getState?.()?.routes?.slice(-1)[0]?.params?.from;
+    if (from === 'engagement') {
+      navigation.navigate('BrideAoDaiStyle' as never);
+    } else {
+      navigation.navigate('WeddingDress' as never);
+    }
   };
 
   const handleGroomSelection = () => {
-    // Show alert for under development feature
-    alert('Tính năng cho chú rể đang được phát triển. Vui lòng quay lại sau!');
+    // If coming from engagement, navigate to engagement outfit; default to groom suit
+    // @ts-ignore
+    const from: string | undefined = (navigation as any)?.getState?.()?.routes?.slice(-1)[0]?.params?.from;
+    if (from === 'engagement') {
+      navigation.navigate('GroomEngagementOutfit' as never);
+    } else {
+      navigation.navigate('GroomSuit' as never);
+    }
   };
+
+  // popup close removed
 
   return (
     <SafeAreaView style={styles.container}>
@@ -88,6 +105,8 @@ const RoleSelectionScreen = () => {
         <Heart size={12} color="#F9CBD6" fill="#F9CBD6" />
         <Heart size={12} color="#F9CBD6" fill="#F9CBD6" />
       </View>
+
+      {/* Popup removed - direct navigate to GroomSuit */}
     </SafeAreaView>
   );
 };

@@ -1,22 +1,21 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
+  Image,
   Dimensions,
   Pressable,
-  ActivityIndicator,
 } from 'react-native';
-import { Image } from 'expo-image';
 import { Check } from 'lucide-react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { fonts } from '../theme/fonts';
-import { getItemWidth, getItemHeight, getGridGap } from '../../assets/styles/utils/responsive';
+import { getItemWidth, getItemHeight } from '../../assets/styles/utils/responsive';
 
 const { width } = Dimensions.get('window');
 
-interface WeddingItemCardProps {
+interface SimpleWeddingItemCardProps {
   id: string;
   name: string;
   image?: string;
@@ -26,7 +25,7 @@ interface WeddingItemCardProps {
   showPinButton?: boolean;
 }
 
-const WeddingItemCard: React.FC<WeddingItemCardProps> = ({
+const SimpleWeddingItemCard: React.FC<SimpleWeddingItemCardProps> = ({
   id,
   name,
   image,
@@ -35,8 +34,6 @@ const WeddingItemCard: React.FC<WeddingItemCardProps> = ({
   onPress,
   showPinButton = true,
 }) => {
-  // Loại bỏ state management để tối ưu performance
-
   return (
     <TouchableOpacity
       key={id}
@@ -46,13 +43,9 @@ const WeddingItemCard: React.FC<WeddingItemCardProps> = ({
     >
       <View style={styles.imageContainer}>
         <Image
-          source={image ? encodeURI(image) : require('../../assets/images/default.png')}
+          source={image ? { uri: image } : require('../../assets/images/default.png')}
+          resizeMode="cover"
           style={styles.image}
-          contentFit="cover"
-          transition={0}
-          cachePolicy="immutable"
-          placeholder={require('../../assets/images/default.png') as any}
-          recyclingKey={id}
         />
         {showPinButton && (
           <View style={styles.pinIconContainer}>
@@ -85,7 +78,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   imageContainer: {
-    width: getItemWidth() - 12, // 12px smaller than container for padding
+    width: getItemWidth() - 12,
     height: getItemHeight(),
     position: 'relative',
     borderRadius: 8,
@@ -100,7 +93,7 @@ const styles = StyleSheet.create({
   pinIconContainer: {
     position: 'absolute',
     right: 3,
-    top: getItemHeight() - 25, // Position relative to image height
+    top: getItemHeight() - 25,
     zIndex: 1,
   },
   pinButton: {
@@ -138,4 +131,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default React.memo(WeddingItemCard);
+export default SimpleWeddingItemCard;

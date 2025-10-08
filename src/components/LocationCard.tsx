@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -6,27 +6,24 @@ import {
   TouchableOpacity,
   Dimensions,
   Pressable,
-  ActivityIndicator,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { Check } from 'lucide-react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
-import { fonts } from '../theme/fonts';
-import { getItemWidth, getItemHeight, getGridGap } from '../../assets/styles/utils/responsive';
 
 const { width } = Dimensions.get('window');
 
-interface WeddingItemCardProps {
+interface LocationCardProps {
   id: string;
   name: string;
-  image?: string;
+  image: string;
   isSelected: boolean;
   onSelect: () => void;
   onPress?: () => void;
   showPinButton?: boolean;
 }
 
-const WeddingItemCard: React.FC<WeddingItemCardProps> = ({
+const LocationCard: React.FC<LocationCardProps> = ({
   id,
   name,
   image,
@@ -35,40 +32,59 @@ const WeddingItemCard: React.FC<WeddingItemCardProps> = ({
   onPress,
   showPinButton = true,
 }) => {
-  // Loại bỏ state management để tối ưu performance
+  const getItemWidth = () => {
+    const paddingHorizontal = 32; // 16px on each side
+    const gap = 8;
+    const availableWidth = width - paddingHorizontal;
+    const totalGapWidth = gap; // 1 gap between 2 items
+    return (availableWidth - totalGapWidth) / 2;
+  };
+
+  const getItemHeight = () => {
+    return getItemWidth(); // Square aspect ratio
+  };
+
+  const itemWidth = getItemWidth();
+  const itemHeight = getItemHeight();
 
   return (
     <TouchableOpacity
-      key={id}
-      style={styles.itemContainer}
+      style={[styles.itemContainer, { width: itemWidth }]}
       onPress={onPress || onSelect}
       activeOpacity={0.7}
     >
       <View style={styles.imageContainer}>
         <Image
-          source={image ? encodeURI(image) : require('../../assets/images/default.png')}
-          style={styles.image}
+          source={encodeURI(image)}
+          style={[styles.itemImage, { width: itemWidth - 12, height: itemHeight }]}
           contentFit="cover"
-          transition={0}
           cachePolicy="immutable"
+          transition={0}
           placeholder={require('../../assets/images/default.png') as any}
           recyclingKey={id}
         />
         {showPinButton && (
-          <View style={styles.pinIconContainer}>
+          <View style={[styles.pinIconContainer, { top: itemHeight - 25 }]}>
             <Pressable
-              style={[styles.pinButton, isSelected && styles.pinButtonSelected]}
-              onPress={(e) => { e.stopPropagation(); onSelect(); }}
+              style={[
+                styles.pinButton,
+                isSelected ? styles.pinButtonSelected : undefined,
+              ]}
+              onPress={(e) => {
+                e.stopPropagation();
+                onSelect();
+              }}
             >
-              {isSelected
-                ? <Check size={12} color="#E07181" style={styles.checkIcon} />
-                : <FontAwesome5
+              {isSelected ? (
+                <Check size={12} color="#E07181" style={styles.checkIcon} />
+              ) : (
+                <FontAwesome5
                   name="thumbtack"
                   size={12}
                   color="#ffffff"
                   style={styles.pinIcon}
                 />
-              }
+              )}
             </Pressable>
           </View>
         )}
@@ -80,27 +96,21 @@ const WeddingItemCard: React.FC<WeddingItemCardProps> = ({
 
 const styles = StyleSheet.create({
   itemContainer: {
-    width: getItemWidth(),
     marginBottom: 24,
     alignItems: 'center',
   },
   imageContainer: {
-    width: getItemWidth() - 12, // 12px smaller than container for padding
-    height: getItemHeight(),
     position: 'relative',
     borderRadius: 8,
     overflow: 'hidden',
     marginBottom: 8,
   },
-  image: {
-    width: getItemWidth() - 12,
-    height: getItemHeight(),
+  itemImage: {
     borderRadius: 8,
   },
   pinIconContainer: {
     position: 'absolute',
     right: 3,
-    top: getItemHeight() - 25, // Position relative to image height
     zIndex: 1,
   },
   pinButton: {
@@ -131,11 +141,12 @@ const styles = StyleSheet.create({
     transform: [{ rotate: '45deg' }],
   },
   itemName: {
-    fontSize: 12,
-    fontFamily: fonts.montserratMedium,
+    fontSize: 14,
+    fontWeight: '500',
     color: '#1f2937',
     textAlign: 'center',
+    lineHeight: 18,
   },
 });
 
-export default React.memo(WeddingItemCard);
+export default LocationCard;

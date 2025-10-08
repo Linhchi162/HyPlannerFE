@@ -45,9 +45,12 @@ import BudgetProgressBar from "../components/BudgetProgressBar";
 import {
   createGroupActivity,
   getGroupActivities,
+  insertSampleGroupActivity,
 } from "../service/groupActivityService";
 import { deleteActivity } from "../service/activityService";
 import { selectCurrentUser } from "../store/authSlice";
+import SuccessDialog from "src/components/SuccessDialog";
+import ErrorDialog from "src/components/ErrorDialog";
 
 type ListFooterProps = {
   modalVisible: boolean;
@@ -154,6 +157,13 @@ export default function BudgetListScreen() {
   // State cho modal chi tiết công việc
   const [selectedTask, setSelectedTask] = useState<any>(null); // Task được chọn
   const [taskDetailModalVisible, setTaskDetailModalVisible] = useState(false); // Trạng thái hiển thị modal
+  const [isInsertingBudget, setIsInsertingBudget] = useState(false);
+  // Dialog state
+  const [successDialogVisible, setSuccessDialogVisible] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+  const [errorDialogVisible, setErrorDialogVisible] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+
   const dispatch = useDispatch<AppDispatch>();
   const groupActivities = useSelector(
     (state: RootState) =>
@@ -300,6 +310,33 @@ export default function BudgetListScreen() {
       console.error("Error creating phase:", error);
     }
   };
+  // Xử lý chèn checklist mẫu
+  const handleInsertSampleBudgets = async () => {
+    try {
+      setIsInsertingBudget(true);
+      // Lấy ngày tạo event từ Redux store
+      // Gọi API để insert sample tasks với ngày tạo event
+      const result = await insertSampleGroupActivity(eventId);
+
+      if (result.hasData) {
+        alert("Sự kiện này đã có dữ liệu ngân sách rồi!");
+        setSuccessMessage("Sự kiện này đã có dữ liệu ngân sách rồi!");
+        setSuccessDialogVisible(true);
+      } else {
+        await getGroupActivities(eventId, dispatch);
+        // alert("Đã thêm checklist mẫu thành công!");
+        // console.log("Đã thêm checklist mẫu thành công!");
+        setSuccessMessage("Đã thêm ngân sách mẫu thành công!");
+        setSuccessDialogVisible(true);
+      }
+    } catch (error: any) {
+      console.error("Error inserting sample budget:", error);
+      setErrorMessage("Có lỗi xảy ra khi thêm ngân sách mẫu: " + error.message);
+      setErrorDialogVisible(true);
+    } finally {
+      setIsInsertingBudget(false);
+    }
+  };
   const renderHiddenItem = (data: any, rowMap: any) => {
     const showConfirm = (taskId: string) => {
       setSelectedTaskId(taskId);
@@ -429,7 +466,7 @@ export default function BudgetListScreen() {
                   </Text>
                   {selectedTask.expectedBudget
                     ? selectedTask.expectedBudget.toLocaleString() + " VNĐ"
-                    : "Chưa có"}
+                    : "0" + " VNĐ"}
                 </Text>
                 {/* Ngân sách thực tế */}
                 <Text style={styles.modalText}>
@@ -438,7 +475,7 @@ export default function BudgetListScreen() {
                   </Text>
                   {selectedTask.actualBudget
                     ? selectedTask.actualBudget.toLocaleString() + " VNĐ"
-                    : "Chưa có"}
+                    : "0" + " VNĐ"}
                 </Text>
                 {/* Người chi trả */}
                 <Text style={styles.modalText}>
@@ -550,6 +587,46 @@ export default function BudgetListScreen() {
           Không có nhóm ngân sách nào.{"\n"}Bạn hãy thêm nhóm ngân sách mới nhé
           !
         </Text>
+        <View
+          style={{
+            borderWidth: 1,
+            borderColor: "#ddd",
+            padding: 16,
+            borderRadius: 8,
+            borderStyle: "dashed",
+          }}
+        >
+          <Text>Hoặc bạn có thể sử dụng mẫu ngân sách của chúng tôi</Text>
+          <TouchableOpacity
+            style={{
+              borderRadius: 8,
+              borderWidth: 1,
+              marginTop: 10,
+              padding: 8,
+              backgroundColor: isInsertingBudget ? "#ddd" : "#FEF0F3",
+              borderColor: "#D95D74",
+            }}
+            onPress={handleInsertSampleBudgets}
+            disabled={isInsertingBudget}
+          >
+            <View
+              style={{
+                alignSelf: "center",
+                flexDirection: "row",
+                alignItems: "center",
+              }}
+            >
+              {isInsertingBudget ? (
+                <ActivityIndicator size={24} color="#D95D74" />
+              ) : (
+                <Entypo name="check" size={24} />
+              )}
+              <Text style={styles.addTaskButtonLabel}>
+                {isInsertingBudget ? "Đang tải..." : "Sử dụng ngân sách mẫu"}
+              </Text>
+            </View>
+          </TouchableOpacity>
+        </View>
       </View>
     );
   };
@@ -594,6 +671,17 @@ export default function BudgetListScreen() {
           ListEmptyComponent={PhaseEmpty}
         />
       )}
+      <SuccessDialog
+        visible={successDialogVisible}
+        message={successMessage}
+        onDismiss={() => setSuccessDialogVisible(false)}
+      />
+
+      <ErrorDialog
+        visible={errorDialogVisible}
+        message={errorMessage}
+        onDismiss={() => setErrorDialogVisible(false)}
+      />
     </View>
   );
 }

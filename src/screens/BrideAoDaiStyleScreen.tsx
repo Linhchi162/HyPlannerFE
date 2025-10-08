@@ -10,70 +10,62 @@ import {
   Dimensions,
   StatusBar,
   Platform,
+  FlatList,
 } from 'react-native';
 import { ChevronLeft, Menu } from 'lucide-react-native';
 import { LayoutAnimation } from 'react-native';
 import { useState, useEffect } from 'react';
 import { useNavigation } from '@react-navigation/native';
-import AccessoriesMenu from '../components/AccessoriesMenu';
+import EngagementBrideMenu from '../components/EngagementBrideMenu';
 import WeddingItemCard from '../components/WeddingItemCard';
 import { fonts } from '../theme/fonts';
-import * as weddingCostumeService from '../service/weddingCostumeService';
+import * as brideEngageService from '../service/brideEngageService';
 import { Style } from '../store/weddingCostume';
-import { useSelection } from '../contexts/SelectionContext';
 import { getGridGap } from '../../assets/styles/utils/responsive';
+import { useSelection } from '../contexts/SelectionContext';
 
 const { width } = Dimensions.get('window');
 
-const AccessoriesHairClipScreen = () => {
+const BrideAoDaiStyleScreen = () => {
   const navigation = useNavigation();
   const [menuVisible, setMenuVisible] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [hairpins, setHairpins] = useState<Style[]>([]);
-  const { selectedHairpins, toggleHairpinSelection } = useSelection();
+  const [dressStyles, setDressStyles] = useState<Style[]>([]);
+  const { selectedBrideEngageStyles, toggleBrideEngageStyle, saveSelections } = useSelection();
 
   useEffect(() => {
-    const fetchHairpins = async () => {
-      setIsLoading(true);
-      try {
-        const response = await weddingCostumeService.getAllHairpins();
-        setHairpins(response.data);
-        setError(null);
-      } catch (err: any) {
-        setError(err.message || 'Có lỗi xảy ra khi tải dữ liệu');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchHairpins();
+    brideEngageService.getAllBrideEngageStyles()
+      .then(response => {
+        setDressStyles(response.data);
+      })
+      .catch(error => {});
   }, []);
 
-  const renderHairClipItem = (item: Style) => {
+  const renderDressItem = (item: Style) => {
     return (
       <WeddingItemCard
         key={item._id}
         id={item._id}
         name={item.name}
         image={item.image}
-        isSelected={selectedHairpins.includes(item._id)}
-        onSelect={async () => await toggleHairpinSelection(item._id)}
+        isSelected={selectedBrideEngageStyles.includes(item._id)}
+        onSelect={async () => await toggleBrideEngageStyle(item._id)}
       />
     );
   };
+
 
   const topPad = Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 8 : 0;
 
   return (
     <SafeAreaView style={[styles.container, { paddingTop: topPad }] }>
+      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <ChevronLeft size={24} color="#1f2937" />
         </TouchableOpacity>
         <View style={styles.headerTitleContainer}>
-          <Text style={styles.headerTitle}>Phụ kiện</Text>
-          <Text style={styles.headerSubtitle}>Kẹp tóc</Text>
+          <Text style={styles.headerTitle}>Áo dài</Text>
+          <Text style={styles.headerSubtitle}>Kiểu dáng</Text>
         </View>
         <TouchableOpacity onPress={() => {
           if (!menuVisible) {
@@ -84,35 +76,30 @@ const AccessoriesHairClipScreen = () => {
           <Menu size={24} color="#1f2937" />
         </TouchableOpacity>
       </View>
-      <AccessoriesMenu 
+      <EngagementBrideMenu 
         visible={menuVisible}
-        currentScreen="AccessoriesHairClip"
+        currentScreen="BrideAoDaiStyle"
         onClose={() => setMenuVisible(false)}
       />
 
+      {/* Dress Grid */}
       <ScrollView 
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        {isLoading ? (
-          <View style={styles.loadingContainer}>
-            <Text>Đang tải dữ liệu...</Text>
-          </View>
-        ) : error ? (
-          <View style={styles.errorContainer}>
-            <Text style={styles.errorText}>{error}</Text>
-          </View>
-        ) : (
-          <View style={styles.hairClipGrid}>
-            {hairpins.map(renderHairClipItem)}
-          </View>
-        )}
+        <View style={styles.dressGrid}>
+          {dressStyles.map(renderDressItem)}
+        </View>
 
+        {/* Action Button */}
         <TouchableOpacity 
           style={styles.actionButton}
-          onPress={() => navigation.navigate('WeddingFlowers' as never)}
+          onPress={async () => {
+            await saveSelections();
+            navigation.navigate('BrideAoDaiMaterial' as never);
+          }}
         >
-          <Text style={styles.actionButtonText}>Chọn hoa cưới</Text>
+          <Text style={styles.actionButtonText}>Chọn chất liệu</Text>
           <ChevronLeft size={16} color="#000000" style={{ transform: [{ rotate: '180deg' }] }} />
         </TouchableOpacity>
       </ScrollView>
@@ -121,21 +108,6 @@ const AccessoriesHairClipScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  errorContainer: {
-    padding: 20,
-    alignItems: 'center',
-  },
-  errorText: {
-    color: 'red',
-    textAlign: 'center',
-    fontFamily: fonts.montserratMedium,
-  },
   container: {
     flex: 1,
     backgroundColor: '#fff',
@@ -165,7 +137,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: 24,
   },
-  hairClipGrid: {
+  dressGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     paddingHorizontal: 16,
@@ -192,4 +164,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default AccessoriesHairClipScreen;
+export default BrideAoDaiStyleScreen;

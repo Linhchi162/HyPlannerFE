@@ -63,11 +63,27 @@ import WeddingNecklineScreen from "../screens/WeddingNecklineScreen";
 import WeddingDetailScreen from "../screens/WeddingDetailScreen";
 import AccessoriesScreen from "../screens/AccessoriesScreen";
 import WeddingFlowersScreen from "../screens/WeddingFlowersScreen";
+import LocationScreen from "../screens/LocationScreen";
+import StyleScreen from "../screens/StyleScreen";
+import ColorToneScreen from "../screens/ColorToneScreen";
 import AccessoriesJewelryScreen from "../screens/AccessoriesJewelryScreen";
 import AccessoriesHairClipScreen from "../screens/AccessoriesHairClipScreen";
 import AccessoriesCrownScreen from "../screens/AccessoriesCrownScreen";
 import AlbumScreen from "../screens/AlbumScreen";
 import AlbumDetailScreen from "../screens/AlbumDetailScreen";
+import GroomSuitScreen from "../screens/GroomSuitScreen";
+import GroomMaterialScreen from "../screens/GroomMaterialScreen";
+import GroomColorScreen from "../screens/GroomColorScreen";
+import GroomAccessoriesLapelScreen from "../screens/GroomAccessoriesLapelScreen";
+import GroomAccessoriesPocketSquareScreen from "../screens/GroomAccessoriesPocketSquareScreen";
+import GroomAccessoriesDecorScreen from "../screens/GroomAccessoriesDecorScreen";
+import BrideAoDaiStyleScreen from "../screens/BrideAoDaiStyleScreen";
+import BrideAoDaiMaterialScreen from "../screens/BrideAoDaiMaterialScreen";
+import BrideAoDaiPatternScreen from "../screens/BrideAoDaiPatternScreen";
+import BrideHeadscarfScreen from "../screens/BrideHeadscarfScreen";
+import GroomEngagementOutfitScreen from "../screens/GroomEngagementOutfitScreen";
+import GroomEngagementAccessoriesScreen from "../screens/GroomEngagementAccessoriesScreen";
+import EditPhaseScreen from "../screens/EditPhase/EditPhaseScreen";
 
 const scheme = process.env.EXPO_PUBLIC_SCHEME;
 
@@ -120,6 +136,8 @@ export type RootStackParamList = {
   AddWeddingInfo: undefined;
   JoinWedding: undefined;
 
+  EditPhaseScreen: { eventId: string; createdAt?: string };
+
   // ===== THÊM TYPE MÀN HÌNH MỚI =====
   RoleSelection: undefined;
   ChooseStyle: undefined;
@@ -129,11 +147,29 @@ export type RootStackParamList = {
   WeddingNeckline: undefined;
   WeddingDetail: undefined;
   WeddingFlowers: undefined;
+  // New selection flows
+  Location: undefined;
+  Style: undefined;
+  ColorTone: undefined;
   AccessoriesJewelry: undefined;
   AccessoriesHairClip: undefined;
   AccessoriesCrown: undefined;
   Album: undefined;
   AlbumDetail: { album: any };
+  // Groom suit flow
+  GroomSuit: undefined;
+  GroomMaterial: undefined;
+  GroomColor: undefined;
+  GroomAccessoriesLapel: undefined;
+  GroomAccessoriesPocketSquare: undefined;
+  GroomAccessoriesDecor: undefined;
+  // Engagement flow
+  BrideAoDaiStyle: undefined;
+  BrideAoDaiMaterial: undefined;
+  BrideAoDaiPattern: undefined;
+  BrideHeadscarf: undefined;
+  GroomEngagementOutfit: undefined;
+  GroomEngagementAccessories: undefined;
 };
 
 // ===== CẬP NHẬT LẠI TYPE CHO TAB =====
@@ -491,6 +527,42 @@ const AppNavigator = () => {
           component={EditBudgetScreen}
           options={{ headerShown: false }}
         />
+        {/* ===== Tasks & Budget ===== */}
+        <Stack.Screen
+          name="TaskList"
+          component={TaskListScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="EditPhaseScreen"
+          component={EditPhaseScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="AddTask"
+          component={CreateNewTaskScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="EditTask"
+          component={EditTaskScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="BudgetList"
+          component={BudgetListScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="AddBudget"
+          component={CreateNewBudgetScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="EditBudget"
+          component={EditBudgetScreen}
+          options={{ headerShown: false }}
+        />
 
         {/* ===== Members ===== */}
         <Stack.Screen
@@ -568,6 +640,154 @@ const AppNavigator = () => {
         <Stack.Screen
           name="AlbumDetail"
           component={AlbumDetailScreen}
+          options={{ headerShown: false }}
+        />
+        {/* ===== Wedding flow / Catalog ===== */}
+        <Stack.Screen
+          name="AddWeddingInfo"
+          component={AddWeddingInfo}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="JoinWedding"
+          component={JoinWeddingEvent}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="ChooseStyle"
+          component={ChooseStyleScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="WeddingDress"
+          component={WeddingDressScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="Accessories"
+          component={AccessoriesScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="WeddingMaterial"
+          component={WeddingMaterialScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="WeddingNeckline"
+          component={WeddingNecklineScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="WeddingDetail"
+          component={WeddingDetailScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="WeddingFlowers"
+          component={WeddingFlowersScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="Location"
+          component={LocationScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="Style"
+          component={StyleScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="ColorTone"
+          component={ColorToneScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="AccessoriesJewelry"
+          component={AccessoriesJewelryScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="AccessoriesHairClip"
+          component={AccessoriesHairClipScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="AccessoriesCrown"
+          component={AccessoriesCrownScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="Album"
+          component={AlbumScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="AlbumDetail"
+          component={AlbumDetailScreen}
+          options={{ headerShown: false }}
+        />
+        {/* Engagement flow */}
+        <Stack.Screen
+          name="BrideAoDaiStyle"
+          component={BrideAoDaiStyleScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="BrideAoDaiMaterial"
+          component={BrideAoDaiMaterialScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="BrideAoDaiPattern"
+          component={BrideAoDaiPatternScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="BrideHeadscarf"
+          component={BrideHeadscarfScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="GroomEngagementOutfit"
+          component={GroomEngagementOutfitScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="GroomEngagementAccessories"
+          component={GroomEngagementAccessoriesScreen}
+          options={{ headerShown: false }}
+        />
+        {/* Groom suit flow */}
+        <Stack.Screen
+          name="GroomSuit"
+          component={GroomSuitScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="GroomMaterial"
+          component={GroomMaterialScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="GroomColor"
+          component={GroomColorScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="GroomAccessoriesLapel"
+          component={GroomAccessoriesLapelScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="GroomAccessoriesPocketSquare"
+          component={GroomAccessoriesPocketSquareScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="GroomAccessoriesDecor"
+          component={GroomAccessoriesDecorScreen}
           options={{ headerShown: false }}
         />
       </Stack.Navigator>

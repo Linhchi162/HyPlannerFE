@@ -10,13 +10,15 @@ import {
   Dimensions,
   StatusBar,
   Platform,
+  FlatList,
 } from 'react-native';
 import { ChevronLeft } from 'lucide-react-native';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import WeddingItemCard from '../components/WeddingItemCard';
 import { fonts } from '../theme/fonts';
 import { Album } from '../service/userSelectionService';
+import { getItemHeight } from '../../assets/styles/utils/responsive';
 
 const { width } = Dimensions.get('window');
 
@@ -30,6 +32,41 @@ const AlbumDetailScreen = () => {
   const { album } = route.params as RouteParams;
   
   const [allItems, setAllItems] = useState<any[]>([]);
+  const [visibleCount, setVisibleCount] = useState<number>(6); // lazy load: 3 cols x 2 rows
+  const [prefetched, setPrefetched] = useState<Record<string, boolean>>({});
+  const [categoryFilter, setCategoryFilter] = useState<string>('Tất cả');
+  const categories = useMemo(() => {
+    const set = new Set<string>();
+    allItems.forEach((it) => set.add(it.category));
+    const ordered: string[] = [
+      'Tất cả',
+      'Kiểu dáng',
+      'Chất liệu',
+      'Cổ áo',
+      'Chi tiết',
+      'Voan cưới',
+      'Trang sức',
+      'Kẹp tóc',
+      'Vương miện',
+      'Hoa cưới',
+      'Địa điểm',
+      'Phong cách',
+      'Đám cưới',
+      'Lễ ăn hỏi',
+      'Vest - Kiểu dáng',
+      'Vest - Chất liệu',
+      'Vest - Màu sắc',
+      'Vest - Ve áo',
+      'Vest - Túi áo',
+      'Vest - Trang trí',
+      'Hoa văn & Trang trí',
+      'Khăn đội đầu',
+      'Trang phục',
+      'Phụ kiện',
+    ];
+    // Only keep categories that exist in items, but preserve order
+    return ordered.filter((c) => c === 'Tất cả' || set.has(c));
+  }, [allItems]);
 
   useEffect(() => {
     // Flatten all selections into a single array for display
@@ -37,6 +74,7 @@ const AlbumDetailScreen = () => {
     
     if (album.selections && album.selections.length > 0) {
       album.selections.forEach(selection => {
+        const anySel: any = selection as any;
         // Add styles
         if (selection.styles && selection.styles.length > 0) {
           selection.styles.forEach(style => {
@@ -81,6 +119,95 @@ const AlbumDetailScreen = () => {
           });
         }
         
+        // Vest selections
+        // Tone color selections
+        if (anySel.weddingToneColors && anySel.weddingToneColors.length > 0) {
+          anySel.weddingToneColors.forEach((v: any) => {
+            items.push({ ...v, category: 'Đám cưới', categoryColor: '#FDF2F8' });
+          });
+        }
+        if (anySel.engageToneColors && anySel.engageToneColors.length > 0) {
+          anySel.engageToneColors.forEach((v: any) => {
+            items.push({ ...v, category: 'Lễ ăn hỏi', categoryColor: '#FFF7ED' });
+          });
+        }
+        if (anySel.vestStyles && anySel.vestStyles.length > 0) {
+          anySel.vestStyles.forEach((v: any) => {
+            items.push({ ...v, category: 'Vest - Kiểu dáng', categoryColor: '#F3E8FF' });
+          });
+        }
+        if (anySel.vestMaterials && anySel.vestMaterials.length > 0) {
+          anySel.vestMaterials.forEach((v: any) => {
+            items.push({ ...v, category: 'Vest - Chất liệu', categoryColor: '#E0F2FE' });
+          });
+        }
+        if (anySel.vestColors && anySel.vestColors.length > 0) {
+          anySel.vestColors.forEach((v: any) => {
+            items.push({ ...v, category: 'Vest - Màu sắc', categoryColor: '#FEE2E2' });
+          });
+        }
+        if (anySel.vestLapels && anySel.vestLapels.length > 0) {
+          anySel.vestLapels.forEach((v: any) => {
+            items.push({ ...v, category: 'Vest - Ve áo', categoryColor: '#DCFCE7' });
+          });
+        }
+        if (anySel.vestPockets && anySel.vestPockets.length > 0) {
+          anySel.vestPockets.forEach((v: any) => {
+            items.push({ ...v, category: 'Vest - Túi áo', categoryColor: '#FAE8FF' });
+          });
+        }
+        if (anySel.vestDecorations && anySel.vestDecorations.length > 0) {
+          anySel.vestDecorations.forEach((v: any) => {
+            items.push({ ...v, category: 'Vest - Trang trí', categoryColor: '#FFFBEB' });
+          });
+        }
+
+        // Bride engagement selections
+        if (anySel.brideEngageStyles && anySel.brideEngageStyles.length > 0) {
+          anySel.brideEngageStyles.forEach((v: any) => {
+            items.push({ ...v, category: 'Kiểu dáng', categoryColor: '#FEF0F3' });
+          });
+        }
+        if (anySel.brideEngageMaterials && anySel.brideEngageMaterials.length > 0) {
+          anySel.brideEngageMaterials.forEach((v: any) => {
+            items.push({ ...v, category: 'Chất liệu', categoryColor: '#F0F9FF' });
+          });
+        }
+        if (anySel.brideEngagePatterns && anySel.brideEngagePatterns.length > 0) {
+          anySel.brideEngagePatterns.forEach((v: any) => {
+            items.push({ ...v, category: 'Hoa văn & Trang trí', categoryColor: '#F0FDF4' });
+          });
+        }
+        if (anySel.brideEngageHeadwears && anySel.brideEngageHeadwears.length > 0) {
+          anySel.brideEngageHeadwears.forEach((v: any) => {
+            items.push({ ...v, category: 'Khăn đội đầu', categoryColor: '#FFFBEB' });
+          });
+        }
+
+        // Wedding Venues & Themes
+        if (anySel.weddingVenues && anySel.weddingVenues.length > 0) {
+          anySel.weddingVenues.forEach((v: any) => {
+            items.push({ ...v, category: 'Địa điểm', categoryColor: '#FEF0F3' });
+          });
+        }
+        if (anySel.weddingThemes && anySel.weddingThemes.length > 0) {
+          anySel.weddingThemes.forEach((v: any) => {
+            items.push({ ...v, category: 'Phong cách', categoryColor: '#F0F9FF' });
+          });
+        }
+
+        // Groom engagement selections
+        if (anySel.groomEngageOutfits && anySel.groomEngageOutfits.length > 0) {
+          anySel.groomEngageOutfits.forEach((v: any) => {
+            items.push({ ...v, category: 'Trang phục', categoryColor: '#FEF0F3' });
+          });
+        }
+        if (anySel.groomEngageAccessories && anySel.groomEngageAccessories.length > 0) {
+          anySel.groomEngageAccessories.forEach((v: any) => {
+            items.push({ ...v, category: 'Phụ kiện', categoryColor: '#F0F9FF' });
+          });
+        }
+
         // Add accessories
         if (selection.accessories) {
           // Veils
@@ -145,24 +272,48 @@ const AlbumDetailScreen = () => {
   }, [album]);
 
   const renderAlbumItem = (item: any, index: number) => {
+    const displayCategory = typeof item.category === 'string' ? item.category.replace(/^Vest\s-\s/, '') : item.category;
     return (
-      <View key={`${item._id}-${item.category}-${index}`} style={styles.itemWrapper}>
+      <View style={styles.itemWrapper}>
         <WeddingItemCard
           id={item._id}
           name={item.name}
           image={item.image}
-          isSelected={true} // All items in album are "selected"
-          onSelect={() => {}} // No selection in detail view
-          showPinButton={false} // Hide pin button in detail view
+          isSelected={true}
+          onSelect={() => {}}
+          showPinButton={false}
         />
         <View style={[styles.categoryBadge, { backgroundColor: item.categoryColor }]}>
-          <Text style={styles.categoryText}>{item.category}</Text>
+          <Text style={styles.categoryText}>{displayCategory}</Text>
         </View>
       </View>
     );
   };
 
   const topPad = Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 8 : 0;
+
+  const filteredItems = useMemo(() => {
+    const items = allItems.filter((it) => categoryFilter === 'Tất cả' || it.category === categoryFilter);
+    return items;
+  }, [allItems, categoryFilter]);
+
+  const pagedItems = useMemo(() => {
+    return filteredItems.slice(0, Math.min(visibleCount, filteredItems.length));
+  }, [filteredItems, visibleCount]);
+
+  // Prefetch images for current page to avoid flash/missing
+  useEffect(() => {
+    const toPrefetch = pagedItems.filter((it) => it.image && !prefetched[it._id]);
+    if (toPrefetch.length === 0) return;
+    toPrefetch.forEach(async (it) => {
+      try {
+        await Image.prefetch(encodeURI(it.image));
+      } catch {}
+      finally {
+        setPrefetched((p) => ({ ...p, [it._id]: true }));
+      }
+    });
+  }, [pagedItems]);
 
   return (
     <SafeAreaView style={[styles.container, { paddingTop: topPad }] }>
@@ -178,16 +329,57 @@ const AlbumDetailScreen = () => {
         <View style={{ width: 24 }} />
       </View>
 
-      {/* Album Items Grid */}
-      <ScrollView 
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        <View style={styles.itemsGrid}>
-          {allItems.map((item, index) => renderAlbumItem(item, index))}
-        </View>
+      {/* Filter Bar by category - rebuilt with FlatList and fixed heights */}
+      <View style={styles.filterWrapper}>
+        <FlatList
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          data={categories}
+          keyExtractor={(item) => item}
+          contentContainerStyle={styles.filterBar}
+          ItemSeparatorComponent={() => <View style={{ width: 8 }} />}
+          renderItem={({ item }) => {
+            const display = typeof item === 'string' ? item.replace(/^Vest\s-\s/, '') : item;
+            return (
+              <TouchableOpacity
+                style={[styles.filterChip, categoryFilter === item && styles.filterChipActive]}
+                onPress={() => setCategoryFilter(item)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.filterText}>{display}</Text>
+              </TouchableOpacity>
+            );
+          }}
+        />
+      </View>
 
-      </ScrollView>
+      {/* Album Items Grid - FlatList to avoid image recycling issues */}
+      <FlatList
+        data={pagedItems}
+        keyExtractor={(item: any) => `${item._id}-${item.category}`}
+        numColumns={3}
+        columnWrapperStyle={{ justifyContent: 'space-between', paddingHorizontal: 16, gap: 8 }}
+        renderItem={({ item, index }) => renderAlbumItem(item, index)}
+        contentContainerStyle={styles.scrollContent}
+        removeClippedSubviews
+        windowSize={5}
+        initialNumToRender={6}
+        maxToRenderPerBatch={6}
+        updateCellsBatchingPeriod={80}
+        extraData={categoryFilter}
+        getItemLayout={(data, index) => {
+          const cardHeight = getItemHeight() + 24 + 40; // image + margin + text/badge approx
+          const row = Math.floor(index / 3);
+          return { length: cardHeight, offset: cardHeight * row, index };
+        }}
+        onEndReachedThreshold={0.3}
+        onEndReached={() => {
+          if (visibleCount < filteredItems.length) {
+            setVisibleCount((c) => Math.min(c + 6, filteredItems.length)); // thêm 2 hàng (3x2)
+          }
+        }}
+        showsVerticalScrollIndicator={false}
+      />
     </SafeAreaView>
   );
 };
@@ -221,13 +413,47 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingBottom: 24,
+    paddingTop: 0,
   },
   itemsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     paddingHorizontal: 16,
-    paddingTop: 16,
+    paddingTop: 0,
     gap: 8,
+  },
+  filterWrapper: {
+    height: 44,
+    marginBottom: 12,
+  },
+  filterBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+  },
+  filterChip: {
+    paddingHorizontal: 12,
+    height: 32,
+    paddingVertical: 0,
+    borderRadius: 16,
+    backgroundColor: '#F3F4F6',
+    alignSelf: 'center',
+    justifyContent: 'center',
+    borderWidth: 0,
+  },
+  filterChipActive: {
+    backgroundColor: '#F9CBD6',
+    borderWidth: 0,
+  },
+  filterText: {
+    fontFamily: fonts.montserratMedium,
+    color: '#1f2937',
+    fontSize: 12,
+    lineHeight: 16,
+  },
+  filterTextActive: {
+    // Keep same font family to avoid chip height change
+    fontFamily: fonts.montserratMedium,
   },
   itemWrapper: {
     position: 'relative',
