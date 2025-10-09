@@ -8,6 +8,8 @@ import { Provider } from "react-redux";
 import { store, persistor } from "./src/store/store";
 import { PersistGate } from "redux-persist/integration/react";
 import { SelectionProvider } from "./src/contexts/SelectionContext";
+import RootStackNavigator from "src/navigation/RootStackNavigator";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 
 export default function App() {
   const [fontsLoaded, setFontsLoaded] = useState(false);
@@ -23,17 +25,18 @@ export default function App() {
   }, []);
   if (!fontsLoaded) return null;
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <PaperProvider>
-        <Provider store={store}>
-          {/* THÊM PersistGate Ở ĐÂY */}
-          <PersistGate loading={null} persistor={persistor}>
-            <SelectionProvider>
-              <AppNavigator />
-            </SelectionProvider>
-          </PersistGate>
-        </Provider>
-      </PaperProvider>
-    </GestureHandlerRootView>
+    <SafeAreaProvider>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <PaperProvider>
+          <Provider store={store}>
+            <PersistGate loading={null} persistor={persistor}>
+              <SelectionProvider>
+                <RootStackNavigator />
+              </SelectionProvider>
+            </PersistGate>
+          </Provider>
+        </PaperProvider>
+      </GestureHandlerRootView>
+    </SafeAreaProvider>
   );
 }

@@ -26,6 +26,7 @@ import {
   Palette,
   Settings2,
   Crown,
+  Youtube,
 } from "lucide-react-native";
 import {
   useNavigation,
@@ -33,12 +34,8 @@ import {
   RouteProp,
   NavigationProp,
 } from "@react-navigation/native";
-import { RootStackParamList } from "../navigation/AppNavigator";
-
-// ----- BƯỚC 1: THAY ĐỔI IMPORT -----
-import { useAppDispatch } from "../store/hooks"; // <-- Import hook đã được type
-// ------------------------------------
-
+import { RootStackParamList } from "../navigation/types";
+import { useAppDispatch } from "../store/hooks";
 import { fetchUserInvitation } from "../store/invitationSlice";
 import apiClient from "../api/client";
 
@@ -51,12 +48,9 @@ export default function WebsiteManagementScreen() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const route = useRoute<WebsiteManagementRouteProp>();
   const { invitation } = route.params;
+  const dispatch = useAppDispatch();
 
-  // ----- BƯỚC 2: THAY ĐỔI CÁCH GỌI HOOK -----
-  const dispatch = useAppDispatch(); // <-- Sử dụng useAppDispatch
-  // ----------------------------------------
-
-  const websiteUrl = `https://hy-planner-be.vercel.app/inviletter/${invitation.slug}`; // <-- Sửa lại domain cho đúng
+  const websiteUrl = `https://hy-planner-be.vercel.app/inviletter/${invitation.slug}`;
 
   const handleDeleteWebsite = () => {
     Alert.alert(
@@ -75,9 +69,10 @@ export default function WebsiteManagementScreen() {
 
               Alert.alert("Thành công", response.data.message);
 
-              // Dòng này bây giờ sẽ không còn báo lỗi TypeScript nữa
+              // Cập nhật lại Redux state (để data trở thành null)
               dispatch(fetchUserInvitation());
 
+              // Quay về màn hình Home
               navigation.navigate("Main", { screen: "Home" });
             } catch (error: any) {
               Alert.alert("Lỗi", error.message || "Không thể xóa website.");
@@ -88,15 +83,87 @@ export default function WebsiteManagementScreen() {
     );
   };
 
+  const showComingSoonAlert = () => {
+    Alert.alert(
+      "Sắp ra mắt",
+      "Chức năng này đang được phát triển. Vui lòng quay lại sau!"
+    );
+  };
+
   const menuItems = [
-    { icon: Info, label: "Thông tin cô dâu chú rể" },
-    { icon: Image, label: "Album ảnh" },
-    { icon: BookHeart, label: "Chuyện tình yêu" },
-    { icon: CalendarDays, label: "Sự kiện cưới" },
-    { icon: Gift, label: "Hộp mừng cưới", isPremium: true },
-    { icon: Music, label: "Nhạc và hiệu ứng", isPremium: true },
-    { icon: Palette, label: "Thay đổi giao diện", isPremium: true },
-    { icon: Settings2, label: "Chỉnh sửa giao diện" },
+    {
+      icon: Info,
+      label: "Thông tin cô dâu chú rể",
+      action: () =>
+        navigation.navigate("EditCoupleInfo", {
+          invitation,
+          sectionType: "coupleInfo",
+          title: "Thông tin cặp đôi",
+        }),
+    },
+    {
+      icon: Youtube,
+      label: "Video Kỷ Niệm",
+      action: () =>
+        navigation.navigate("EditCoupleInfo", {
+          invitation,
+          sectionType: "youtubeVideo",
+          title: "Video Kỷ Niệm",
+        }),
+    },
+    {
+      icon: Image,
+      label: "Album ảnh",
+      action: () =>
+        navigation.navigate("EditCoupleInfo", {
+          invitation,
+          sectionType: "album",
+          title: "Chỉnh sửa Album",
+        }),
+    },
+    {
+      icon: BookHeart,
+      label: "Chuyện tình yêu",
+      action: () =>
+        navigation.navigate("EditCoupleInfo", {
+          invitation,
+          sectionType: "loveStory",
+          title: "Chuyện Tình Yêu",
+        }),
+    },
+    {
+      icon: CalendarDays,
+      label: "Sự kiện cưới",
+      action: () =>
+        navigation.navigate("EditCoupleInfo", {
+          invitation,
+          sectionType: "events",
+          title: "Chương Trình Cưới",
+        }),
+    },
+    {
+      icon: Gift,
+      label: "Hộp mừng cưới",
+      isPremium: true,
+      action: showComingSoonAlert,
+    },
+    {
+      icon: Music,
+      label: "Nhạc và hiệu ứng",
+      isPremium: true,
+      action: showComingSoonAlert,
+    },
+    {
+      icon: Palette,
+      label: "Thay đổi giao diện",
+      isPremium: true,
+      action: showComingSoonAlert,
+    },
+    {
+      icon: Settings2,
+      label: "Chỉnh sửa giao diện",
+      action: showComingSoonAlert,
+    },
   ];
 
   return (
@@ -107,7 +174,7 @@ export default function WebsiteManagementScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <ChevronLeft size={24} color="#374151" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Website</Text>
+        <Text style={styles.headerTitle}>Quản lý Website</Text>
         <TouchableOpacity>
           <Share2 size={24} color="#374151" />
         </TouchableOpacity>
@@ -154,17 +221,29 @@ export default function WebsiteManagementScreen() {
         {/* Menu List */}
         <View style={styles.menuList}>
           {menuItems.map((item, index) => (
-            <TouchableOpacity key={index} style={styles.menuItem}>
+            <TouchableOpacity
+              key={index}
+              style={styles.menuItem}
+              onPress={item.action}
+              disabled={!item.action}
+            >
               <View style={{ flexDirection: "row", alignItems: "center" }}>
-                <item.icon size={22} color="#555" />
-                <Text style={styles.menuItemText}>{item.label}</Text>
+                <item.icon size={22} color={!item.action ? "#ccc" : "#555"} />
+                <Text
+                  style={[
+                    styles.menuItemText,
+                    !item.action && { color: "#ccc" },
+                  ]}
+                >
+                  {item.label}
+                </Text>
               </View>
               {item.isPremium && <Crown size={20} color="#f1c40f" />}
             </TouchableOpacity>
           ))}
           <TouchableOpacity
             style={styles.menuItem}
-            onPress={handleDeleteWebsite} // Sẽ tạo hàm này ở bước sau
+            onPress={handleDeleteWebsite}
           >
             <Text style={[styles.menuItemText, styles.deleteText]}>
               Xóa Website

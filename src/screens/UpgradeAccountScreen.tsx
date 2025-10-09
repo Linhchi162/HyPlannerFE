@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   SafeAreaView,
   View,
@@ -11,7 +11,6 @@ import {
   ActivityIndicator,
 } from "react-native";
 import {
-  ChevronLeft,
   Crown,
   Sparkles,
   Check,
@@ -20,54 +19,70 @@ import {
   ArrowLeft,
   CheckCircle,
 } from "lucide-react-native";
-import {
-  useNavigation,
-  useRoute,
-  useFocusEffect,
-  NavigationProp,
-} from "@react-navigation/native";
-import { Linking } from "react-native";
+import { useNavigation, NavigationProp } from "@react-navigation/native";
+import * as Linking from "expo-linking";
 import apiClient from "../api/client";
 import { useAppDispatch } from "../store/hooks";
 import { fetchUserInvitation } from "../store/invitationSlice";
 import { RootStackParamList } from "src/navigation/AppNavigator";
 
 export default function UpgradeAccountScreen() {
-  console.log("--- MÀN HÌNH UPGRADE ĐƯỢC RENDER ---"); // Log khi component render
-
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
-  type UpgradeAccountRouteParams = { status?: string };
-  const route = useRoute() as { params?: UpgradeAccountRouteParams };
   const dispatch = useAppDispatch();
+
+  // State để lưu accountType lấy từ API
+  const [currentUserAccountType, setCurrentUserAccountType] = useState<
+    string | null
+  >(null);
+  const [isLoadingStatus, setIsLoadingStatus] = useState(true);
 
   const [activeUpgradeTab, setActiveUpgradeTab] = useState("VIP");
   const [isProcessing, setIsProcessing] = useState(false);
   const [showSuccessOverlay, setShowSuccessOverlay] = useState(false);
 
-  useFocusEffect(
-    useCallback(() => {
-      console.log("--- useFocusEffect ĐƯỢC KÍCH HOẠT ---");
-      console.log("Toàn bộ route object:", JSON.stringify(route, null, 2));
-      console.log("Kiểm tra route.params:", route.params);
+  // useEffect để gọi API lấy trạng thái user khi vào màn hình
+  useEffect(() => {
+    const fetchAccountStatus = async () => {
+      try {
+        setIsLoadingStatus(true);
+        const response = await apiClient.get("/auth/status");
+        setCurrentUserAccountType(response.data.accountType);
+      } catch (error) {
+        console.error("Không thể lấy trạng thái tài khoản:", error);
+        Alert.alert("Lỗi", "Không thể tải thông tin tài khoản của bạn.");
+      } finally {
+        setIsLoadingStatus(false);
+      }
+    };
 
-      if (route.params?.status) {
-        console.log(`TÌM THẤY STATUS: ${route.params.status}`);
-        if (route.params.status === "success") {
-          console.log("==> Đang xử lý logic SUCCESS");
+    fetchAccountStatus();
+  }, []); // Mảng rỗng để chỉ chạy 1 lần khi màn hình được mount
+
+  const url = Linking.useURL();
+  const processedUrlRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (url && url !== processedUrlRef.current) {
+      processedUrlRef.current = url;
+      const { queryParams } = Linking.parse(url);
+      if (queryParams?.status) {
+        const status = (queryParams.status as string).toLowerCase();
+        const orderCode = queryParams.orderCode as string;
+        if (status === "paid" || status === "success") {
           dispatch(fetchUserInvitation());
           setShowSuccessOverlay(true);
+          // Cập nhật lại trạng thái tài khoản ngay trên UI sau khi thanh toán thành công
+          setCurrentUserAccountType(activeUpgradeTab);
           setTimeout(() => setShowSuccessOverlay(false), 3000);
-        } else if (route.params.status === "cancelled") {
-          console.log("==> Đang xử lý logic CANCELLED");
+        } else if (status === "cancelled") {
           Alert.alert("Thông báo", "Giao dịch đã bị hủy.");
+          if (orderCode) {
+            apiClient.post("/payments/cancel-order", { orderCode });
+          }
         }
-        console.log("Đang xóa params...");
-        navigation.setParams({ status: undefined });
-      } else {
-        console.log("KHÔNG TÌM THẤY 'status' TRONG route.params");
       }
-    }, [route.params]) // Chỉ chạy lại khi params thay đổi
-  );
+    }
+  }, [url, dispatch, activeUpgradeTab]);
 
   const handleUpgrade = async (packageType: string) => {
     setIsProcessing(true);
@@ -75,7 +90,7 @@ export default function UpgradeAccountScreen() {
     if (packageType === "VIP") {
       orderDetails = {
         description: "Nang cap VIP HyPlanner",
-        price: 5000,
+        price: 99000,
         packageType: "VIP",
       };
     } else if (packageType === "SUPER") {
@@ -85,14 +100,12 @@ export default function UpgradeAccountScreen() {
         packageType: "SUPER",
       };
     }
-
     try {
       const response = await apiClient.post(
         "/payments/create-link",
         orderDetails
       );
       const { checkoutUrl } = response.data;
-
       if (checkoutUrl) {
         await Linking.openURL(checkoutUrl);
       }
@@ -178,6 +191,34 @@ export default function UpgradeAccountScreen() {
   const selectedPackagePrice =
     activeUpgradeTab === "VIP" ? features[0].vip : features[0].super;
 
+  const isVipTabDisabled =
+    currentUserAccountType === "VIP" || currentUserAccountType === "SUPER";
+  const isSuperTabDisabled = currentUserAccountType === "SUPER";
+
+  let isUpgradeButtonDisabled = false;
+  let upgradeButtonText = `Nâng cấp ${activeUpgradeTab}: ${selectedPackagePrice}`;
+
+  if (currentUserAccountType === "SUPER") {
+    isUpgradeButtonDisabled = true;
+    upgradeButtonText = "Bạn đã là tài khoản SUPER";
+  } else if (currentUserAccountType === "VIP" && activeUpgradeTab === "VIP") {
+    isUpgradeButtonDisabled = true;
+    upgradeButtonText = "Bạn đã là tài khoản VIP";
+  }
+
+  // Nếu đang tải trạng thái, hiển thị màn hình loading
+  if (isLoadingStatus) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View
+          style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+        >
+          <ActivityIndicator size="large" color="#e07181" />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="light-content" backgroundColor="#e07181" />
@@ -193,8 +234,10 @@ export default function UpgradeAccountScreen() {
           style={[
             styles.upgradeTabButton,
             activeUpgradeTab === "VIP" && styles.activeUpgradeTabButton,
+            isVipTabDisabled && styles.buttonDisabled,
           ]}
           onPress={() => setActiveUpgradeTab("VIP")}
+          disabled={isVipTabDisabled}
         >
           <Crown
             size={16}
@@ -214,8 +257,10 @@ export default function UpgradeAccountScreen() {
           style={[
             styles.upgradeTabButton,
             activeUpgradeTab === "SUPER" && styles.activeUpgradeTabButton,
+            isSuperTabDisabled && styles.buttonDisabled,
           ]}
           onPress={() => setActiveUpgradeTab("SUPER")}
+          disabled={isSuperTabDisabled}
         >
           <Sparkles
             size={16}
@@ -287,16 +332,17 @@ export default function UpgradeAccountScreen() {
 
       <View style={styles.bottomButtonContainer}>
         <TouchableOpacity
-          style={[styles.upgradeButton, isProcessing && styles.buttonDisabled]}
+          style={[
+            styles.upgradeButton,
+            (isProcessing || isUpgradeButtonDisabled) && styles.buttonDisabled,
+          ]}
           onPress={() => handleUpgrade(activeUpgradeTab)}
-          disabled={isProcessing}
+          disabled={isProcessing || isUpgradeButtonDisabled}
         >
           {isProcessing ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.upgradeButtonText}>
-              Nâng cấp {activeUpgradeTab}: {selectedPackagePrice}
-            </Text>
+            <Text style={styles.upgradeButtonText}>{upgradeButtonText}</Text>
           )}
         </TouchableOpacity>
       </View>
@@ -470,7 +516,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   buttonDisabled: {
-    backgroundColor: "#f2b6c0",
+    backgroundColor: "#cccccc",
+    borderColor: "#cccccc",
   },
   upgradeButtonText: {
     color: "#fff",

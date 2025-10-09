@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import {
   View,
   Text,
@@ -11,18 +11,25 @@ import {
   Dimensions,
   type NativeSyntheticEvent,
   type NativeScrollEvent,
+  ActivityIndicator,
 } from "react-native";
-import { useDispatch, useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { selectCurrentUser } from "../store/authSlice";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { useNavigation } from "@react-navigation/native";
-import { RootStackParamList } from "../navigation/AppNavigator";
+import { RootStackParamList } from "../navigation/types"; // Đảm bảo đường dẫn này đúng
 import { ChevronRight, List, Shirt, Mail, Wallet } from "lucide-react-native";
-import { useState } from "react";
 import { getWeddingEvent } from "../service/weddingEventService";
 import { AppDispatch, RootState } from "../store";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-const { width, height } = Dimensions.get("window");
+import {
+  responsiveWidth,
+  responsiveHeight,
+  responsiveFont,
+} from "../../assets/styles/utils/responsive"; // Đảm bảo đường dẫn này đúng
+
+const { width } = Dimensions.get("window");
 
 const weddingImages = [
   {
@@ -34,7 +41,7 @@ const weddingImages = [
     caption: "Hoa cưới lãng mạn",
   },
   {
-    uri: "https://images.unsplash.com/photo-1465495976277-4387d4b0e4a6?w=400&h=500&fit=crop",
+    uri: "https://tuandiamond.vn/wp-content/uploads/2024/08/nhan-cuoi-kim-cuong-tu-nhien-cao-cap-nc1489.jpg",
     caption: "Nhẫn cưới đẹp",
   },
   {
@@ -48,76 +55,114 @@ const weddingImages = [
 ];
 
 const HomeScreen = () => {
+  // --- LẤY DỮ LIỆU TỪ REDUX STORE ---
+  const insets = useSafeAreaInsets();
   const user = useSelector(selectCurrentUser);
+  const { weddingEvent, isLoading, error } = useSelector(
+    (state: RootState) => state.weddingEvent.getWeddingEvent
+  );
+  const eventId = weddingEvent?._id;
 
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+  const dispatch = useDispatch<AppDispatch>();
+
+  useEffect(() => {
+    const fetchWeddingInfo = async () => {
+      const userId = user?.id || user?._id;
+      if (userId) {
+        try {
+          await getWeddingEvent(userId, dispatch);
+        } catch (err) {
+          console.error("Error fetching wedding info:", err);
+        }
+      }
+    };
+    fetchWeddingInfo();
+  }, [dispatch, user]);
+
+  // --- TÍNH TOÁN SỐ NGÀY ĐẾM NGƯỢC ĐỘNG ---
+  const daysLeft = useMemo(() => {
+    if (!weddingEvent?.timeToMarried) {
+      return 0;
+    }
+    const weddingDate = new Date(weddingEvent.timeToMarried);
+    const today = new Date();
+    weddingDate.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
+
+    const differenceInTime = weddingDate.getTime() - today.getTime();
+    if (differenceInTime < 0) {
+      return 0;
+    }
+    const differenceInDays = Math.ceil(differenceInTime / (1000 * 3600 * 24));
+    return differenceInDays;
+  }, [weddingEvent?.timeToMarried]);
 
   const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const scrollPosition = event.nativeEvent.contentOffset.x;
     const imageIndex = Math.round(scrollPosition / width);
     setCurrentImageIndex(imageIndex);
   };
-  const dispatch = useDispatch<AppDispatch>();
 
-  useEffect(() => {
-    const fetchWeddingInfo = async () => {
-      if (!user) return;
-      try {
-        await getWeddingEvent(user.id || user._id, dispatch);
-      } catch (error) {
-        console.error("Error fetching wedding info:", error);
-      }
-    };
-    fetchWeddingInfo();
-  }, [dispatch]);
-  const creatorId = useSelector(
-    (state: RootState) =>
-      state.weddingEvent.getWeddingEvent.weddingEvent.creatorId
-  );
-  const eventId = useSelector(
-    (state: RootState) => state.weddingEvent.getWeddingEvent.weddingEvent._id
-  );
-  if (!user) {
+  // --- XỬ LÝ CÁC TRẠNG THÁI UI ---
+  if (isLoading) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View
-          style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
-        >
-          <Text>Đang tải thông tin...</Text>
-        </View>
+      <SafeAreaView style={styles.centerScreen}>
+        <ActivityIndicator size="large" color="#ff6b9d" />
+        <Text style={styles.centerText}>Đang tải dữ liệu...</Text>
       </SafeAreaView>
     );
   }
 
+  if (error) {
+    return (
+      <SafeAreaView style={styles.centerScreen}>
+        <Text style={styles.centerText}>Đã có lỗi xảy ra khi tải dữ liệu.</Text>
+      </SafeAreaView>
+    );
+  }
+
+  if (!weddingEvent) {
+    return (
+      <SafeAreaView style={styles.centerScreen}>
+        <Text style={styles.centerText}>Chào {user?.fullName}!</Text>
+        <Text style={styles.centerText}>Bạn chưa tạo sự kiện cưới nào.</Text>
+        <TouchableOpacity
+          style={styles.createEventButton}
+          onPress={() => navigation.navigate("AddWeddingInfo")}
+        >
+          <Text style={styles.createEventButtonText}>
+            Tạo kế hoạch cưới ngay
+          </Text>
+        </TouchableOpacity>
+      </SafeAreaView>
+    );
+  }
+
+  // --- GIAO DIỆN CHÍNH KHI CÓ DỮ LIỆU ---
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
+        contentContainerStyle={{
+          paddingBottom:
+            insets.bottom > 0 ? insets.bottom : responsiveHeight(20),
+        }}
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.profileImageContainer}>
-            <Image
-              source={{
-                uri: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&h=100&fit=crop&crop=face",
-              }}
-              style={styles.profileImage}
-            />
-          </View>
-        </View>
-
         {/* Greeting Card */}
         <View style={styles.greetingCard}>
-          <Text style={styles.greetingTitle}>Xin chào, Hau & Nhu</Text>
+          <Text style={styles.greetingTitle}>
+            {`Chúc mừng, ${weddingEvent.groomName} & ${weddingEvent.brideName}`}
+          </Text>
           <Text style={styles.greetingText}>
             Hãy thiết kế đám cưới của riêng bạn ngay bây giờ!{"\n"}
             Đếm ngược ngày cưới còn lại:
           </Text>
           <View style={styles.countdownContainer}>
-            <Text style={styles.countdownNumber}>62</Text>
+            <Text style={styles.countdownNumber}>{daysLeft}</Text>
             <Text style={styles.countdownLabel}>ngày</Text>
           </View>
         </View>
@@ -151,9 +196,12 @@ const HomeScreen = () => {
         <View style={styles.menuSection}>
           <TouchableOpacity
             style={styles.menuItem}
-            onPress={() =>
-              navigation.navigate("TaskList", { eventId: eventId })
-            }
+            onPress={() => {
+              if (eventId) {
+                navigation.navigate("TaskList", { eventId: eventId });
+              }
+            }}
+            disabled={!eventId}
           >
             <View style={styles.menuItemLeft}>
               <View style={styles.menuIcon}>
@@ -166,8 +214,8 @@ const HomeScreen = () => {
             </View>
             <ChevronRight size={20} color="#9ca3af" />
           </TouchableOpacity>
-          {/* chỉ cho creator */}
-          {(user.id || user._id) === creatorId && (
+
+          {(user?.id || user?._id) === weddingEvent.creatorId && (
             <TouchableOpacity
               style={styles.menuItem}
               onPress={() => navigation.navigate("BudgetList")}
@@ -218,7 +266,6 @@ const HomeScreen = () => {
           </TouchableOpacity>
         </View>
 
-        {/* Bottom padding to account for bottom navigation */}
         <View style={styles.bottomPadding} />
       </ScrollView>
     </SafeAreaView>
@@ -233,127 +280,135 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingBottom: 8,
-  },
-  profileImageContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    overflow: "hidden",
-  },
-  profileImage: {
-    width: "100%",
-    height: "100%",
-  },
   greetingCard: {
-    marginHorizontal: 16,
-    marginBottom: 24,
+    marginHorizontal: responsiveWidth(16),
+    marginTop: responsiveHeight(16),
+    marginBottom: responsiveHeight(24),
     backgroundColor: "#ffe4e8",
-    borderRadius: 16,
-    padding: 24,
+    borderRadius: responsiveWidth(16),
+    padding: responsiveWidth(24),
   },
   greetingTitle: {
     fontFamily: "Montserrat-SemiBold",
-    fontSize: 18,
+    fontSize: responsiveFont(18),
     fontWeight: "500",
     color: "#1f2937",
-    marginBottom: 12,
+    marginBottom: responsiveHeight(12),
   },
   greetingText: {
     fontFamily: "Montserrat-Medium",
     color: "#6b7280",
-    fontSize: 14,
-    lineHeight: 20,
-    marginBottom: 24,
+    fontSize: responsiveFont(14),
+    lineHeight: responsiveHeight(20),
+    marginBottom: responsiveHeight(24),
   },
   countdownContainer: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: responsiveWidth(8),
   },
   countdownNumber: {
     fontFamily: "Montserrat-Medium",
-    fontSize: 36,
+    fontSize: responsiveFont(36),
     fontWeight: "bold",
     color: "#ff6b9d",
   },
   countdownLabel: {
     fontFamily: "Montserrat-Medium",
     color: "#6b7280",
-    fontSize: 24,
+    fontSize: responsiveFont(24),
   },
   imageSection: {
-    marginHorizontal: 16,
-    marginBottom: 16,
+    marginBottom: responsiveHeight(16),
   },
   carouselContainer: {
-    marginHorizontal: -16, // Offset parent margin to make full width
+    // Để trống vì nó đã tự động theo chiều rộng màn hình
   },
   imageContainer: {
-    width: width - 32, // Account for parent margins
-    marginHorizontal: 16,
-    borderRadius: 16,
+    width: width - responsiveWidth(32), // Chiều rộng màn hình trừ đi lề 2 bên
+    marginHorizontal: responsiveWidth(16),
+    borderRadius: responsiveWidth(16),
     overflow: "hidden",
-    marginBottom: 12,
+    marginBottom: responsiveHeight(12),
   },
   weddingImage: {
     width: "100%",
-    height: width * 0.8, // Responsive height based on screen width
+    height: (width - responsiveWidth(32)) * 0.8, // Giữ tỷ lệ ảnh responsive
   },
   imageCaption: {
     fontFamily: "Montserrat-Medium",
     textAlign: "center",
     color: "#6b7280",
-    fontSize: 14,
-    marginBottom: 16,
+    fontSize: responsiveFont(14),
+    marginBottom: responsiveHeight(16),
   },
   menuSection: {
-    marginHorizontal: 16,
-    marginBottom: 32,
-    gap: 4,
+    marginHorizontal: responsiveWidth(16),
+    marginBottom: responsiveHeight(32),
+    gap: responsiveHeight(4),
   },
   menuItem: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     backgroundColor: "#f3f4f6",
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: responsiveWidth(12),
+    padding: responsiveWidth(16),
   },
   menuItemLeft: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    gap: responsiveWidth(12),
   },
   menuIcon: {
-    width: 32,
-    height: 32,
+    width: responsiveWidth(32),
+    height: responsiveWidth(32), // Giữ hình vuông
     backgroundColor: "#ff6b9d",
-    borderRadius: 8,
+    borderRadius: responsiveWidth(8),
     justifyContent: "center",
     alignItems: "center",
   },
   menuTextContainer: {
-    gap: 2,
+    gap: responsiveHeight(2),
   },
   menuTitle: {
     fontFamily: "Montserrat-SemiBold",
     fontWeight: "500",
     color: "#1f2937",
-    fontSize: 16,
+    fontSize: responsiveFont(16),
   },
   menuSubtitle: {
     fontFamily: "Montserrat-Medium",
-    fontSize: 12,
+    fontSize: responsiveFont(12),
     color: "#6b7280",
   },
   bottomPadding: {
-    height: 55, // Space for bottom navigation
+    height: responsiveHeight(85), // Không gian cho thanh điều hướng dưới cùng
+  },
+  centerScreen: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#ffffff",
+    padding: responsiveWidth(16),
+  },
+  centerText: {
+    fontFamily: "Montserrat-Medium",
+    fontSize: responsiveFont(16),
+    color: "#6b7280",
+    textAlign: "center",
+    marginBottom: responsiveHeight(16),
+  },
+  createEventButton: {
+    backgroundColor: "#ff6b9d",
+    paddingVertical: responsiveHeight(12),
+    paddingHorizontal: responsiveWidth(24),
+    borderRadius: responsiveWidth(8),
+  },
+  createEventButtonText: {
+    fontFamily: "Montserrat-SemiBold",
+    color: "white",
+    fontSize: responsiveFont(16),
   },
 });
 
