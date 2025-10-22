@@ -31,7 +31,7 @@ export default function InviteOrCreateScreen() {
 
         // Nếu người dùng đã có sự kiện
         if (hasEvent) {
-          console.log("User has an event:", event);
+          // console.log("User has an event:", event);
           // 1. Lưu thông tin sự kiện vào Redux
           dispatch(setWeddingEventFromCheck(event));
           // 2. Chuyển hướng thẳng đến màn hình chính

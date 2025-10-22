@@ -13,7 +13,7 @@ import apiClient from "../api/client";
 import { budgetListData } from "src/sampleData/SampleData";
 
 // const API_BASE_URL = "http://192.168.2.77:8082";
-// const API_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_SCHEME;
+const API_BASE_URL = process.env.EXPO_PUBLIC_BASE_URL;
 
 export const getGroupActivities = async (
   eventId: string,
@@ -61,8 +61,8 @@ export const insertSampleGroupActivity = async (
   try {
     // Tạo data từ sampleData với creatorId
     const budgetData = budgetListData();
-    
-    const response = await apiClient.post('/weddingEvents/checkAndInsertActivities', {
+
+    const response = await axios.post(`${API_BASE_URL}/weddingEvents/checkAndInsertActivities`, {
       eventId,
       groupActivitiesData: budgetData
     });

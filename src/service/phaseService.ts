@@ -4,7 +4,7 @@ import axios from "axios";
 import apiClient from "../api/client";
 import { taskListData } from "src/sampleData/SampleData";
 
-// const API_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_SCHEME;
+const API_BASE_URL = process.env.EXPO_PUBLIC_BASE_URL;
 // const API_BASE_URL = "http://192.168.2.77:8082"
 
 
@@ -77,8 +77,8 @@ export const insertSampleTasks = async (
   try {
     // Tạo data từ sampleData với creatorId và ngày tạo event
     const phasesData = taskListData(creatorId, eventCreatedDate);
-    
-    const response = await apiClient.post('/weddingEvents/checkAndInsertTasks', {
+
+    const response = await axios.post(`${API_BASE_URL}/weddingEvents/checkAndInsertTasks`, {
       eventId,
       phasesData
     });
