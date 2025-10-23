@@ -21,6 +21,14 @@ export type WeddingEvent = {
   address: string;
   mapLink?: string;
   image?: string;
+  embedMapUrl?: string;
+};
+
+export type GuestbookMessage = {
+  _id: string;
+  name: string;
+  message: string;
+  createdAt: string;
 };
 
 // 2. Cập nhật InvitationData với tất cả các trường từ Mongoose Model
@@ -36,6 +44,12 @@ export type InvitationData = {
   album?: string[];
   loveStory?: LoveStoryItem[];
   events?: WeddingEvent[];
+  guestRsvpCount?: number;
+  guestbookMessages?: GuestbookMessage[];
+  bankAccount?: {
+    bankBin: string;
+    accountNumber: string;
+  };
   // ... thêm các trường khác nếu có
 };
 
@@ -70,7 +84,8 @@ export type RootStackParamList = {
       | "album"
       | "loveStory"
       | "events"
-      | "youtubeVideo"; // <-- Thêm vào đây
+      | "youtubeVideo"
+      | "bankAccount"; // <-- Thêm vào đây
     title: string;
   };
   PaymentSuccess: undefined;
