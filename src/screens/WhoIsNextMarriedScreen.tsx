@@ -8,8 +8,17 @@ import {
   Text,
   FlatList,
   Dimensions,
+  Keyboard,
 } from "react-native";
-import { ActivityIndicator, Appbar, Avatar, Button, Dialog, Portal } from "react-native-paper";
+import {
+  ActivityIndicator,
+  Appbar,
+  Avatar,
+  Button,
+  Dialog,
+  Portal,
+  TextInput,
+} from "react-native-paper";
 import Svg, { G, Path, Text as SvgText } from "react-native-svg";
 import { Entypo } from "@expo/vector-icons";
 import {
@@ -80,6 +89,9 @@ export default function WhoIsNextMarriedScreen() {
   const [dialogVisible, setDialogVisible] = useState(false);
   const [spinning, setSpinning] = useState(false);
 
+  // ✅ MỚI: State cho tên thành viên mới
+  const [newName, setNewName] = useState("");
+
   const rotation = useRef(new Animated.Value(0)).current;
   const pointerAnim = useRef(new Animated.Value(0)).current;
 
@@ -93,9 +105,9 @@ export default function WhoIsNextMarriedScreen() {
     "#BDB2FF",
   ];
 
-  // ✅ MỚI: Lấy chiều rộng màn hình để căn giữa pháo hoa
   const { width } = Dimensions.get("window");
 
+  // (spinWheel, shuffleMembers, resetWheel, removeMember, getSlicePath không đổi)
   const spinWheel = () => {
     if (spinning || members.length === 0) return;
     setSpinning(true);
@@ -127,7 +139,7 @@ export default function WhoIsNextMarriedScreen() {
         }),
       ]).start();
       setWinner(members[randomIndex]);
-      setDialogVisible(true); // ✅ Đây là lúc pháo hoa được kích hoạt
+      setDialogVisible(true);
       rotation.setValue(randomRotation % 360);
       setSpinning(false);
     });
@@ -147,6 +159,20 @@ export default function WhoIsNextMarriedScreen() {
   const removeMember = (idToRemove: string) => {
     if (spinning) return;
     setMembers((prev) => prev.filter((m) => m._id !== idToRemove));
+  };
+
+  // ✅ MỚI: Hàm thêm thành viên
+  const addMember = () => {
+    if (newName.trim() === "" || spinning) return;
+
+    const newMember = {
+      _id: Date.now().toString(), // Tạo ID tạm thời duy nhất
+      fullName: newName.trim(),
+      email: "",
+    };
+    setMembers((prev) => [...prev, newMember]);
+    setNewName(""); // Xóa ô input
+    Keyboard.dismiss(); // Ẩn bàn phím
   };
 
   const getSlicePath = (index: number) => {
@@ -169,10 +195,13 @@ export default function WhoIsNextMarriedScreen() {
       {isLoading ? (
         <View style={[styles.container, { justifyContent: "center" }]}>
           <ActivityIndicator size="large" color="#F06292" />
-          <Text style={{ marginTop: 12, fontSize: responsiveFont(13) }}>Đang tải thông tin</Text>
+          <Text style={{ marginTop: 12, fontSize: responsiveFont(13) }}>
+            Đang tải thông tin
+          </Text>
         </View>
       ) : (
         <View style={styles.container}>
+          {/* Vòng quay hoặc Thông báo Chúc mừng */}
           {members.length > 0 ? (
             <View style={styles.wheelContainer}>
               {/* Bánh xe */}
@@ -205,7 +234,8 @@ export default function WhoIsNextMarriedScreen() {
                     ))}
                     {members.map((m, i) => {
                       const sliceAngleDeg = 360 / members.length;
-                      const angleRad = ((i + 0.5) * 2 * Math.PI) / members.length;
+                      const angleRad =
+                        ((i + 0.5) * 2 * Math.PI) / members.length;
                       const angleDeg = (i + 0.5) * sliceAngleDeg;
                       const textX = radius * 0.6 * Math.cos(angleRad);
                       const textY = radius * 0.6 * Math.sin(angleRad);
@@ -262,6 +292,30 @@ export default function WhoIsNextMarriedScreen() {
             </View>
           )}
 
+          {/* ✅ MỚI: Khu vực thêm thành viên */}
+          <View style={styles.addMemberContainer}>
+            <TextInput
+              label="Thêm tên thành viên"
+              value={newName}
+              onChangeText={setNewName}
+              style={styles.textInput}
+              mode="outlined"
+              dense
+              outlineColor="#F06292"
+              activeOutlineColor="#F06292"
+              disabled={spinning}
+            />
+            <Button
+              onPress={addMember}
+              mode="contained"
+              style={styles.addButton}
+              disabled={spinning || newName.trim() === ""}
+              icon="plus"
+            >
+              Thêm
+            </Button>
+          </View>
+
           {/* Danh sách thành viên có thể xóa */}
           {members.length > 0 && (
             <View style={styles.memberListContainer}>
@@ -314,14 +368,18 @@ export default function WhoIsNextMarriedScreen() {
             >
               Xáo trộn
             </Button>
-            <Button mode="outlined" onPress={resetWheel} style={styles.resetButton}>
+            <Button
+              mode="outlined"
+              onPress={resetWheel}
+              style={styles.resetButton}
+            >
               Làm mới
             </Button>
           </View>
         </View>
       )}
 
-      {/* Dialog kết quả */}
+      {/* (Dialog kết quả và Confetti không đổi) */}
       <Portal>
         <Dialog
           visible={dialogVisible}
@@ -338,7 +396,8 @@ export default function WhoIsNextMarriedScreen() {
             />
             <Text style={styles.dialogText}>{winner?.fullName}</Text>
             <Text style={styles.dialogSubText}>
-              <Heart color="#F06292" /> là người tiếp theo sẽ kết hôn! <Heart color="#F06292" />
+              <Heart color="#F06292" /> là người tiếp theo sẽ kết hôn!{" "}
+              <Heart color="#F06292" />
             </Text>
           </Dialog.Content>
           <Dialog.Actions style={styles.dialogActions}>
@@ -355,16 +414,14 @@ export default function WhoIsNextMarriedScreen() {
           </Dialog.Actions>
         </Dialog>
 
-        {/* Hiệu ứng hoa giấy */}
-        {/* Component này sẽ tự động bắn khi `dialogVisible` là true */}
         {dialogVisible && (
           <ConfettiCannon
-            count={200} // Số lượng hoa giấy
-            origin={{ x: width / 2, y: -20 }} // Bắn từ đỉnh, giữa màn hình
+            count={200}
+            origin={{ x: width / 2, y: -20 }}
             autoStart={true}
-            fadeOut={true} // Tự động mờ đi
-            explosionSpeed={300} // Tốc độ bắn
-            fallSpeed={3000} // Tốc độ rơi
+            fadeOut={true}
+            explosionSpeed={300}
+            fallSpeed={3000}
           />
         )}
       </Portal>
@@ -373,6 +430,7 @@ export default function WhoIsNextMarriedScreen() {
 }
 
 const styles = StyleSheet.create({
+  // ... (appbar styles)
   appbarHeader: {
     backgroundColor: "#FEF0F3",
     elevation: 0,
@@ -411,6 +469,24 @@ const styles = StyleSheet.create({
     marginTop: responsiveHeight(-150 - 16),
     zIndex: 10,
   },
+
+  // ✅ MỚI: Style cho khu vực thêm thành viên
+  addMemberContainer: {
+    flexDirection: "row",
+    width: "90%",
+    marginTop: 20,
+    gap: 10,
+    alignItems: "center",
+  },
+  textInput: {
+    flex: 1,
+  },
+  addButton: {
+    backgroundColor: "#F06292",
+    justifyContent: "center",
+  },
+
+  // ... (button styles)
   buttons: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -430,6 +506,7 @@ const styles = StyleSheet.create({
   resetButton: {
     flex: 1,
   },
+  // ... (congrats styles)
   congratsContainer: {
     alignItems: "center",
     justifyContent: "center",
@@ -451,12 +528,15 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontWeight: "600",
   },
+
+  // ✅ CHỈNH SỬA: Thay đổi marginTop
   memberListContainer: {
     width: "90%",
-    marginTop: responsiveHeight(30),
+    marginTop: responsiveHeight(20), // Giảm margin
     flexShrink: 1,
     flex: 1,
   },
+  // ... (list styles)
   listTitle: {
     fontSize: responsiveFont(14),
     fontFamily: "Montserrat-SemiBold",
@@ -495,6 +575,7 @@ const styles = StyleSheet.create({
     paddingLeft: responsiveWidth(10),
   },
 
+  // ... (dialog styles)
   dialogStyle: {
     borderRadius: 20,
   },
@@ -502,7 +583,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontFamily: "Montserrat-SemiBold",
     fontSize: responsiveFont(22),
-    color: "#F06292", // Màu chủ đạo
+    color: "#F06292",
     fontWeight: "700",
   },
   dialogContent: {
