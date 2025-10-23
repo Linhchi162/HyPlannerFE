@@ -1,4 +1,4 @@
-// screens/EditSectionScreen.tsx
+// screens/EditCoupleInfo.tsx
 
 import React, { useState, useEffect } from "react";
 import {
@@ -15,6 +15,8 @@ import {
   ActivityIndicator,
   ScrollView,
 } from "react-native";
+// 1. IMPORT PICKER
+import { Picker } from "@react-native-picker/picker";
 import { ChevronLeft, Plus, Trash2, Edit } from "lucide-react-native";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import {
@@ -27,6 +29,21 @@ import { useAppDispatch } from "../store/hooks";
 import { fetchUserInvitation } from "../store/invitationSlice";
 
 type EditCoupleInfoRouteProp = RouteProp<RootStackParamList, "EditCoupleInfo">;
+
+// 2. THÊM DANH SÁCH NGÂN HÀNG
+const VIETQR_BANKS = [
+  { name: "Chọn ngân hàng...", bin: "" },
+  { name: "MB Bank", bin: "970422" },
+  { name: "Vietcombank", bin: "970436" },
+  { name: "Techcombank", bin: "970407" },
+  { name: "Vietinbank", bin: "970415" },
+  { name: "BIDV", bin: "970418" },
+  { name: "Agribank", bin: "970405" },
+  { name: "VPBank", bin: "970432" },
+  { name: "ACB", bin: "970416" },
+  { name: "Sacombank", bin: "970403" },
+  { name: "TPBank", bin: "970423" },
+];
 
 export default function EditCoupleInfo() {
   const navigation = useNavigation();
@@ -71,31 +88,40 @@ export default function EditCoupleInfo() {
       case "youtubeVideo":
         setData(invitation.youtubeUrl || "");
         break;
+
+      // 3. THÊM CASE MỚI CHO BANK ACCOUNT
+      case "bankAccount":
+        setData({
+          bankBin: invitation.bankAccount?.bankBin || "",
+          accountNumber: invitation.bankAccount?.accountNumber || "",
+        });
+        break;
     }
   }, [invitation, sectionType]);
 
-  // --- SỬA LỖI GỬI DỮ LIỆU ALBUM: Cập nhật hàm này ---
   const handleSaveChanges = async () => {
     setIsLoading(true);
     let payload = {};
 
-    // Tạo payload một cách cẩn thận cho từng loại dữ liệu
     switch (sectionType) {
       case "coupleInfo":
         payload = data;
         break;
       case "album":
-        // Với album, payload chỉ đơn giản là mảng chuỗi
         payload = { album: data };
         break;
       case "loveStory":
       case "events":
-        // Với loveStory và events, chúng ta cần loại bỏ _id tạm thời
         const cleanData = data.map(({ _id, ...rest }: any) => rest);
         payload = { [sectionType]: cleanData };
         break;
       case "youtubeVideo":
         payload = { youtubeUrl: data };
+        break;
+
+      // 4. THÊM CASE MỚI CHO BANK ACCOUNT
+      case "bankAccount":
+        payload = { bankAccount: data };
         break;
     }
 
@@ -105,7 +131,6 @@ export default function EditCoupleInfo() {
       Alert.alert("Thành công", `Đã cập nhật mục "${title}"!`);
       navigation.goBack();
     } catch (error: any) {
-      // Lấy thông điệp lỗi từ response của server nếu có
       const errorMessage =
         error.response?.data?.message ||
         error.message ||
@@ -116,7 +141,7 @@ export default function EditCoupleInfo() {
     }
   };
 
-  // ... (Các hàm còn lại giữ nguyên như cũ)
+  // ... (Hàm openModalToAdd giữ nguyên)
   const openModalToAdd = () => {
     setIsEditing(false);
     let emptyItem = {};
@@ -138,6 +163,7 @@ export default function EditCoupleInfo() {
     setModalVisible(true);
   };
 
+  // ... (Hàm openModalToEdit giữ nguyên)
   const openModalToEdit = (item: any, index?: number) => {
     setIsEditing(true);
     if (sectionType === "album") {
@@ -148,6 +174,7 @@ export default function EditCoupleInfo() {
     setModalVisible(true);
   };
 
+  // ... (Hàm handleDeleteItem giữ nguyên)
   const handleDeleteItem = (identifier: string | number) => {
     Alert.alert("Xác nhận", "Bạn có chắc muốn xóa mục này?", [
       { text: "Hủy", style: "cancel" },
@@ -169,6 +196,7 @@ export default function EditCoupleInfo() {
     ]);
   };
 
+  // ... (Hàm handleSaveItemInModal giữ nguyên)
   const handleSaveItemInModal = () => {
     if (sectionType === "album") {
       if (!currentItem.url || !currentItem.url.trim()) {
@@ -311,6 +339,11 @@ export default function EditCoupleInfo() {
                   <Text>
                     {item.time} - {item.venue}
                   </Text>
+                  {item.embedMapUrl && (
+                    <Text style={{ fontSize: 12, color: "gray" }}>
+                      Có bản đồ nhúng
+                    </Text>
+                  )}
                 </View>
                 <View style={{ flexDirection: "row" }}>
                   <TouchableOpacity
@@ -335,13 +368,52 @@ export default function EditCoupleInfo() {
               style={styles.input}
               placeholder="https://www.youtube.com/watch?v=..."
               value={data}
-              onChangeText={setData} // Vì data chỉ là string, có thể gán trực tiếp
+              onChangeText={setData}
             />
             <Text style={styles.hintText}>
               Dán link video YouTube của bạn vào đây. Website sẽ tự động nhúng
               video vào trang.
             </Text>
           </View>
+        );
+
+      // 5. THÊM CASE MỚI ĐỂ RENDER FORM BANK
+      case "bankAccount":
+        return (
+          <ScrollView contentContainerStyle={styles.formContainer}>
+            <Text style={styles.label}>Ngân hàng thụ hưởng</Text>
+            <View style={styles.pickerContainer}>
+              <Picker
+                selectedValue={data.bankBin}
+                onValueChange={(itemValue) =>
+                  setData({ ...data, bankBin: itemValue })
+                }
+                style={styles.picker}
+              >
+                {VIETQR_BANKS.map((bank) => (
+                  <Picker.Item
+                    key={bank.bin}
+                    label={bank.name}
+                    value={bank.bin}
+                  />
+                ))}
+              </Picker>
+            </View>
+
+            <Text style={styles.label}>Số tài khoản</Text>
+            <TextInput
+              style={styles.input}
+              value={data.accountNumber}
+              onChangeText={(text) =>
+                setData({ ...data, accountNumber: text.trim() })
+              }
+              placeholder="Nhập số tài khoản"
+              keyboardType="numeric"
+            />
+            <Text style={styles.hintText}>
+              Mã QR VietQR sẽ được tạo tự động trên website của bạn.
+            </Text>
+          </ScrollView>
         );
 
       default:
@@ -491,12 +563,33 @@ export default function EditCoupleInfo() {
               />
               <TextInput
                 style={styles.input}
-                placeholder="Link Google Maps (tùy chọn)"
+                placeholder="Link Google Maps (Xem bản đồ)"
                 value={currentItem.mapLink}
                 onChangeText={(text) =>
                   setCurrentItem({ ...currentItem, mapLink: text })
                 }
               />
+              {/* --- THÊM INPUT MỚI CHO EMBED MAP URL --- */}
+              <TextInput
+                style={[
+                  styles.input,
+                  { height: 100, textAlignVertical: "top" },
+                ]} // Tăng chiều cao, cho phép nhiều dòng
+                placeholder="Dán toàn bộ mã HTML nhúng của Google Maps vào đây" // Placeholder mới
+                value={currentItem.embedMapUrl}
+                onChangeText={(text) =>
+                  setCurrentItem({ ...currentItem, embedMapUrl: text })
+                }
+                multiline={true} // Cho phép dán nhiều dòng
+                autoCapitalize="none"
+              />
+              <Text
+                style={[styles.hintText, { marginTop: -10, marginBottom: 10 }]}
+              >
+                Lên Google Maps &gt; Chia sẻ &gt; Nhúng bản đồ &gt; Sao chép
+                HTML &gt; Dán hết vào ô trên.
+              </Text>
+              {/* --- KẾT THÚC THÊM INPUT --- */}
               <TextInput
                 style={styles.input}
                 placeholder="URL ảnh minh họa (tùy chọn)"
@@ -590,9 +683,9 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     marginBottom: 15,
     fontSize: 16,
+    backgroundColor: "#fff", // Đảm bảo input có nền trắng
   },
   hintText: {
-    // <-- Thêm style này
     fontSize: 14,
     color: "#666",
     marginTop: -5,
@@ -650,4 +743,18 @@ const styles = StyleSheet.create({
     marginLeft: 10,
   },
   confirmButton: { backgroundColor: "#e07181" },
+
+  // 6. THÊM STYLE CHO PICKER
+  pickerContainer: {
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 5,
+    marginBottom: 15,
+    backgroundColor: "#FFFFFF", // Quan trọng trên iOS
+    justifyContent: "center",
+  },
+  picker: {
+    height: 60, // Cần thiết cho Android
+    width: "100%",
+  },
 });
