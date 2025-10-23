@@ -117,6 +117,7 @@ export type RootStackParamList = {
   BrideHeadscarf: undefined;
   GroomEngagementOutfit: undefined;
   GroomEngagementAccessories: undefined;
+  WhoIsNextMarried: {member: any[], creatorId?: string};
 };
 
 // Định nghĩa các màn hình trong Tab Navigator

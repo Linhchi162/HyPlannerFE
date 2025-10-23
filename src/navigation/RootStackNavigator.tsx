@@ -80,6 +80,7 @@ import BrideHeadscarfScreen from "../screens/BrideHeadscarfScreen";
 import GroomEngagementOutfitScreen from "../screens/GroomEngagementOutfitScreen";
 import GroomEngagementAccessoriesScreen from "../screens/GroomEngagementAccessoriesScreen";
 import EditPhaseScreen from "../screens/EditPhase/EditPhaseScreen";
+import WhoIsNextMarriedScreen from "src/screens/WhoIsNextMarriedScreen";
 
 const Stack = createStackNavigator<RootStackParamList>();
 
@@ -434,6 +435,12 @@ const RootStackNavigator = () => {
         <Stack.Screen
           name="GroomAccessoriesDecor"
           component={GroomAccessoriesDecorScreen}
+          options={{ headerShown: false }}
+        />
+        {/* Who is next married screen */}
+        <Stack.Screen
+          name="WhoIsNextMarried"
+          component={WhoIsNextMarriedScreen}
           options={{ headerShown: false }}
         />
       </Stack.Navigator>
