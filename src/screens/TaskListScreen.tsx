@@ -33,7 +33,11 @@ import { RootStackParamList } from "../navigation/AppNavigator";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "../store";
-import { createPhase, getPhases, insertSampleTasks } from "../service/phaseService";
+import {
+  createPhase,
+  getPhases,
+  insertSampleTasks,
+} from "../service/phaseService";
 import * as Clipboard from "expo-clipboard";
 import { deleteTask, markTaskCompleted } from "../service/taskService";
 import {
@@ -44,6 +48,7 @@ import Hashids from "hashids";
 import { selectCurrentUser } from "../store/authSlice";
 import SuccessDialog from "src/components/SuccessDialog";
 import ErrorDialog from "src/components/ErrorDialog";
+import { MixpanelService } from "../service/mixpanelService";
 
 type ListFooterProps = {
   modalVisible: boolean;
@@ -105,7 +110,12 @@ const ListFooter = memo(
         </TouchableOpacity>
         {phases && phases.length > 0 && (
           <TouchableOpacity
-            onPress={() => navigation.navigate("EditPhaseScreen", { eventId: eventId || "", createdAt: createdAt?.toISOString() })}
+            onPress={() =>
+              navigation.navigate("EditPhaseScreen", {
+                eventId: eventId || "",
+                createdAt: createdAt?.toISOString(),
+              })
+            }
             style={styles.addStageButton}
           >
             <View
@@ -116,7 +126,9 @@ const ListFooter = memo(
               }}
             >
               <Feather name="edit" size={20} />
-              <Text style={styles.addStageButtonLabel}>Chỉnh sửa giai đoạn</Text>
+              <Text style={styles.addStageButtonLabel}>
+                Chỉnh sửa giai đoạn
+              </Text>
             </View>
           </TouchableOpacity>
         )}
@@ -242,6 +254,11 @@ export default function TaskListScreen() {
   const [errorDialogVisible, setErrorDialogVisible] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const dispatch = useDispatch<AppDispatch>();
+
+  useEffect(() => {
+    MixpanelService.track("Viewed Task List");
+  }, []);
+
   const phases = useSelector(
     (state: RootState) => state.phases.getPhases.phases
   );
@@ -363,14 +380,22 @@ export default function TaskListScreen() {
   // Xử lý sự kiện chọn công việc
   const handleTaskToggle = async (taskId: string) => {
     let currentCompleted = false;
+    let taskName = "";
     for (const stage of stages) {
       const found = stage.tasks.find((task: any) => task.id === taskId);
       if (found) {
         currentCompleted = found.completed;
+        taskName = found.text;
         break;
       }
     }
     await markTaskCompleted(taskId, !currentCompleted, dispatch);
+    if (!currentCompleted) {
+      MixpanelService.track("Completed Task", {
+        "Task Name": taskName,
+        "Task ID": taskId,
+      });
+    }
     await getPhases(eventId, dispatch);
   };
 
@@ -386,6 +411,14 @@ export default function TaskListScreen() {
         },
         dispatch
       );
+
+      MixpanelService.track("Created Checklist", {
+        "Checklist Name": `Phase ${phases.length + 1}`, // Tên chung
+        "Start Date": startDate.toISOString(),
+        "End Date": endDate.toISOString(),
+        Method: "Manual", // Tạo thủ công
+      });
+
       setModalVisible(false);
       setStartDate(undefined);
       setEndDate(undefined);
@@ -398,8 +431,9 @@ export default function TaskListScreen() {
     }
   };
   const eventCreatedDate = new Date(
-    useSelector((state: RootState) =>
-      state.weddingEvent.getWeddingEvent.weddingEvent.createdAt || new Date()
+    useSelector(
+      (state: RootState) =>
+        state.weddingEvent.getWeddingEvent.weddingEvent.createdAt || new Date()
     )
   );
   // Xử lý chèn checklist mẫu
@@ -408,11 +442,20 @@ export default function TaskListScreen() {
       setIsInsertingTasks(true);
       // Lấy ngày tạo event từ Redux store
       // Gọi API để insert sample tasks với ngày tạo event
-      const result = await insertSampleTasks(eventId, userId, eventCreatedDate, dispatch);
+      const result = await insertSampleTasks(
+        eventId,
+        userId,
+        eventCreatedDate,
+        dispatch
+      );
 
       if (result.hasData) {
         alert("Sự kiện này đã có dữ liệu checklist rồi!");
       } else {
+        MixpanelService.track("Created Checklist", {
+          "Checklist Name": "Sample Checklist",
+          Method: "Template", // Tạo từ mẫu
+        });
         await getPhases(eventId, dispatch);
         // alert("Đã thêm checklist mẫu thành công!");
         // console.log("Đã thêm checklist mẫu thành công!");
@@ -442,6 +485,20 @@ export default function TaskListScreen() {
     const handleConfirmDelete = async () => {
       if (selectedTaskId) {
         setActionLoading(true);
+        let taskName = "Unknown";
+        for (const stage of stages) {
+          const found = stage.tasks.find(
+            (task: any) => task.id === selectedTaskId
+          );
+          if (found) {
+            taskName = found.text;
+            break;
+          }
+        }
+        MixpanelService.track("Deleted Task", {
+          "Task ID": selectedTaskId,
+          "Task Name": taskName,
+        });
         await deleteTask(selectedTaskId, dispatch);
         await getPhases(eventId, dispatch);
         setActionLoading(false);
@@ -498,6 +555,11 @@ export default function TaskListScreen() {
   const renderTaskItem = (data: any, rowMap: any, stageId: string) => {
     const task = data.item;
     const handleTaskDetail = (task: any) => {
+      MixpanelService.track("Viewed Task Details", {
+        "Task ID": task.id,
+        "Task Name": task.text,
+        Completed: task.completed,
+      });
       setSelectedTask(task); // Lưu task được chọn
       setTaskDetailModalVisible(true); // Hiển thị modal
     };
@@ -680,12 +742,16 @@ export default function TaskListScreen() {
         />
         <TouchableOpacity
           style={{ backgroundColor: "#FFF" }}
-          onPress={() =>
+          onPress={() => {
+            MixpanelService.track("Clicked Add Task Button", {
+              "Phase ID": stage.id,
+              "Phase Name": stage.title,
+            });
             navigation.navigate("AddTask", {
               phaseId: stage.id,
               eventId: eventId,
-            })
-          }
+            });
+          }}
         >
           <View style={styles.addTaskButton}>
             <Entypo name="plus" size={24} />
@@ -695,7 +761,10 @@ export default function TaskListScreen() {
       </List.Accordion>
     </View>
   );
-  const PhaseEmpty = (isInsertingTasks: boolean, handleInsertSampleTasks: () => void) => {
+  const PhaseEmpty = (
+    isInsertingTasks: boolean,
+    handleInsertSampleTasks: () => void
+  ) => {
     return (
       <View style={styles.phaseEmptyContainer}>
         <Image
@@ -708,14 +777,35 @@ export default function TaskListScreen() {
         </Text>
         {/* just for creator */}
         {userId === creatorId && (
-          <View style={{ borderWidth: 1, borderColor: "#ddd", padding: 16, borderRadius: 8, borderStyle: "dashed" }}>
+          <View
+            style={{
+              borderWidth: 1,
+              borderColor: "#ddd",
+              padding: 16,
+              borderRadius: 8,
+              borderStyle: "dashed",
+            }}
+          >
             <Text>Hoặc bạn có thể sử dụng checklist của chúng tôi</Text>
             <TouchableOpacity
-              style={{ borderRadius: 8, borderWidth: 1, marginTop: 10, padding: 8, backgroundColor: isInsertingTasks ? "#ddd" : "#FEF0F3", borderColor: "#D95D74" }}
+              style={{
+                borderRadius: 8,
+                borderWidth: 1,
+                marginTop: 10,
+                padding: 8,
+                backgroundColor: isInsertingTasks ? "#ddd" : "#FEF0F3",
+                borderColor: "#D95D74",
+              }}
               onPress={handleInsertSampleTasks}
               disabled={isInsertingTasks}
             >
-              <View style={{ alignSelf: "center", flexDirection: "row", alignItems: "center" }}>
+              <View
+                style={{
+                  alignSelf: "center",
+                  flexDirection: "row",
+                  alignItems: "center",
+                }}
+              >
                 {isInsertingTasks ? (
                   <ActivityIndicator size={24} color="#D95D74" />
                 ) : (
@@ -760,7 +850,10 @@ export default function TaskListScreen() {
     const inviteCode = hashids.encodeHex(eventId);
     const copyToClipboard = async () => {
       await Clipboard.setStringAsync(inviteCode);
-      // alert('Đã sao chép link mời vào clipboard!');
+      MixpanelService.track("Invited Partner", {
+        Method: "Copy Code",
+        "Invite Code": inviteCode,
+      });
     };
     return (
       <Modal
@@ -916,7 +1009,10 @@ export default function TaskListScreen() {
             />
           }
           contentContainerStyle={styles.contentContainer}
-          ListEmptyComponent={PhaseEmpty(isInsertingTasks, handleInsertSampleTasks)}
+          ListEmptyComponent={PhaseEmpty(
+            isInsertingTasks,
+            handleInsertSampleTasks
+          )}
         />
       )}
       <SuccessDialog

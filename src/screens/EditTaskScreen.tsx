@@ -7,16 +7,33 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { Appbar, Avatar, Icon, IconButton, List, TextInput } from "react-native-paper";
+import {
+  Appbar,
+  Avatar,
+  Icon,
+  IconButton,
+  List,
+  TextInput,
+} from "react-native-paper";
 import { Entypo, FontAwesome5 } from "@expo/vector-icons";
-import { responsiveFont, responsiveHeight, responsiveWidth } from "../../assets/styles/utils/responsive";
-import { NavigationProp, RouteProp, useNavigation, useRoute } from "@react-navigation/native";
+import {
+  responsiveFont,
+  responsiveHeight,
+  responsiveWidth,
+} from "../../assets/styles/utils/responsive";
+import {
+  NavigationProp,
+  RouteProp,
+  useNavigation,
+  useRoute,
+} from "@react-navigation/native";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "../store";
 import { editTask, getTasks } from "../service/taskService";
 import { getPhases } from "../service/phaseService";
 import { Member } from "../store/weddingEventSlice";
 import { RootStackParamList } from "../navigation/AppNavigator";
+import { MixpanelService } from "../service/mixpanelService";
 
 type CreateTaskAppbarProps = {
   onBack: () => void;
@@ -24,25 +41,39 @@ type CreateTaskAppbarProps = {
   loading?: boolean;
 };
 
-const CreateTaskAppbar = React.memo(({ onBack, onCheck, loading }: CreateTaskAppbarProps) => (
-  <Appbar.Header style={styles.appbarHeader}>
-    <TouchableOpacity onPress={onBack} style={{ padding: 8, marginRight: 8 }}>
-      <Entypo name="chevron-left" size={24} color="#000000" />
-    </TouchableOpacity>
-    <Appbar.Content title="Chỉnh sửa công việc" titleStyle={styles.appbarTitle} />
-    <TouchableOpacity onPress={onCheck} disabled={loading} style={{ padding: 8, marginRight: 8 }}>
-      {loading ? (
-        <ActivityIndicator size={24} color="#D95D74" />
-      ) : (
-        <Entypo name="check" size={24} color="#000000" />
-      )}
-    </TouchableOpacity>
-  </Appbar.Header>
-));
+const CreateTaskAppbar = React.memo(
+  ({ onBack, onCheck, loading }: CreateTaskAppbarProps) => (
+    <Appbar.Header style={styles.appbarHeader}>
+      <TouchableOpacity onPress={onBack} style={{ padding: 8, marginRight: 8 }}>
+        <Entypo name="chevron-left" size={24} color="#000000" />
+      </TouchableOpacity>
+      <Appbar.Content
+        title="Chỉnh sửa công việc"
+        titleStyle={styles.appbarTitle}
+      />
+      <TouchableOpacity
+        onPress={onCheck}
+        disabled={loading}
+        style={{ padding: 8, marginRight: 8 }}
+      >
+        {loading ? (
+          <ActivityIndicator size={24} color="#D95D74" />
+        ) : (
+          <Entypo name="check" size={24} color="#000000" />
+        )}
+      </TouchableOpacity>
+    </Appbar.Header>
+  )
+);
 
 export const EmptyMemberComponent = () => (
   <View style={styles.emptyMemberContainer}>
-    <FontAwesome5 name="user-friends" size={36} color="#F9CBD6" style={{ marginBottom: 8 }} />
+    <FontAwesome5
+      name="user-friends"
+      size={36}
+      color="#F9CBD6"
+      style={{ marginBottom: 8 }}
+    />
     <Text style={styles.emptyMemberText}>Không có thành viên nào.</Text>
   </View>
 );
@@ -55,11 +86,13 @@ export default function EditTaskScreen() {
   const { taskId } = route.params;
   const dispatch = useDispatch<AppDispatch>();
   const task = useSelector((state: RootState) => state.tasks.getTaskInfo.task);
-  const memberInTask = useSelector((state: RootState) => state.tasks.getTaskInfo.task?.member) || [];
+  const memberInTask =
+    useSelector((state: RootState) => state.tasks.getTaskInfo.task?.member) ||
+    [];
   // const [expectedBudget, setExpectedBudget] = useState<number | null>(null); // Giá trị ban đầu là null
   // const [actualBudget, setActualBudget] = useState<number | null>(null);
   // const [budgetError, setBudgetError] = useState<string>("");
-  const [taskNameError, setTaskNameError] = useState('');
+  const [taskNameError, setTaskNameError] = useState("");
   const [members, setMembers] = useState<Member[]>(memberInTask);
   // const eventId = "68c29283931d7e65bd3ad689"; // Fix cứng tạm thời
   const { eventId } = route.params;
@@ -67,7 +100,8 @@ export default function EditTaskScreen() {
   const [actionLoading, setActionLoading] = useState(false);
   // const userId = "6892b8a2aa0f1640e5c173f2"; //fix cứng tạm thời
   // const creatorId = useSelector((state: RootState) => state.weddingEvent.getWeddingEvent.weddingEvent.creatorId);
-  useEffect(() => { // fix lỗi ERROR  Warning: Maximum update depth exceeded. This can happen when a component calls setState inside useEffect, but useEffect either doesn't have a dependency array, or one of the dependencies changes on every render.
+  useEffect(() => {
+    // fix lỗi ERROR  Warning: Maximum update depth exceeded. This can happen when a component calls setState inside useEffect, but useEffect either doesn't have a dependency array, or one of the dependencies changes on every render.
     // So sánh mảng cũ và mới, chỉ set nếu khác
     if (
       members.length !== memberInTask.length ||
@@ -83,6 +117,7 @@ export default function EditTaskScreen() {
       setLoadingTask(true);
       try {
         await getTasks(taskId, dispatch);
+        MixpanelService.track("Viewed Edit Task Screen", { "Task ID": taskId });
       } catch (error) {
         console.error("Error fetching task:", error);
       } finally {
@@ -103,22 +138,27 @@ export default function EditTaskScreen() {
 
   const handleSave = async () => {
     try {
-      if (taskName.trim() === '') {
-        setTaskNameError('Tên công việc không được để trống');
+      if (taskName.trim() === "") {
+        setTaskNameError("Tên công việc không được để trống");
         return;
-      } setTaskNameError('');
+      }
+      setTaskNameError("");
       setActionLoading(true);
-      await editTask(
-        taskId,
-        {
-          taskName,
-          taskNote: notes,
-          member: members.map(m => m._id),
-          // expectedBudget: expectedBudget === null ? 0 : expectedBudget,
-          // actualBudget: actualBudget === null ? 0 : actualBudget,
-        },
-        dispatch
-      );
+
+      const taskData = {
+        taskName,
+        taskNote: notes,
+        member: members.map((m) => m._id),
+      };
+
+      await editTask(taskId, taskData, dispatch);
+
+      MixpanelService.track("Edited Task", {
+        "Task ID": taskId,
+        "Task Name": taskData.taskName,
+        "Has Note": taskData.taskNote.trim().length > 0,
+        "Assignee Count": taskData.member.length,
+      });
       await getPhases(eventId, dispatch);
       setActionLoading(false);
       navigation.goBack();
@@ -131,7 +171,11 @@ export default function EditTaskScreen() {
   };
   return (
     <View style={styles.safeArea}>
-      <CreateTaskAppbar onBack={navigation.goBack} onCheck={handleSave} loading={actionLoading} />
+      <CreateTaskAppbar
+        onBack={navigation.goBack}
+        onCheck={handleSave}
+        loading={actionLoading}
+      />
       {loadingTask ? (
         <ActivityIndicator size="large" color="#D95D74" />
       ) : (
@@ -162,7 +206,9 @@ export default function EditTaskScreen() {
                   }}
                 />
                 {taskNameError && (
-                  <Text style={{ color: 'red', marginTop: 4, marginLeft: 4 }}>{taskNameError}</Text>
+                  <Text style={{ color: "red", marginTop: 4, marginLeft: 4 }}>
+                    {taskNameError}
+                  </Text>
                 )}
               </View>
 
@@ -192,7 +238,12 @@ export default function EditTaskScreen() {
 
               {/* Thành viên đảm nhận */}
               <View style={styles.section}>
-                <View style={[styles.sectionHeader, { justifyContent: "space-between" }]}>
+                <View
+                  style={[
+                    styles.sectionHeader,
+                    { justifyContent: "space-between" },
+                  ]}
+                >
                   <View style={{ flexDirection: "row", alignItems: "center" }}>
                     <Icon source="account-group" color="#F9CBD6" size={24} />
                     <Text style={styles.sectionTitle}>Thành viên đảm nhận</Text>
@@ -225,7 +276,12 @@ export default function EditTaskScreen() {
                         description={member.email}
                         titleStyle={styles.memberTitle}
                         descriptionStyle={styles.memberDescription}
-                        left={() => <Avatar.Image size={48} source={{ uri: member.picture }} />}
+                        left={() => (
+                          <Avatar.Image
+                            size={48}
+                            source={{ uri: member.picture }}
+                          />
+                        )}
                       />
                     </View>
                   )}
@@ -242,17 +298,17 @@ export default function EditTaskScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
   },
   appbarHeader: {
-    backgroundColor: '#FEF0F3',
+    backgroundColor: "#FEF0F3",
   },
   appbarTitle: {
-    color: '#333',
-    fontFamily: 'Montserrat-SemiBold',
+    color: "#333",
+    fontFamily: "Montserrat-SemiBold",
     fontSize: responsiveFont(16),
-    fontWeight: '700',
-    textAlign: 'center',
+    fontWeight: "700",
+    textAlign: "center",
   },
   scrollView: {
     flex: 1,
@@ -265,65 +321,65 @@ const styles = StyleSheet.create({
     marginBottom: responsiveHeight(24),
   },
   sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: responsiveHeight(12),
   },
   sectionTitle: {
-    fontFamily: 'Montserrat-SemiBold',
+    fontFamily: "Montserrat-SemiBold",
     fontSize: responsiveFont(13),
-    color: '#831843',
+    color: "#831843",
     marginLeft: 8,
   },
   textInput: {
-    backgroundColor: '#FFFFFF',
-    fontFamily: 'Montserrat-Regular',
+    backgroundColor: "#FFFFFF",
+    fontFamily: "Montserrat-Regular",
   },
   textArea: {
-    textAlignVertical: 'top',
+    textAlignVertical: "top",
     height: responsiveHeight(150),
   },
   textInputOutline: {
     borderRadius: 12,
-    borderColor: '#F9E2E7',
+    borderColor: "#F9E2E7",
   },
   memberContainer: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderRadius: 12,
     paddingHorizontal: responsiveWidth(10),
     elevation: 2,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     borderWidth: 1,
-    borderColor: '#F9E2E7',
+    borderColor: "#F9E2E7",
     marginBottom: responsiveHeight(10),
   },
   memberTitle: {
-    fontFamily: 'Montserrat-SemiBold',
+    fontFamily: "Montserrat-SemiBold",
     fontSize: responsiveFont(13),
-    color: '#333333',
+    color: "#333333",
   },
   memberDescription: {
-    fontFamily: 'Montserrat-Regular',
+    fontFamily: "Montserrat-Regular",
     fontSize: responsiveFont(10),
-    color: '#6B7280',
+    color: "#6B7280",
   },
   memberListScroll: {
     maxHeight: responsiveHeight(300),
   },
   emptyMemberContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: responsiveHeight(32),
     borderRadius: 12,
     marginVertical: responsiveHeight(45),
   },
   emptyMemberText: {
     marginTop: 4,
-    color: '#B0B0B0',
+    color: "#B0B0B0",
     fontSize: responsiveFont(13),
-    fontFamily: 'Montserrat-SemiBold',
+    fontFamily: "Montserrat-SemiBold",
   },
 });

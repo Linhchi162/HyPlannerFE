@@ -21,6 +21,7 @@ import { AntDesign, FontAwesome } from "@expo/vector-icons";
 import Checkbox from "expo-checkbox";
 import { useDispatch } from "react-redux";
 import { setCredentials } from "../store/authSlice";
+import { MixpanelService } from "../service/mixpanelService";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -64,6 +65,14 @@ const LoginScreen = () => {
 
           dispatch(setCredentials({ user, token }));
 
+          const userId = user.id || user._id;
+          MixpanelService.identify(userId);
+          MixpanelService.setUser({
+            fullName: user.fullName,
+            email: user.email,
+          });
+          MixpanelService.track("Logged In", { Method: "Google" });
+
           // SỬA LẠI NAVIGATION: Không truyền params
           navigation.reset({
             index: 0,
@@ -102,12 +111,22 @@ const LoginScreen = () => {
       });
       const { token, user: originalUser } = response.data as {
         token: string;
-        user: { name: string; [key: string]: any };
+        user: { name: string; id: string; email: string; [key: string]: any };
       };
       const { name, ...restOfUser } = originalUser;
-      const updatedUser = { ...restOfUser, fullName: name };
+      const updatedUser = {
+        ...restOfUser,
+        fullName: name || originalUser.email,
+      };
 
       dispatch(setCredentials({ user: updatedUser, token }));
+
+      MixpanelService.identify(updatedUser.id);
+      MixpanelService.setUser({
+        fullName: updatedUser.fullName,
+        email: updatedUser.email,
+      });
+      MixpanelService.track("Logged In", { Method: "Facebook" });
 
       // SỬA LẠI NAVIGATION: Không truyền params
       navigation.reset({
@@ -146,6 +165,12 @@ const LoginScreen = () => {
       await AsyncStorage.setItem("appToken", token);
 
       dispatch(setCredentials({ user, token }));
+
+      const userId = user.id || user._id;
+      MixpanelService.identify(userId);
+      MixpanelService.setUser({ fullName: user.fullName, email: user.email });
+      MixpanelService.track("Logged In", { Method: "Email" });
+
       navigation.reset({
         index: 0,
         routes: [{ name: "InviteOrCreate" }],

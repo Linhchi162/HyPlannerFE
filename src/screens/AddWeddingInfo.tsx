@@ -27,6 +27,7 @@ import { createWeddingEvent } from "../service/weddingEventService";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "../store";
 import { selectCurrentUser } from "../store/authSlice";
+import { MixpanelService } from "../service/mixpanelService";
 
 interface AddWeddingAppBarProps {
   onBack: () => void;
@@ -96,6 +97,20 @@ export default function AddWeddingInfo() {
         },
         dispatch
       );
+
+      const weddingDateISO = date ? date.toISOString() : "";
+
+      MixpanelService.track("Set Wedding Date", {
+        "Wedding Date": weddingDateISO,
+        Budget: budget,
+        "Bride Name": brideName,
+        "Groom Name": groomName,
+      });
+      // 2. Cập nhật 'Wedding Date' vào hồ sơ Mixpanel của user này
+      MixpanelService.setPersonProperties({
+        "Wedding Date": weddingDateISO,
+      });
+
       navigation.reset({
         index: 0,
         routes: [{ name: "Main" }], // Điều hướng đến 'Main', tự động hiển thị tab Home

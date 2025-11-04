@@ -25,6 +25,7 @@ import apiClient from "../api/client";
 import { useAppDispatch } from "../store/hooks";
 import { fetchUserInvitation } from "../store/invitationSlice";
 import { RootStackParamList } from "src/navigation/AppNavigator";
+import { MixpanelService } from "../service/mixpanelService";
 
 export default function UpgradeAccountScreen() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
@@ -47,6 +48,9 @@ export default function UpgradeAccountScreen() {
         setIsLoadingStatus(true);
         const response = await apiClient.get("/auth/status");
         setCurrentUserAccountType(response.data.accountType);
+        MixpanelService.track("Viewed Upgrade Screen", {
+          "Current Account Type": response.data.accountType,
+        });
       } catch (error) {
         console.error("Không thể lấy trạng thái tài khoản:", error);
         Alert.alert("Lỗi", "Không thể tải thông tin tài khoản của bạn.");
@@ -71,11 +75,19 @@ export default function UpgradeAccountScreen() {
         if (status === "paid" || status === "success") {
           dispatch(fetchUserInvitation());
           setShowSuccessOverlay(true);
+          MixpanelService.track("Viewed Payment Success Screen", {
+            "Order Code": orderCode,
+            Status: status,
+          });
           // Cập nhật lại trạng thái tài khoản ngay trên UI sau khi thanh toán thành công
           setCurrentUserAccountType(activeUpgradeTab);
           setTimeout(() => setShowSuccessOverlay(false), 3000);
         } else if (status === "cancelled") {
           Alert.alert("Thông báo", "Giao dịch đã bị hủy.");
+          MixpanelService.track("Cancelled Payment", {
+            "Order Code": orderCode,
+            Method: "Redirect", // Hủy bằng cách quay lại từ PayOS
+          });
           if (orderCode) {
             apiClient.post("/payments/cancel-order", { orderCode });
           }
@@ -87,19 +99,26 @@ export default function UpgradeAccountScreen() {
   const handleUpgrade = async (packageType: string) => {
     setIsProcessing(true);
     let orderDetails = {};
+    let price = 0;
     if (packageType === "VIP") {
+      price = 39000;
       orderDetails = {
         description: "Nang cap VIP HyPlanner",
-        price: 99000,
+        price: price,
         packageType: "VIP",
       };
     } else if (packageType === "SUPER") {
+      price = 110000;
       orderDetails = {
         description: "Nang cap SUPER HyPlanner",
-        price: 149000,
+        price: price,
         packageType: "SUPER",
       };
     }
+    MixpanelService.track("Initiated Payment", {
+      "Package Type": packageType,
+      Amount: price,
+    });
     try {
       const response = await apiClient.post(
         "/payments/create-link",
@@ -124,11 +143,11 @@ export default function UpgradeAccountScreen() {
     {
       label: "Giá",
       free: "Miễn phí",
-      vip: "99.000 đ",
-      super: "149.000 đ",
+      vip: "39.000 đ",
+      super: "110.000 đ",
       isPrice: true,
-      oldVipPrice: "199.000 đ",
-      oldSuperPrice: "299.000 đ",
+      oldVipPrice: "49.000 đ",
+      oldSuperPrice: "139.000 đ",
     },
     {
       label: "Giới hạn checklist",
@@ -236,7 +255,12 @@ export default function UpgradeAccountScreen() {
             activeUpgradeTab === "VIP" && styles.activeUpgradeTabButton,
             isVipTabDisabled && styles.buttonDisabled,
           ]}
-          onPress={() => setActiveUpgradeTab("VIP")}
+          onPress={() => {
+            setActiveUpgradeTab("VIP");
+            MixpanelService.track("Switched Upgrade Tab", {
+              "Tab Selected": "VIP",
+            });
+          }}
           disabled={isVipTabDisabled}
         >
           <Crown
@@ -259,7 +283,12 @@ export default function UpgradeAccountScreen() {
             activeUpgradeTab === "SUPER" && styles.activeUpgradeTabButton,
             isSuperTabDisabled && styles.buttonDisabled,
           ]}
-          onPress={() => setActiveUpgradeTab("SUPER")}
+          onPress={() => {
+            setActiveUpgradeTab("SUPER");
+            MixpanelService.track("Switched Upgrade Tab", {
+              "Tab Selected": "SUPER",
+            });
+          }}
           disabled={isSuperTabDisabled}
         >
           <Sparkles
