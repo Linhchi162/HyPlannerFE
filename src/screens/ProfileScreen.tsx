@@ -33,6 +33,7 @@ import type { StackNavigationProp } from "@react-navigation/stack";
 import { getMyFeedback } from "src/service/feedbackService";
 import FeedbackModal from "./FeedbackModal";
 import { resetFeedback } from "src/store/feedbackSlice";
+import { MixpanelService } from "../service/mixpanelService";
 // ------------------------------------
 
 const COLORS = {
@@ -89,8 +90,10 @@ const ProfileScreen = () => {
   // ----- BƯỚC 3: CẬP NHẬT HÀM LOGOUT -----
   const handleLogout = async () => {
     // Xóa state trong bộ nhớ Redux
+    MixpanelService.track("User Logged Out");
+    MixpanelService.reset();
     dispatch(logout());
-    dispatch(resetFeedback())
+    dispatch(resetFeedback());
     // Yêu cầu redux-persist xóa state đã lưu trong AsyncStorage
     await persistor.purge();
 
@@ -105,9 +108,12 @@ const ProfileScreen = () => {
   const userId = user?.id || user?._id;
 
   // -------------------------Lấy feedback từ Redux store------------
-  const feedback = useAppSelector((state) => state.feedback.getFeedback.feedback);
+  const feedback = useAppSelector(
+    (state) => state.feedback.getFeedback.feedback
+  );
   // ----- GỌI getMyFeedback KHI COMPONENT MỞ -----
   useEffect(() => {
+    MixpanelService.track("Viewed Profile Screen");
     if (userId) {
       getMyFeedback(userId, dispatch);
     }
@@ -125,7 +131,6 @@ const ProfileScreen = () => {
       </View>
     );
   }
-
 
   return (
     <SafeAreaView style={styles.safeArea}>

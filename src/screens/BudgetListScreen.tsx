@@ -51,6 +51,7 @@ import { deleteActivity } from "../service/activityService";
 import { selectCurrentUser } from "../store/authSlice";
 import SuccessDialog from "src/components/SuccessDialog";
 import ErrorDialog from "src/components/ErrorDialog";
+import { MixpanelService } from "../service/mixpanelService";
 
 type ListFooterProps = {
   modalVisible: boolean;
@@ -165,6 +166,9 @@ export default function BudgetListScreen() {
   const [errorMessage, setErrorMessage] = useState("");
 
   const dispatch = useDispatch<AppDispatch>();
+  useEffect(() => {
+    MixpanelService.track("Viewed Budget List");
+  }, []);
   const groupActivities = useSelector(
     (state: RootState) =>
       state.groupActivities.getGroupActivities.groupActivities
@@ -300,6 +304,10 @@ export default function BudgetListScreen() {
     try {
       setActionLoading(true);
       await createGroupActivity(eventId, groupName, dispatch);
+      MixpanelService.track("Created Budget Group", {
+        "Group Name": groupName,
+        Method: "Manual",
+      });
       setModalVisible(false);
       setGroupName("");
       // Sau khi tạo thành công, tự động reload danh sách phases
@@ -323,6 +331,10 @@ export default function BudgetListScreen() {
         setSuccessMessage("Sự kiện này đã có dữ liệu ngân sách rồi!");
         setSuccessDialogVisible(true);
       } else {
+        MixpanelService.track("Created Budget Group", {
+          "Group Name": "Sample Budget",
+          Method: "Template",
+        });
         await getGroupActivities(eventId, dispatch);
         // alert("Đã thêm checklist mẫu thành công!");
         // console.log("Đã thêm checklist mẫu thành công!");
@@ -346,6 +358,9 @@ export default function BudgetListScreen() {
     const handleConfirmDelete = async () => {
       if (selectedTaskId) {
         setActionLoading(true);
+        MixpanelService.track("Deleted Budget Item", {
+          "Budget ID": selectedTaskId,
+        });
         await deleteActivity(selectedTaskId, dispatch);
         await getGroupActivities(eventId, dispatch);
         setConfirmVisible(false);
@@ -402,6 +417,13 @@ export default function BudgetListScreen() {
   const renderTaskItem = (data: any, rowMap: any, stageId: string) => {
     const task = data.item;
     const handleTaskDetail = (task: any) => {
+      MixpanelService.track("Viewed Budget Details", {
+        "Budget ID": task.id,
+        "Budget Name": task.text,
+        "Expected Amount": task.expectedBudget,
+        "Actual Amount": task.actualBudget,
+        Payer: task.payer,
+      });
       setSelectedTask(task); // Lưu task được chọn
       setTaskDetailModalVisible(true); // Hiển thị modal
     };
@@ -560,12 +582,16 @@ export default function BudgetListScreen() {
         />
         <TouchableOpacity
           style={{ backgroundColor: "#FFF" }}
-          onPress={() =>
+          onPress={() => {
+            MixpanelService.track("Clicked Add Budget Button", {
+              "Group ID": stage.id,
+              "Group Name": stage.title,
+            });
             navigation.navigate("AddBudget", {
               groupActivityId: stage.id,
               eventId: eventId,
-            })
-          }
+            });
+          }}
         >
           <View style={styles.addTaskButton}>
             <Entypo name="plus" size={24} />

@@ -18,10 +18,18 @@ import { selectCurrentUser } from "../store/authSlice";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { useNavigation } from "@react-navigation/native";
 import { RootStackParamList } from "../navigation/types"; // Đảm bảo đường dẫn này đúng
-import { ChevronRight, List, Shirt, Mail, Wallet, LifeBuoy } from "lucide-react-native";
+import {
+  ChevronRight,
+  List,
+  Shirt,
+  Mail,
+  Wallet,
+  LifeBuoy,
+} from "lucide-react-native";
 import { getWeddingEvent } from "../service/weddingEventService";
 import { AppDispatch, RootState } from "../store";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { MixpanelService } from "../service/mixpanelService";
 
 import {
   responsiveWidth,
@@ -67,6 +75,10 @@ const HomeScreen = () => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const dispatch = useDispatch<AppDispatch>();
+
+  useEffect(() => {
+    MixpanelService.track("Viewed Dashboard");
+  }, []);
 
   useEffect(() => {
     const fetchWeddingInfo = async () => {
@@ -268,15 +280,24 @@ const HomeScreen = () => {
           {(user?.id || user?._id) === weddingEvent.creatorId && (
             <TouchableOpacity
               style={styles.menuItem}
-              onPress={() => navigation.navigate("WhoIsNextMarried", { member, creatorId: weddingEvent.creatorId })}
+              onPress={() =>
+                navigation.navigate("WhoIsNextMarried", {
+                  member,
+                  creatorId: weddingEvent.creatorId,
+                })
+              }
             >
               <View style={styles.menuItemLeft}>
                 <View style={styles.menuIcon}>
                   <LifeBuoy size={16} color="white" />
                 </View>
                 <View style={styles.menuTextContainer}>
-                  <Text style={styles.menuTitle}>Ai là người tiếp theo kết hôn?</Text>
-                  <Text style={styles.menuSubtitle}>Xem ai là người tiếp theo</Text>
+                  <Text style={styles.menuTitle}>
+                    Ai là người tiếp theo kết hôn?
+                  </Text>
+                  <Text style={styles.menuSubtitle}>
+                    Xem ai là người tiếp theo
+                  </Text>
                 </View>
               </View>
               <ChevronRight size={20} color="#9ca3af" />
