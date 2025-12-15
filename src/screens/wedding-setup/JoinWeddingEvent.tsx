@@ -18,9 +18,10 @@ import {
 import { useState } from "react";
 import { NavigationProp, useNavigation } from "@react-navigation/native";
 import { joinWeddingEvent } from "../../service/weddingEventService";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "../../store";
 import type { RootStackParamList } from "../../navigation/types";
+import { selectCurrentUser } from "../../store/authSlice";
 
 interface JoinWeddingAppBarProps {
   onBack: () => void;
@@ -44,12 +45,27 @@ export default function JoinWeddingEvent() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const dispatch = useDispatch<AppDispatch>();
 
-  const userId = "68958dd1b6d033a5f26fb42d"; // Thay thế bằng userId thực tế của bạn
+  // Lấy userId từ Redux store
+  const user = useSelector(selectCurrentUser);
+  const userId = user?.id || user?._id;
+
   const handleJoinEvent = async () => {
     setShowConfirm(false);
+
+    if (!userId) {
+      setError("Không tìm thấy thông tin người dùng. Vui lòng đăng nhập lại.");
+      setShowError(true);
+      return;
+    }
+
     try {
       await joinWeddingEvent(code, userId, dispatch);
-      navigation.navigate("TaskList" as never);
+
+      // Navigate về màn hình Main sau khi join thành công
+      navigation.reset({
+        index: 0,
+        routes: [{ name: "Main" }],
+      });
     } catch (error: any) {
       setError(error);
       setShowError(true);

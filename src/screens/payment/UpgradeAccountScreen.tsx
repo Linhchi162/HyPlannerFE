@@ -306,7 +306,7 @@ export default function UpgradeAccountScreen() {
               activeUpgradeTab === "SUPER" && styles.activeUpgradeTabButtonText,
             ]}
           >
-            Nâng cấp SUPER
+            Nâng cấp PRO
           </Text>
         </TouchableOpacity>
       </View>
@@ -320,7 +320,7 @@ export default function UpgradeAccountScreen() {
             <View style={styles.verticalSeparator} />
             <Text style={styles.tableHeaderCell}>VIP</Text>
             <View style={styles.verticalSeparator} />
-            <Text style={styles.tableHeaderCell}>SUPER</Text>
+            <Text style={styles.tableHeaderCell}>PRO</Text>
           </View>
 
           {features.map((feature, index) => (

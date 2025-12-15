@@ -1,4 +1,8 @@
-export const taskListData = (creatorId: string, eventCreatedDate: Date = new Date()) => {
+export const taskListData = (
+  creatorId: string,
+  eventCreatedDate: Date = new Date(),
+  weddingDate?: Date
+) => {
   // Helper function để tính toán ngày
   const addMonths = (date: Date, months: number): Date => {
     const result = new Date(date);
@@ -8,7 +12,7 @@ export const taskListData = (creatorId: string, eventCreatedDate: Date = new Dat
 
   const addWeeks = (date: Date, weeks: number): Date => {
     const result = new Date(date);
-    result.setDate(result.getDate() + (weeks * 7));
+    result.setDate(result.getDate() + weeks * 7);
     return result;
   };
 
@@ -18,39 +22,280 @@ export const taskListData = (creatorId: string, eventCreatedDate: Date = new Dat
     return result;
   };
 
-  // Tính toán thời gian cho từng giai đoạn
-  const phase1Start = eventCreatedDate;
-  const phase1End = addMonths(phase1Start, 5);
+  const subtractDays = (date: Date, days: number): Date => {
+    const result = new Date(date);
+    result.setDate(result.getDate() - days);
+    return result;
+  };
 
-  const phase2Start = phase1End;
-  const phase2End = addMonths(phase2Start, 3);
+  // Phân bổ phần trăm thời gian cho các phase (tổng = 100%)
+  // Phase 1-10: Từ ngày tạo đến ngày cưới
+  const phasePercentages = {
+    phase1: 25, // Lên kế hoạch ban đầu - 25%
+    phase2: 15, // Đặt dịch vụ và trang phục - 15%
+    phase3: 20, // Chuẩn bị chi tiết - 20%
+    phase4: 12, // Hoàn thiện trang phục và in ấn - 12%
+    phase5: 12, // Chuẩn bị nhân sự và chi tiết - 12%
+    phase6: 8, // Hoàn tất cuối cùng - 8%
+    phase7: 4, // 2 tuần trước cưới - 4%
+    phase8: 2, // 1 tuần trước cưới - 2%
+    phase9: 1, // 1 ngày trước cưới - 1%
+    phase10: 1, // Ngày cưới - 1%
+  };
 
-  const phase3Start = phase2End;
-  const phase3End = addMonths(phase3Start, 4);
+  // Số ngày tối thiểu cho các phase quan trọng cuối
+  const minimumDays = {
+    phase10: 1, // Ngày cưới - tối thiểu 1 ngày
+    phase9: 1, // 1 ngày trước - tối thiểu 1 ngày
+    phase8: 3, // 1 tuần trước - tối thiểu 3 ngày
+    phase7: 7, // 2 tuần trước - tối thiểu 7 ngày
+    phase6: 7, // Hoàn tất cuối - tối thiểu 7 ngày
+  };
 
-  const phase4Start = phase3End;
-  const phase4End = addMonths(phase4Start, 2);
+  // Nếu có ngày cưới, tính toán dựa trên tổng số ngày
+  // Nếu không có, tính từ ngày tạo event
+  let phase1Start: Date, phase1End: Date;
+  let phase2Start: Date, phase2End: Date;
+  let phase3Start: Date, phase3End: Date;
+  let phase4Start: Date, phase4End: Date;
+  let phase5Start: Date, phase5End: Date;
+  let phase6Start: Date, phase6End: Date;
+  let phase7Start: Date, phase7End: Date;
+  let phase8Start: Date, phase8End: Date;
+  let phase9Start: Date, phase9End: Date;
+  let phase10Start: Date, phase10End: Date;
+  let phase11Start: Date, phase11End: Date;
 
-  const phase5Start = phase4End;
-  const phase5End = addMonths(phase5Start, 2);
+  if (weddingDate) {
+    // Phase 1 bắt đầu từ ngày tạo task list
+    phase1Start = new Date(eventCreatedDate);
 
-  const phase6Start = phase5End;
-  const phase6End = addMonths(phase6Start, 1);
+    // Phase 10 kết thúc vào ngày cưới
+    phase10End = new Date(weddingDate);
 
-  const phase7Start = phase6End;
-  const phase7End = addWeeks(phase7Start, 2);
+    // Tính tổng số ngày từ ngày tạo đến ngày cưới
+    const totalDays = Math.ceil(
+      (phase10End.getTime() - phase1Start.getTime()) / (1000 * 60 * 60 * 24)
+    );
 
-  const phase8Start = phase7End;
-  const phase8End = addWeeks(phase8Start, 1);
+    // Tính tổng số ngày tối thiểu cần cho các phase cuối
+    const totalMinimumDays =
+      minimumDays.phase6 +
+      minimumDays.phase7 +
+      minimumDays.phase8 +
+      minimumDays.phase9 +
+      minimumDays.phase10;
 
-  const phase9Start = phase8End;
-  const phase9End = addDays(phase9Start, 1);
+    // Kiểm tra xem có đủ ngày không
+    if (totalDays < totalMinimumDays) {
+      // Nếu không đủ, giảm tỷ lệ xuống nhưng vẫn đảm bảo ít nhất 1 ngày cho mỗi phase
+      const phase10Days = 1;
+      const phase9Days = 1;
+      const phase8Days = Math.max(1, Math.floor(totalDays * 0.05)); // 5%
+      const phase7Days = Math.max(1, Math.floor(totalDays * 0.08)); // 8%
+      const phase6Days = Math.max(1, Math.floor(totalDays * 0.1)); // 10%
 
-  const phase10Start = phase9End;
-  const phase10End = addDays(phase10Start, 1);
+      const reservedDays =
+        phase6Days + phase7Days + phase8Days + phase9Days + phase10Days;
+      const remainingDays = totalDays - reservedDays;
 
-  const phase11Start = phase10End;
-  const phase11End = addMonths(phase11Start, 3);
+      // Phân phối số ngày còn lại cho phase 1-5 theo tỷ lệ
+      const remainingPercentages = {
+        phase1: 25,
+        phase2: 15,
+        phase3: 20,
+        phase4: 12,
+        phase5: 12,
+      };
+      const totalRemainingPercentage = Object.values(
+        remainingPercentages
+      ).reduce((a, b) => a + b, 0);
+
+      const phase1Days = Math.max(
+        1,
+        Math.floor(
+          (remainingDays * remainingPercentages.phase1) /
+            totalRemainingPercentage
+        )
+      );
+      const phase2Days = Math.max(
+        1,
+        Math.floor(
+          (remainingDays * remainingPercentages.phase2) /
+            totalRemainingPercentage
+        )
+      );
+      const phase3Days = Math.max(
+        1,
+        Math.floor(
+          (remainingDays * remainingPercentages.phase3) /
+            totalRemainingPercentage
+        )
+      );
+      const phase4Days = Math.max(
+        1,
+        Math.floor(
+          (remainingDays * remainingPercentages.phase4) /
+            totalRemainingPercentage
+        )
+      );
+
+      // Phase 5 lấy phần còn lại
+      const usedDays =
+        phase1Days +
+        phase2Days +
+        phase3Days +
+        phase4Days +
+        phase6Days +
+        phase7Days +
+        phase8Days +
+        phase9Days +
+        phase10Days;
+      const phase5Days = Math.max(1, totalDays - usedDays);
+
+      // Tính toán ngày bắt đầu và kết thúc cho từng phase
+      phase1End = addDays(phase1Start, phase1Days);
+
+      phase2Start = new Date(phase1End);
+      phase2End = addDays(phase2Start, phase2Days);
+
+      phase3Start = new Date(phase2End);
+      phase3End = addDays(phase3Start, phase3Days);
+
+      phase4Start = new Date(phase3End);
+      phase4End = addDays(phase4Start, phase4Days);
+
+      phase5Start = new Date(phase4End);
+      phase5End = addDays(phase5Start, phase5Days);
+
+      phase6Start = new Date(phase5End);
+      phase6End = addDays(phase6Start, phase6Days);
+
+      phase7Start = new Date(phase6End);
+      phase7End = addDays(phase7Start, phase7Days);
+
+      phase8Start = new Date(phase7End);
+      phase8End = addDays(phase8Start, phase8Days);
+
+      phase9Start = new Date(phase8End);
+      phase9End = addDays(phase9Start, phase9Days);
+
+      phase10Start = new Date(phase9End);
+    } else {
+      // Nếu đủ ngày, ưu tiên đảm bảo các phase cuối có đủ ngày tối thiểu
+      const phase10Days = minimumDays.phase10;
+      const phase9Days = minimumDays.phase9;
+      const phase8Days = minimumDays.phase8;
+      const phase7Days = minimumDays.phase7;
+      const phase6Days = minimumDays.phase6;
+
+      // Số ngày còn lại cho phase 1-5
+      const reservedDays =
+        phase6Days + phase7Days + phase8Days + phase9Days + phase10Days;
+      const remainingDays = totalDays - reservedDays;
+
+      // Tính số ngày cho phase 1-5 dựa trên phần trăm
+      const totalPercentage =
+        phasePercentages.phase1 +
+        phasePercentages.phase2 +
+        phasePercentages.phase3 +
+        phasePercentages.phase4 +
+        phasePercentages.phase5;
+
+      const phase1Days = Math.floor(
+        (remainingDays * phasePercentages.phase1) / totalPercentage
+      );
+      const phase2Days = Math.floor(
+        (remainingDays * phasePercentages.phase2) / totalPercentage
+      );
+      const phase3Days = Math.floor(
+        (remainingDays * phasePercentages.phase3) / totalPercentage
+      );
+      const phase4Days = Math.floor(
+        (remainingDays * phasePercentages.phase4) / totalPercentage
+      );
+
+      // Phase 5 chiếm phần còn lại
+      const usedDays =
+        phase1Days +
+        phase2Days +
+        phase3Days +
+        phase4Days +
+        phase6Days +
+        phase7Days +
+        phase8Days +
+        phase9Days +
+        phase10Days;
+      const phase5Days = totalDays - usedDays;
+
+      // Tính toán ngày bắt đầu và kết thúc cho từng phase
+      phase1End = addDays(phase1Start, phase1Days);
+
+      phase2Start = new Date(phase1End);
+      phase2End = addDays(phase2Start, phase2Days);
+
+      phase3Start = new Date(phase2End);
+      phase3End = addDays(phase3Start, phase3Days);
+
+      phase4Start = new Date(phase3End);
+      phase4End = addDays(phase4Start, phase4Days);
+
+      phase5Start = new Date(phase4End);
+      phase5End = addDays(phase5Start, phase5Days);
+
+      phase6Start = new Date(phase5End);
+      phase6End = addDays(phase6Start, phase6Days);
+
+      phase7Start = new Date(phase6End);
+      phase7End = addDays(phase7Start, phase7Days);
+
+      phase8Start = new Date(phase7End);
+      phase8End = addDays(phase8Start, phase8Days);
+
+      phase9Start = new Date(phase8End);
+      phase9End = addDays(phase9Start, phase9Days);
+
+      phase10Start = new Date(phase9End);
+    }
+
+    // Phase 11: Sau cưới (3 tháng)
+    phase11Start = addDays(phase10End, 1);
+    phase11End = addMonths(phase11Start, 3);
+  } else {
+    // Tính toán thời gian cho từng giai đoạn theo cách cũ (từ ngày tạo event)
+    phase1Start = eventCreatedDate;
+    phase1End = addMonths(phase1Start, 5);
+
+    phase2Start = phase1End;
+    phase2End = addMonths(phase2Start, 3);
+
+    phase3Start = phase2End;
+    phase3End = addMonths(phase3Start, 4);
+
+    phase4Start = phase3End;
+    phase4End = addMonths(phase4Start, 2);
+
+    phase5Start = phase4End;
+    phase5End = addMonths(phase5Start, 2);
+
+    phase6Start = phase5End;
+    phase6End = addMonths(phase6Start, 1);
+
+    phase7Start = phase6End;
+    phase7End = addWeeks(phase7Start, 2);
+
+    phase8Start = phase7End;
+    phase8End = addWeeks(phase8Start, 1);
+
+    phase9Start = phase8End;
+    phase9End = addDays(phase9Start, 1);
+
+    phase10Start = phase9End;
+    phase10End = addDays(phase10Start, 1);
+
+    phase11Start = phase10End;
+    phase11End = addMonths(phase11Start, 3);
+  }
 
   return [
     {
@@ -58,14 +303,16 @@ export const taskListData = (creatorId: string, eventCreatedDate: Date = new Dat
       phaseTimeEnd: phase1End.toISOString(),
       tasks: [
         {
-          taskName: "Hai bên gia đình cùng bàn bạc và thống nhất ngày ăn hỏi, ngày cưới.",
+          taskName:
+            "Hai bên gia đình cùng bàn bạc và thống nhất ngày ăn hỏi, ngày cưới.",
           taskNote: "Thống nhất ngày cụ thể để tiện cho việc lên kế hoạch.",
           member: [creatorId],
           completed: false,
         },
         {
           taskName: "Xây dựng ngân sách dự kiến cho toàn bộ chi tiêu.",
-          taskNote: "Ước tính các khoản chi lớn và nhỏ để có cái nhìn tổng quan.",
+          taskNote:
+            "Ước tính các khoản chi lớn và nhỏ để có cái nhìn tổng quan.",
           member: [creatorId],
           completed: false,
         },
@@ -76,20 +323,24 @@ export const taskListData = (creatorId: string, eventCreatedDate: Date = new Dat
           completed: false,
         },
         {
-          taskName: "Tìm hiểu các phong cách, xu hướng và ý tưởng tổ chức hôn lễ.",
-          taskNote: "Tham khảo trên mạng, tạp chí để định hình phong cách đám cưới.",
+          taskName:
+            "Tìm hiểu các phong cách, xu hướng và ý tưởng tổ chức hôn lễ.",
+          taskNote:
+            "Tham khảo trên mạng, tạp chí để định hình phong cách đám cưới.",
           member: [creatorId],
           completed: false,
         },
         {
           taskName: "Khảo sát và so sánh những địa điểm tổ chức tiệc cưới.",
-          taskNote: "Xem xét các nhà hàng, khách sạn về giá cả, sức chứa, dịch vụ.",
+          taskNote:
+            "Xem xét các nhà hàng, khách sạn về giá cả, sức chứa, dịch vụ.",
           member: [creatorId],
           completed: false,
         },
         {
           taskName: "Tìm hiểu và liên hệ sơ bộ các nhà cung cấp dịch vụ cưới.",
-          taskNote: "Lên danh sách các nhà cung cấp chụp ảnh, trang trí, trang điểm...",
+          taskNote:
+            "Lên danh sách các nhà cung cấp chụp ảnh, trang trí, trang điểm...",
           member: [creatorId],
           completed: false,
         },
@@ -112,19 +363,22 @@ export const taskListData = (creatorId: string, eventCreatedDate: Date = new Dat
           completed: false,
         },
         {
-          taskName: "Lựa chọn chủ đề/ý tưởng cưới: phong cách, tông màu, cách trang trí.",
+          taskName:
+            "Lựa chọn chủ đề/ý tưởng cưới: phong cách, tông màu, cách trang trí.",
           taskNote: "Quyết định chủ đề chính để các dịch vụ khác làm theo.",
           member: [creatorId],
           completed: false,
         },
         {
-          taskName: "Liên hệ và đặt dịch vụ với các bên: trang trí (ăn hỏi, lễ gia tiên, tiệc cưới), chụp ảnh, quay phim, thiệp cưới, hoa cưới, xe đưa đón, photo booth…",
+          taskName:
+            "Liên hệ và đặt dịch vụ với các bên: trang trí (ăn hỏi, lễ gia tiên, tiệc cưới), chụp ảnh, quay phim, thiệp cưới, hoa cưới, xe đưa đón, photo booth…",
           taskNote: "Đặt cọc các nhà cung cấp dịch vụ đã chọn.",
           member: [creatorId],
           completed: false,
         },
         {
-          taskName: "Lập kế hoạch tuần trăng mật hoặc tiệc chia tay độc thân: chọn địa điểm, đặt vé, khách sạn.",
+          taskName:
+            "Lập kế hoạch tuần trăng mật hoặc tiệc chia tay độc thân: chọn địa điểm, đặt vé, khách sạn.",
           taskNote: "Chọn địa điểm, đặt vé máy bay, khách sạn.",
           member: [creatorId],
           completed: false,
@@ -142,8 +396,10 @@ export const taskListData = (creatorId: string, eventCreatedDate: Date = new Dat
           completed: false,
         },
         {
-          taskName: "Chuẩn bị quỹ dự phòng phát sinh, kiểm tra thủ tục giấy tờ hôn nhân.",
-          taskNote: "Dành ra một khoản cho các chi phí không lường trước và chuẩn bị giấy tờ.",
+          taskName:
+            "Chuẩn bị quỹ dự phòng phát sinh, kiểm tra thủ tục giấy tờ hôn nhân.",
+          taskNote:
+            "Dành ra một khoản cho các chi phí không lường trước và chuẩn bị giấy tờ.",
           member: [creatorId],
           completed: false,
         },
@@ -154,19 +410,23 @@ export const taskListData = (creatorId: string, eventCreatedDate: Date = new Dat
       phaseTimeEnd: phase3End.toISOString(),
       tasks: [
         {
-          taskName: "Chuẩn bị cho lễ ăn hỏi: lễ vật, nghi thức, dàn bưng quả, đặt cỗ, thuê xe đưa đón.",
+          taskName:
+            "Chuẩn bị cho lễ ăn hỏi: lễ vật, nghi thức, dàn bưng quả, đặt cỗ, thuê xe đưa đón.",
           taskNote: "Lên danh sách chi tiết các mục cần chuẩn bị.",
           member: [creatorId],
           completed: false,
         },
         {
-          taskName: "Chọn trang phục cho ăn hỏi: dành cho cô dâu chú rể và người thân.",
-          taskNote: "Chọn áo dài cho cô dâu và trang phục cho chú rể, gia đình.",
+          taskName:
+            "Chọn trang phục cho ăn hỏi: dành cho cô dâu chú rể và người thân.",
+          taskNote:
+            "Chọn áo dài cho cô dâu và trang phục cho chú rể, gia đình.",
           member: [creatorId],
           completed: false,
         },
         {
-          taskName: "Đặt lịch make up, nail và làm tóc thử cho ngày ăn hỏi và ngày cưới.",
+          taskName:
+            "Đặt lịch make up, nail và làm tóc thử cho ngày ăn hỏi và ngày cưới.",
           taskNote: "Thử trước để chọn phong cách trang điểm phù hợp.",
           member: [creatorId],
           completed: false,
@@ -226,7 +486,8 @@ export const taskListData = (creatorId: string, eventCreatedDate: Date = new Dat
           completed: false,
         },
         {
-          taskName: "Chốt mẫu thiệp và tiến hành in (nếu có dress code thì in kèm).",
+          taskName:
+            "Chốt mẫu thiệp và tiến hành in (nếu có dress code thì in kèm).",
           taskNote: "Kiểm tra kỹ thông tin trước khi in hàng loạt.",
           member: [creatorId],
           completed: false,
@@ -274,7 +535,8 @@ export const taskListData = (creatorId: string, eventCreatedDate: Date = new Dat
       phaseTimeEnd: phase5End.toISOString(),
       tasks: [
         {
-          taskName: "Nhờ bạn bè hoặc người thân làm phù dâu, phù rể (hoặc tìm hiểu dịch vụ thuê).",
+          taskName:
+            "Nhờ bạn bè hoặc người thân làm phù dâu, phù rể (hoặc tìm hiểu dịch vụ thuê).",
           taskNote: "Ngỏ lời và bàn bạc về vai trò, trang phục.",
           member: [creatorId],
           completed: false,
@@ -376,13 +638,15 @@ export const taskListData = (creatorId: string, eventCreatedDate: Date = new Dat
           completed: false,
         },
         {
-          taskName: "Kiểm tra lại flow chương trình với điều phối hoặc người thân hỗ trợ.",
+          taskName:
+            "Kiểm tra lại flow chương trình với điều phối hoặc người thân hỗ trợ.",
           taskNote: "Đảm bảo mọi người hiểu rõ vai trò của mình.",
           member: [creatorId],
           completed: false,
         },
         {
-          taskName: "Chuẩn bị quà hoặc lời cảm ơn riêng cho bố mẹ, họ hàng thân thiết.",
+          taskName:
+            "Chuẩn bị quà hoặc lời cảm ơn riêng cho bố mẹ, họ hàng thân thiết.",
           taskNote: "Thể hiện lòng biết ơn đến những người đã hỗ trợ.",
           member: [creatorId],
           completed: false,
@@ -418,7 +682,8 @@ export const taskListData = (creatorId: string, eventCreatedDate: Date = new Dat
           completed: false,
         },
         {
-          taskName: "Chuẩn bị sẵn túi vật dụng khẩn cấp: kem chống nắng, xịt khoáng, nước hoa, chỉ kim, băng keo cá nhân…",
+          taskName:
+            "Chuẩn bị sẵn túi vật dụng khẩn cấp: kem chống nắng, xịt khoáng, nước hoa, chỉ kim, băng keo cá nhân…",
           taskNote: "Chuẩn bị kim chỉ, băng cá nhân, thuốc men cần thiết...",
           member: [creatorId],
           completed: false,
@@ -454,7 +719,8 @@ export const taskListData = (creatorId: string, eventCreatedDate: Date = new Dat
           completed: false,
         },
         {
-          taskName: "Cô dâu – chú rể nghỉ ngơi, spa, chăm sóc tóc và da để sẵn sàng cho ngày trọng đại.",
+          taskName:
+            "Cô dâu – chú rể nghỉ ngơi, spa, chăm sóc tóc và da để sẵn sàng cho ngày trọng đại.",
           taskNote: "Thư giãn để có tinh thần và sức khỏe tốt nhất.",
           member: [creatorId],
           completed: false,
@@ -532,7 +798,8 @@ export const taskListData = (creatorId: string, eventCreatedDate: Date = new Dat
           completed: false,
         },
         {
-          taskName: "Lưu trữ file ảnh, video ra nhiều nơi (ổ cứng, drive, USB) để tránh mất dữ liệu.",
+          taskName:
+            "Lưu trữ file ảnh, video ra nhiều nơi (ổ cứng, drive, USB) để tránh mất dữ liệu.",
           taskNote: "Sao lưu dữ liệu quan trọng ở nhiều nơi.",
           member: [creatorId],
           completed: false,
@@ -544,13 +811,15 @@ export const taskListData = (creatorId: string, eventCreatedDate: Date = new Dat
           completed: false,
         },
         {
-          taskName: "Tổng kết chi phí cưới: thu – chi, đối chiếu lại ngân sách.",
+          taskName:
+            "Tổng kết chi phí cưới: thu – chi, đối chiếu lại ngân sách.",
           taskNote: "Hoàn tất các khoản thanh toán và tổng kết lại.",
           member: [creatorId],
           completed: false,
         },
         {
-          taskName: "Cảm ơn và trả thù lao (nếu chưa) cho MC, ban nhạc, ekip, bạn bè đã hỗ trợ.",
+          taskName:
+            "Cảm ơn và trả thù lao (nếu chưa) cho MC, ban nhạc, ekip, bạn bè đã hỗ trợ.",
           taskNote: "Gửi lời cảm ơn chân thành đến mọi người.",
           member: [creatorId],
           completed: false,
@@ -574,31 +843,36 @@ export const taskListData = (creatorId: string, eventCreatedDate: Date = new Dat
           completed: false,
         },
         {
-          taskName: "Kiểm kê đồ dùng lễ cưới còn dư: thiệp, quà khách, phụ kiện decor.",
+          taskName:
+            "Kiểm kê đồ dùng lễ cưới còn dư: thiệp, quà khách, phụ kiện decor.",
           taskNote: "Sắp xếp và tái sử dụng những gì còn lại.",
           member: [creatorId],
           completed: false,
         },
         {
-          taskName: "Gửi thiệp/cảm ơn online đến khách (có thể kèm vài tấm ảnh).",
+          taskName:
+            "Gửi thiệp/cảm ơn online đến khách (có thể kèm vài tấm ảnh).",
           taskNote: "Gửi lời cảm ơn kèm ảnh đẹp.",
           member: [creatorId],
           completed: false,
         },
         {
-          taskName: "Tặng quà hoặc lời cảm ơn riêng đến bố mẹ, họ hàng thân thiết, bạn bè đã giúp đỡ.",
+          taskName:
+            "Tặng quà hoặc lời cảm ơn riêng đến bố mẹ, họ hàng thân thiết, bạn bè đã giúp đỡ.",
           taskNote: "Thể hiện lòng biết ơn đặc biệt.",
           member: [creatorId],
           completed: false,
         },
         {
-          taskName: "Hoàn tất thủ tục liên quan đến đăng ký kết hôn (nếu chưa xong).",
+          taskName:
+            "Hoàn tất thủ tục liên quan đến đăng ký kết hôn (nếu chưa xong).",
           taskNote: "Nếu có giấy tờ gì còn dang dở.",
           member: [creatorId],
           completed: false,
         },
         {
-          taskName: "Cập nhật thông tin hôn nhân trên giấy tờ cá nhân (hộ khẩu, ngân hàng, bảo hiểm).",
+          taskName:
+            "Cập nhật thông tin hôn nhân trên giấy tờ cá nhân (hộ khẩu, ngân hàng, bảo hiểm).",
           taskNote: "Cập nhật thông tin trên các giấy tờ quan trọng.",
           member: [creatorId],
           completed: false,
@@ -610,7 +884,8 @@ export const taskListData = (creatorId: string, eventCreatedDate: Date = new Dat
           completed: false,
         },
         {
-          taskName: "Hoàn thiện phòng tân hôn hoặc nhà mới (nếu chưa kịp trước cưới).",
+          taskName:
+            "Hoàn thiện phòng tân hôn hoặc nhà mới (nếu chưa kịp trước cưới).",
           taskNote: "Sắp xếp không gian sống chung.",
           member: [creatorId],
           completed: false,
@@ -622,19 +897,23 @@ export const taskListData = (creatorId: string, eventCreatedDate: Date = new Dat
           completed: false,
         },
         {
-          taskName: "Dành thời gian nghỉ ngơi, du lịch ngắn hoặc tuần trăng mật (nếu chưa đi).",
-          taskNote: "Tận hưởng khoảng thời gian đầu tiên của cuộc sống vợ chồng.",
+          taskName:
+            "Dành thời gian nghỉ ngơi, du lịch ngắn hoặc tuần trăng mật (nếu chưa đi).",
+          taskNote:
+            "Tận hưởng khoảng thời gian đầu tiên của cuộc sống vợ chồng.",
           member: [creatorId],
           completed: false,
         },
         {
-          taskName: "Dành thời gian riêng để chia sẻ, nhìn lại ngày trọng đại cùng nhau.",
+          taskName:
+            "Dành thời gian riêng để chia sẻ, nhìn lại ngày trọng đại cùng nhau.",
           taskNote: "Tạo kỷ niệm đẹp và chia sẻ cảm xúc.",
           member: [creatorId],
           completed: false,
         },
         {
-          taskName: "Bắt đầu lên kế hoạch tài chính, mục tiêu chung (mua nhà, kế hoạch con cái, tiết kiệm…).",
+          taskName:
+            "Bắt đầu lên kế hoạch tài chính, mục tiêu chung (mua nhà, kế hoạch con cái, tiết kiệm…).",
           taskNote: "Lập kế hoạch tương lai cho gia đình.",
           member: [creatorId],
           completed: false,

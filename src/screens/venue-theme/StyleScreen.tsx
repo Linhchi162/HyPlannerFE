@@ -3,7 +3,7 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
+  FlatList,
   TouchableOpacity,
   SafeAreaView,
   Dimensions,
@@ -16,6 +16,10 @@ import LocationCard from "../../components/LocationCard";
 import * as venueThemeService from "../../service/venueThemeService";
 import * as userSelectionService from "../../service/userSelectionService";
 import CustomPopup from "../../components/CustomPopup";
+import {
+  useAlbumCreation,
+  AlbumWizardStep,
+} from "../../contexts/AlbumCreationContext";
 import {
   responsiveFont,
   responsiveWidth,
@@ -33,6 +37,7 @@ interface OptionItem {
 
 const StyleScreen = () => {
   const navigation = useNavigation();
+  const { nextStep, currentStep, isCreatingAlbum } = useAlbumCreation();
   const [selected, setSelected] = useState<string[]>([]);
   const [popupVisible, setPopupVisible] = useState(false);
   const [popupType, setPopupType] = useState<"success" | "error" | "warning">(
@@ -85,32 +90,26 @@ const StyleScreen = () => {
         </Text>
       </View>
 
-      <ScrollView
+      <FlatList
+        data={options}
+        keyExtractor={(item) => item.id}
+        numColumns={3}
+        renderItem={({ item }) => (
+          <LocationCard
+            id={item.id}
+            name={item.name}
+            image={item.image}
+            isSelected={selected.includes(item.id)}
+            onSelect={() => toggleSelection(item.id)}
+          />
+        )}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={[
-          styles.scrollContent,
-          {
-            paddingBottom:
-              Platform.OS === "android"
-                ? responsiveHeight(80)
-                : responsiveHeight(24),
-          },
-        ]}
-      >
-        <View style={styles.grid}>
-          {options.map((item) => (
-            <LocationCard
-              key={item.id}
-              id={item.id}
-              name={item.name}
-              image={item.image}
-              isSelected={selected.includes(item.id)}
-              onSelect={() => toggleSelection(item.id)}
-            />
-          ))}
-        </View>
+        columnWrapperStyle={styles.columnWrapper}
+        contentContainerStyle={styles.scrollContent}
+      />
 
-        {/* Action Button */}
+      {/* Fixed Action Button */}
+      <View style={styles.actionButtonContainer}>
         <TouchableOpacity
           style={[
             styles.actionButton,
@@ -120,38 +119,32 @@ const StyleScreen = () => {
             if (selected.length === 0) return;
             try {
               setPopupType("warning");
-              setPopupTitle("Đang tạo");
+              setPopupTitle("Đang lưu");
               setPopupMessage("Vui lòng đợi trong giây lát...");
               setPopupButtonText(undefined);
               setOnPopupButtonPress(undefined);
               setPopupVisible(true);
+
               await userSelectionService.createSelection(
                 { weddingThemeIds: Array.from(new Set(selected)) },
                 "wedding-theme"
               );
-              const albums = await userSelectionService.getUserAlbums();
-              const name = `Album ${
-                Array.isArray(albums.data) ? albums.data.length + 1 : 1
-              }`;
-              await userSelectionService.createAlbum({
-                name,
-                type: "wedding-theme" as any,
-              });
-              setPopupType("success");
-              setPopupTitle("Thành công");
-              setPopupMessage("Đã tạo album phong cách thành công.");
-              setPopupButtonText("Xem album");
-              setOnPopupButtonPress(() => () => {
-                // @ts-ignore
-                navigation.navigate("Album");
-              });
+
+              // Tiến tới bước tiếp theo trong wizard (STYLE -> TONE_COLOR)
+              if (currentStep === AlbumWizardStep.STYLE) {
+                nextStep();
+              }
+
+              setPopupVisible(false);
+              // Chuyển sang màn chọn tone màu
+              (navigation as any).navigate("ColorTone");
             } catch (e: any) {
               setPopupType("error");
               setPopupTitle("Thất bại");
               const msg =
                 e?.message ||
                 e?.data?.message ||
-                "Không thể tạo album phong cách.";
+                "Không thể lưu lựa chọn phong cách.";
               setPopupMessage(msg);
               setPopupButtonText("Đóng");
               setOnPopupButtonPress(undefined);
@@ -160,9 +153,9 @@ const StyleScreen = () => {
           disabled={selected.length === 0}
           activeOpacity={0.8}
         >
-          <Text style={styles.actionButtonText}>Hoàn thành</Text>
+          <Text style={styles.actionButtonText}>Tiếp theo</Text>
         </TouchableOpacity>
-      </ScrollView>
+      </View>
       <CustomPopup
         visible={popupVisible}
         type={popupType}
@@ -187,6 +180,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
   },
   headerTitle: {
+    fontFamily: "Agbalumo",
     fontSize: responsiveFont(24),
     fontWeight: "600",
     color: "#1f2937",
@@ -201,23 +195,42 @@ const styles = StyleSheet.create({
     color: "#6b7280",
     textAlign: "center",
   },
-  scrollContent: {},
-  grid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
+  scrollContent: {
     paddingHorizontal: responsiveWidth(16),
-    gap: responsiveWidth(8),
+    paddingTop: responsiveHeight(16),
+    paddingBottom: responsiveHeight(100),
+  },
+  columnWrapper: {
     justifyContent: "space-between",
+    marginBottom: responsiveHeight(8),
+  },
+  actionButtonContainer: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: "#fff",
+    paddingVertical: responsiveHeight(16),
+    paddingHorizontal: responsiveWidth(16),
+    borderTopWidth: 1,
+    borderTopColor: "#F3F4F6",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: -2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 5,
   },
   actionButton: {
     backgroundColor: "#F9CBD6",
     paddingVertical: responsiveHeight(12),
-    paddingHorizontal: responsiveWidth(16),
     borderRadius: responsiveWidth(100),
-    marginTop: responsiveHeight(12),
     alignItems: "center",
     justifyContent: "center",
     alignSelf: "center",
+    width: "50%",
   },
   actionButtonDisabled: { opacity: 0.5 },
   actionButtonText: {

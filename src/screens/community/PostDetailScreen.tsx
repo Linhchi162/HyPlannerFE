@@ -33,6 +33,7 @@ import {
   deleteExistingComment,
   reactComment,
   unreactComment,
+  updateExistingComment,
 } from "../../store/commentSlice";
 import { PostCard } from "../../components/PostCard";
 import { CommentItem } from "../../components/CommentItem";
@@ -70,6 +71,7 @@ const PostDetailScreen = () => {
   const [commentText, setCommentText] = useState("");
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [loadedReplies, setLoadedReplies] = useState<Set<string>>(new Set());
+  const [isSendingComment, setIsSendingComment] = useState(false);
 
   useEffect(() => {
     MixpanelService.track("Viewed Post Detail", { postId });
@@ -104,22 +106,29 @@ const PostDetailScreen = () => {
   };
 
   const handleSendComment = async () => {
-    if (commentText.trim()) {
-      await dispatch(
-        createNewComment({
-          postId,
-          data: {
-            content: commentText,
-            parentCommentId: replyingTo || undefined,
-          },
-        })
-      );
+    if (commentText.trim() && !isSendingComment) {
+      setIsSendingComment(true);
+      try {
+        await dispatch(
+          createNewComment({
+            postId,
+            data: {
+              content: commentText,
+              parentCommentId: replyingTo || undefined,
+            },
+          })
+        );
 
-      // Update post comment count
-      dispatch(updatePostCommentCount({ postId, increment: 1 }));
+        // Update post comment count
+        dispatch(updatePostCommentCount({ postId, increment: 1 }));
 
-      setCommentText("");
-      setReplyingTo(null);
+        setCommentText("");
+        setReplyingTo(null);
+      } catch (error) {
+        console.error("Error sending comment:", error);
+      } finally {
+        setIsSendingComment(false);
+      }
     }
   };
 
@@ -147,6 +156,15 @@ const PostDetailScreen = () => {
         },
       },
     ]);
+  };
+
+  const handleEditComment = (commentId: string, newContent: string) => {
+    dispatch(
+      updateExistingComment({
+        commentId,
+        data: { content: newContent },
+      })
+    );
   };
 
   const handleReply = (commentId: string) => {
@@ -235,6 +253,9 @@ const PostDetailScreen = () => {
                   onReact={(type) => handleReactComment(comment._id, type)}
                   onUnreact={() => handleUnreactComment(comment._id)}
                   onDelete={() => handleDeleteComment(comment._id)}
+                  onEdit={(newContent) =>
+                    handleEditComment(comment._id, newContent)
+                  }
                   onReply={() => handleReply(comment._id)}
                   onLoadReplies={() => handleLoadReplies(comment._id)}
                   replies={
@@ -247,6 +268,9 @@ const PostDetailScreen = () => {
                   }
                   onReplyUnreact={(replyId) => handleUnreactComment(replyId)}
                   onReplyDelete={(replyId) => handleDeleteComment(replyId)}
+                  onReplyEdit={(replyId, newContent) =>
+                    handleEditComment(replyId, newContent)
+                  }
                 />
               ))
             )}
@@ -266,7 +290,9 @@ const PostDetailScreen = () => {
           <View style={styles.inputRow}>
             <Image
               source={{
-                uri: currentUser?.picture || "https://via.placeholder.com/32",
+                uri:
+                  currentUser?.picture ||
+                  "https://res.cloudinary.com/dz93cdipk/image/upload/v1734248891/default-avatar_qkbbzr.png",
               }}
               style={styles.userAvatar}
             />
@@ -282,15 +308,20 @@ const PostDetailScreen = () => {
             <TouchableOpacity
               style={[
                 styles.sendButton,
-                !commentText.trim() && styles.sendButtonDisabled,
+                (!commentText.trim() || isSendingComment) &&
+                  styles.sendButtonDisabled,
               ]}
               onPress={handleSendComment}
-              disabled={!commentText.trim()}
+              disabled={!commentText.trim() || isSendingComment}
             >
-              <Send
-                size={20}
-                color={commentText.trim() ? "#ff6b9d" : "#9ca3af"}
-              />
+              {isSendingComment ? (
+                <ActivityIndicator size="small" color="#ff6b9d" />
+              ) : (
+                <Send
+                  size={20}
+                  color={commentText.trim() ? "#ff6b9d" : "#9ca3af"}
+                />
+              )}
             </TouchableOpacity>
           </View>
         </View>

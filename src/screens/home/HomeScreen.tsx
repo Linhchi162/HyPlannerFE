@@ -290,6 +290,13 @@ const HomeScreen = () => {
           </Animated.View>
 
           <View style={styles.countdownContent}>
+            {(weddingEvent.brideName || weddingEvent.groomName) && (
+              <Text style={styles.coupleNames}>
+                {weddingEvent.brideName && weddingEvent.groomName
+                  ? `${weddingEvent.brideName} & ${weddingEvent.groomName}`
+                  : weddingEvent.brideName || weddingEvent.groomName}
+              </Text>
+            )}
             <Text style={styles.countdownTitle}>Đếm ngược đến ngày cưới</Text>
             <View style={styles.timeUnitsContainer}>
               <View style={styles.timeUnit}>
@@ -407,7 +414,7 @@ const HomeScreen = () => {
             </TouchableOpacity>
           )}
 
-          <TouchableOpacity
+          {/* <TouchableOpacity
             style={styles.menuItem}
             onPress={() => navigation.navigate("ChooseStyle")}
           >
@@ -421,9 +428,9 @@ const HomeScreen = () => {
               </View>
             </View>
             <ChevronRight size={20} color="#9ca3af" />
-          </TouchableOpacity>
+          </TouchableOpacity> */}
 
-          <TouchableOpacity
+          {/* <TouchableOpacity
             style={styles.menuItem}
             onPress={() => navigation.navigate("InvitationLettersScreen")}
           >
@@ -453,7 +460,7 @@ const HomeScreen = () => {
               </View>
             </View>
             <ChevronRight size={20} color="#9ca3af" />
-          </TouchableOpacity>
+          </TouchableOpacity> */}
 
           {(user?.id || user?._id) === weddingEvent.creatorId && (
             <TouchableOpacity
@@ -472,7 +479,7 @@ const HomeScreen = () => {
                 <View style={styles.menuTextContainer}>
                   <Text style={styles.menuTitle}>Ai là người tiếp theo?</Text>
                   <Text style={styles.menuSubtitle}>
-                    Xem ai là người tiếp theo
+                    Minigame dùng trong đám cưới
                   </Text>
                 </View>
               </View>
@@ -536,24 +543,34 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     zIndex: 10,
   },
+  coupleNames: {
+    fontFamily: "Agbalumo",
+    fontSize: responsiveFont(18),
+    color: "#ffffff",
+    marginBottom: responsiveHeight(6),
+    textAlign: "center",
+    textShadowColor: "rgba(0, 0, 0, 0.3)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
+  },
   countdownTitle: {
     fontFamily: "Montserrat-SemiBold",
-    fontSize: responsiveFont(14),
+    fontSize: responsiveFont(12),
     color: "#ffffff",
-    marginBottom: responsiveHeight(12),
+    marginBottom: responsiveHeight(10),
     textAlign: "center",
   },
   timeUnitsContainer: {
     flexDirection: "row",
     alignItems: "center",
-    gap: responsiveWidth(6),
+    gap: responsiveWidth(4),
   },
   timeUnit: {
     alignItems: "center",
   },
   timeNumber: {
     fontFamily: "Montserrat-Bold",
-    fontSize: responsiveFont(28),
+    fontSize: responsiveFont(22),
     fontWeight: "bold",
     color: "#ffffff",
     textShadowColor: "rgba(0, 0, 0, 0.3)",
@@ -562,16 +579,16 @@ const styles = StyleSheet.create({
   },
   timeLabel: {
     fontFamily: "Montserrat-Medium",
-    fontSize: responsiveFont(11),
+    fontSize: responsiveFont(9),
     color: "#ffffff",
     marginTop: responsiveHeight(2),
   },
   timeSeparator: {
     fontFamily: "Montserrat-Bold",
-    fontSize: responsiveFont(24),
+    fontSize: responsiveFont(18),
     fontWeight: "bold",
     color: "#ffffff",
-    marginBottom: responsiveHeight(14),
+    marginBottom: responsiveHeight(10),
   },
   countdownContainer: {
     flexDirection: "row",

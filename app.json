@@ -38,6 +38,7 @@
       "bundleIdentifier": "com.yourcompany.hyplanner"
     },
     "android": {
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -46,9 +47,14 @@
       "permissions": [
         "android.permission.INTERNET",
         "android.permission.READ_MEDIA_IMAGES",
-        "android.permission.CAMERA"
+        "android.permission.CAMERA",
+        "android.permission.POST_NOTIFICATIONS"
       ],
-      "package": "com.yourcompany.hyplanner"
+      "package": "com.yourcompany.hyplanner",
+      "statusBar": {
+        "barStyle": "dark-content",
+        "backgroundColor": "#ffffff"
+      }
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -65,6 +71,12 @@
           "autoLogAppEventsEnabled": false,
           "isAutoInitEnabled": true,
           "iosUserTrackingPermission": "This identifier will be used to deliver personalized ads to you."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#FF6B9D"
         }
       ],
       "expo-font",

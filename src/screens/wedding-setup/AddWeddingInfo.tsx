@@ -177,10 +177,15 @@ export default function AddWeddingInfo() {
                 placeholder="Nhập ngân sách dự kiến"
                 value={budget !== null ? formatNumber(budget) : ""} // Hiển thị giá trị dưới dạng chuỗi
                 onChangeText={(value) => {
-                  const numericValue = parseInt(value.replace(/\./g, ""), 10);
-                  if (!isNaN(numericValue)) {
+                  // Loại bỏ tất cả ký tự không phải số (bao gồm dấu chấm, phẩy, space)
+                  const cleanValue = value.replace(/[^0-9]/g, "");
+                  const numericValue = parseInt(cleanValue, 10);
+                  if (!isNaN(numericValue) && numericValue > 0) {
                     setBudget(numericValue); // Cập nhật state nếu giá trị hợp lệ
                     setBudgetError(""); // Xóa thông báo lỗi nếu có
+                  } else if (cleanValue === "") {
+                    setBudget(null); // Đặt lại nếu người dùng xóa hết
+                    setBudgetError("");
                   } else {
                     setBudget(null); // Đặt lại nếu giá trị không hợp lệ
                     setBudgetError("Ngân sách phải là số và lớn hơn 0"); // Hiển thị thông báo lỗi

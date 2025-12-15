@@ -21,7 +21,7 @@ interface CommentItemProps {
   onReact: (reactionType: "like" | "love") => void;
   onUnreact: () => void;
   onDelete?: () => void;
-  onEdit?: () => void;
+  onEdit?: (newContent: string) => void;
   onReply?: () => void;
   onLoadReplies?: () => void;
   replies?: Comment[];
@@ -29,6 +29,7 @@ interface CommentItemProps {
   onReplyReact?: (replyId: string, reactionType: "like" | "love") => void;
   onReplyUnreact?: (replyId: string) => void;
   onReplyDelete?: (replyId: string) => void;
+  onReplyEdit?: (replyId: string, newContent: string) => void;
 }
 
 export const CommentItem: React.FC<CommentItemProps> = ({
@@ -45,6 +46,7 @@ export const CommentItem: React.FC<CommentItemProps> = ({
   onReplyReact,
   onReplyUnreact,
   onReplyDelete,
+  onReplyEdit,
 }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -79,8 +81,10 @@ export const CommentItem: React.FC<CommentItemProps> = ({
   };
 
   const handleEditSave = () => {
-    if (onEdit && editText.trim()) {
-      onEdit();
+    if (onEdit && editText.trim() && editText !== comment.content) {
+      onEdit(editText);
+      setIsEditing(false);
+    } else if (editText === comment.content) {
       setIsEditing(false);
     }
   };
@@ -102,7 +106,9 @@ export const CommentItem: React.FC<CommentItemProps> = ({
     <View style={[styles.container, isReply && styles.replyContainer]}>
       <Image
         source={{
-          uri: comment.userId.picture || "https://via.placeholder.com/32",
+          uri:
+            comment.userId.picture ||
+            "https://res.cloudinary.com/dz93cdipk/image/upload/v1734248891/default-avatar_qkbbzr.png",
         }}
         style={styles.avatar}
       />
@@ -216,6 +222,7 @@ export const CommentItem: React.FC<CommentItemProps> = ({
                 onReact={(type) => onReplyReact?.(reply._id, type)}
                 onUnreact={() => onReplyUnreact?.(reply._id)}
                 onDelete={() => onReplyDelete?.(reply._id)}
+                onEdit={(newContent) => onReplyEdit?.(reply._id, newContent)}
                 isReply
               />
             ))}

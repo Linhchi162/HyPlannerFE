@@ -26,6 +26,7 @@ import {
   CreditCard,
 } from "lucide-react-native";
 import * as ImagePicker from "expo-image-picker";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // ----- BƯỚC 1: SỬA LẠI IMPORT -----
 import { useAppDispatch, useAppSelector } from "../../store/hooks"; // Dùng hook đã được type
@@ -42,6 +43,13 @@ import FeedbackModal from "../shared/FeedbackModal";
 import apiClient from "../../api/client";
 import { resetFeedback } from "../../store/feedbackSlice";
 import { MixpanelService } from "../../service/mixpanelService";
+import { clearWeddingEvent } from "../../store/weddingEventSlice";
+import { leaveWeddingEvent } from "../../service/weddingEventService";
+import {
+  responsiveWidth,
+  responsiveHeight,
+  responsiveFont,
+} from "../../../assets/styles/utils/responsive";
 // ------------------------------------
 
 const COLORS = {
@@ -75,13 +83,15 @@ const ProfileItem: React.FC<ProfileItemProps> = ({
       disabled={!onPress}
     >
       <View style={[styles.iconContainer, { backgroundColor: COLORS.primary }]}>
-        <IconComponent color={COLORS.iconColor} size={20} />
+        <IconComponent color={COLORS.iconColor} size={responsiveWidth(20)} />
       </View>
       <View style={styles.textContainer}>
         <Text style={styles.itemLabel}>{label}</Text>
         {value && <Text style={styles.itemValue}>{value}</Text>}
       </View>
-      {onPress && <ChevronRight color={COLORS.textSecondary} size={22} />}
+      {onPress && (
+        <ChevronRight color={COLORS.textSecondary} size={responsiveWidth(22)} />
+      )}
     </TouchableOpacity>
   );
 };
@@ -91,9 +101,13 @@ const ProfileScreen = () => {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isFeedbackModalVisible, setIsFeedbackModalVisible] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [showLeaveEventDialog, setShowLeaveEventDialog] = useState(false);
   // ----- BƯỚC 2: SỬ DỤNG HOOK ĐÃ TYPE -----
   const dispatch = useAppDispatch();
   const user = useAppSelector(selectCurrentUser);
+  const weddingEvent = useAppSelector(
+    (state) => state.weddingEvent.getWeddingEvent.weddingEvent
+  );
   // ----------------------------------------
 
   // Hàm chọn và upload avatar
@@ -190,6 +204,54 @@ const ProfileScreen = () => {
       routes: [{ name: "Login" }],
     });
   };
+
+  // ----- XỬ LÝ RỜI KHỎI KẾ HOẠCH CƯỚI -----
+  const handleLeaveWeddingEvent = async () => {
+    try {
+      setShowLeaveEventDialog(false);
+
+      const eventId = weddingEvent?._id;
+      const userId = user?.id || user?._id;
+
+      if (!eventId || !userId) {
+        Alert.alert("Lỗi", "Không tìm thấy thông tin sự kiện hoặc người dùng.");
+        return;
+      }
+
+      // Kiểm tra nếu user là creator
+      if (weddingEvent.creatorId === userId) {
+        Alert.alert(
+          "Không thể rời khỏi",
+          "Bạn là người tạo sự kiện, không thể rời khỏi kế hoạch cưới này. Vui lòng chuyển quyền quản lý cho thành viên khác trước khi rời đi."
+        );
+        return;
+      }
+
+      // Track sự kiện trong Mixpanel
+      MixpanelService.track("Left Wedding Event");
+
+      // Gọi API để remove user khỏi wedding event trong database
+      await leaveWeddingEvent(eventId, userId, dispatch);
+
+      // Xóa thông tin wedding event trong Redux
+      dispatch(clearWeddingEvent());
+
+      // Xóa toàn bộ cache redux-persist và lưu lại state mới
+      await persistor.purge();
+      await persistor.flush();
+
+      // Điều hướng về màn hình InviteOrCreateScreen
+      navigation.reset({
+        index: 0,
+        routes: [{ name: "InviteOrCreate" }],
+      });
+    } catch (error: any) {
+      console.error("Error leaving wedding event:", error);
+      const errorMessage =
+        error || "Không thể rời khỏi kế hoạch cưới. Vui lòng thử lại.";
+      Alert.alert("Lỗi", errorMessage);
+    }
+  };
   // ----------------------------------------
   const userId = user?.id || user?._id;
 
@@ -222,10 +284,10 @@ const ProfileScreen = () => {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <ArrowLeft size={24} color={COLORS.textPrimary} />
+          <ArrowLeft size={responsiveWidth(24)} color={COLORS.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Cài đặt</Text>
-        <View style={{ width: 24 }} />
+        <View style={{ width: responsiveWidth(24) }} />
       </View>
 
       <ScrollView
@@ -235,21 +297,30 @@ const ProfileScreen = () => {
         ]}
       >
         <View style={styles.avatarSection}>
-          <Image
-            source={{ uri: user.picture || "https://i.pravatar.cc/300" }}
-            style={styles.avatar}
-          />
+          {/* LOGIC HIỂN THỊ AVATAR */}
+          {user.picture ? (
+            <Image source={{ uri: user.picture }} style={styles.avatar} />
+          ) : (
+            // Nếu chưa có ảnh -> Hiển thị View mặc định với icon User
+            <View style={[styles.avatar, styles.defaultAvatarContainer]}>
+              <User size={responsiveWidth(60)} color="#9ca3af" />
+            </View>
+          )}
+
+          {/* Phần Loading khi upload (Giữ nguyên) */}
           {uploadingAvatar && (
             <View style={styles.uploadingOverlay}>
               <ActivityIndicator size="large" color={COLORS.white} />
             </View>
           )}
+
+          {/* Nút chỉnh sửa (Giữ nguyên) */}
           <TouchableOpacity
             style={styles.editButton}
             onPress={handleChangeAvatar}
             disabled={uploadingAvatar}
           >
-            <Pencil size={18} color={COLORS.white} />
+            <Pencil size={responsiveWidth(18)} color={COLORS.white} />
           </TouchableOpacity>
         </View>
 
@@ -290,7 +361,7 @@ const ProfileScreen = () => {
           <View style={styles.separator} />
           <ProfileItem
             icon={Lock}
-            label="Mật khẩu"
+            label="Thay đổi mật khẩu"
             value="••••••••"
             onPress={() =>
               navigation.navigate("EditProfileScreen", {
@@ -300,7 +371,7 @@ const ProfileScreen = () => {
               })
             }
           />
-          <View style={styles.separator} />
+          {/* <View style={styles.separator} />
           <View style={styles.itemContainer}>
             <View
               style={[
@@ -321,7 +392,7 @@ const ProfileScreen = () => {
               }
               value={isDarkMode}
             />
-          </View>
+          </View> */}
         </View>
 
         <View style={styles.card}>
@@ -334,16 +405,45 @@ const ProfileScreen = () => {
           <View style={styles.separator} />
           <ProfileItem
             icon={Cake}
-            label="Ngày sinh"
-            value="01/01/2000"
+            label="Ngày cưới"
+            value={
+              user.weddingDate
+                ? new Date(user.weddingDate).toLocaleDateString("vi-VN", {
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "numeric",
+                  })
+                : "Chưa đặt"
+            }
             onPress={() =>
               navigation.navigate("EditProfileScreen", {
-                label: "Chỉnh sửa Ngày sinh",
-                currentValue: "01/01/2000",
-                field: "birthDate",
+                label: "Chỉnh sửa Ngày cưới",
+                currentValue: user.weddingDate || new Date().toISOString(),
+                field: "weddingDate",
               })
             }
           />
+          {/* Only show wedding info edit for creator */}
+          {weddingEvent &&
+            (user?.id || user?._id) === weddingEvent.creatorId && (
+              <>
+                <View style={styles.separator} />
+                <ProfileItem
+                  icon={Pencil}
+                  label="Thông tin kế hoạch cưới"
+                  value={
+                    weddingEvent.brideName && weddingEvent.groomName
+                      ? `${weddingEvent.brideName} & ${weddingEvent.groomName}`
+                      : "Chưa đặt"
+                  }
+                  onPress={() =>
+                    navigation.navigate("EditWeddingInfo", {
+                      eventId: weddingEvent._id,
+                    })
+                  }
+                />
+              </>
+            )}
         </View>
 
         {/* Feedback */}
@@ -355,6 +455,15 @@ const ProfileScreen = () => {
           />
         </View>
 
+        <TouchableOpacity
+          style={styles.logoutButton}
+          onPress={() => setShowLeaveEventDialog(true)}
+        >
+          <Text style={styles.logoutButtonText}>
+            Tham gia với tư cách thành viên gia đình
+          </Text>
+        </TouchableOpacity>
+
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
           <Text style={styles.logoutButtonText}>Đăng xuất</Text>
         </TouchableOpacity>
@@ -364,6 +473,35 @@ const ProfileScreen = () => {
         onDismiss={() => setIsFeedbackModalVisible(false)}
         existingFeedback={feedback}
       />
+
+      {/* Dialog cảnh báo rời khỏi kế hoạch cưới */}
+      {showLeaveEventDialog && (
+        <View style={styles.dialogOverlay}>
+          <View style={styles.dialogContainer}>
+            <Text style={styles.dialogTitle}>Cảnh báo</Text>
+            <Text style={styles.dialogMessage}>
+              Bạn có chắc chắn muốn rời khỏi kế hoạch cưới hiện tại?
+              {"\n\n"}
+              Bạn sẽ mất quyền truy cập vào tất cả thông tin và công việc trong
+              kế hoạch này.
+            </Text>
+            <View style={styles.dialogActions}>
+              <TouchableOpacity
+                style={[styles.dialogButton, styles.dialogButtonCancel]}
+                onPress={() => setShowLeaveEventDialog(false)}
+              >
+                <Text style={styles.dialogButtonTextCancel}>Hủy</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.dialogButton, styles.dialogButtonConfirm]}
+                onPress={handleLeaveWeddingEvent}
+              >
+                <Text style={styles.dialogButtonTextConfirm}>Đồng ý</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
     </SafeAreaView>
   );
 };
@@ -378,52 +516,59 @@ const styles = StyleSheet.create({
   },
   safeArea: {
     flex: 1,
-    paddingTop: 20,
+    paddingTop: responsiveHeight(20),
     backgroundColor: COLORS.background,
   },
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: responsiveWidth(16),
+    paddingVertical: responsiveHeight(12),
     backgroundColor: COLORS.background,
   },
   headerTitle: {
-    fontFamily: "Montserrat-SemiBold",
-    fontSize: 20,
+    fontFamily: "Agbalumo",
+    fontSize: responsiveFont(20),
     color: COLORS.textPrimary,
   },
   scrollContainer: {
-    paddingHorizontal: 16,
-    paddingBottom: 32,
+    paddingHorizontal: responsiveWidth(16),
+    paddingBottom: responsiveHeight(32),
   },
   avatarSection: {
     alignItems: "center",
-    marginVertical: 24,
+    marginVertical: responsiveHeight(24),
   },
   avatar: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+    width: responsiveWidth(120),
+    height: responsiveWidth(120),
+    borderRadius: responsiveWidth(60),
+  },
+  defaultAvatarContainer: {
+    backgroundColor: "#f3f4f6",
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: "#ffffff",
   },
   uploadingOverlay: {
     position: "absolute",
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+    width: responsiveWidth(120),
+    height: responsiveWidth(120),
+    borderRadius: responsiveWidth(60),
     backgroundColor: "rgba(0, 0, 0, 0.5)",
     justifyContent: "center",
     alignItems: "center",
   },
   editButton: {
     position: "absolute",
-    bottom: 5,
-    right: "32%",
+    bottom: responsiveHeight(5),
+    right: "35%",
     backgroundColor: COLORS.iconColor,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: responsiveWidth(32),
+    height: responsiveWidth(32),
+    borderRadius: responsiveWidth(16),
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 2,
@@ -431,55 +576,137 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: COLORS.card,
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    marginBottom: 16,
+    borderRadius: responsiveWidth(16),
+    paddingHorizontal: responsiveWidth(16),
+    marginBottom: responsiveHeight(16),
   },
   itemContainer: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 16,
+    paddingVertical: responsiveHeight(16),
   },
   iconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: responsiveWidth(44),
+    height: responsiveWidth(44),
+    borderRadius: responsiveWidth(22),
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 16,
+    marginRight: responsiveWidth(16),
   },
   textContainer: {
     flex: 1,
   },
   itemLabel: {
     fontFamily: "Montserrat-Medium",
-    fontSize: 16,
+    fontSize: responsiveFont(16),
     color: COLORS.textPrimary,
     fontWeight: "500",
   },
   itemValue: {
     fontFamily: "Montserrat-Medium",
-    fontSize: 14,
+    fontSize: responsiveFont(14),
     color: COLORS.textSecondary,
-    marginTop: 2,
+    marginTop: responsiveHeight(2),
   },
   separator: {
     height: 1,
     backgroundColor: "#F0F0F0",
-    marginVertical: 4,
+    marginVertical: responsiveHeight(4),
+  },
+  leaveEventButton: {
+    backgroundColor: "#FFF3CD",
+    borderRadius: responsiveWidth(16),
+    paddingVertical: responsiveHeight(18),
+    alignItems: "center",
+    marginTop: responsiveHeight(24),
+    borderWidth: 2,
+    borderColor: "#FFA500",
+  },
+  leaveEventButtonText: {
+    fontFamily: "Montserrat-SemiBold",
+    fontSize: responsiveFont(16),
+    color: "#D97706",
+    fontWeight: "bold",
   },
   logoutButton: {
     backgroundColor: COLORS.primary,
-    borderRadius: 16,
-    paddingVertical: 18,
+    borderRadius: responsiveWidth(16),
+    paddingVertical: responsiveHeight(18),
     alignItems: "center",
-    marginTop: 24,
+    marginTop: responsiveHeight(16),
   },
   logoutButtonText: {
     fontFamily: "Montserrat-SemiBold",
-    fontSize: 16,
+    fontSize: responsiveFont(16),
     color: COLORS.iconColor,
     fontWeight: "bold",
+  },
+  // Dialog styles
+  dialogOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 1000,
+  },
+  dialogContainer: {
+    backgroundColor: COLORS.white,
+    borderRadius: responsiveWidth(20),
+    padding: responsiveWidth(24),
+    width: "85%",
+    maxWidth: responsiveWidth(400),
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  dialogTitle: {
+    fontFamily: "Montserrat-Bold",
+    fontSize: responsiveFont(20),
+    color: COLORS.textPrimary,
+    marginBottom: responsiveHeight(12),
+    textAlign: "center",
+  },
+  dialogMessage: {
+    fontFamily: "Montserrat-Regular",
+    fontSize: responsiveFont(15),
+    color: COLORS.textSecondary,
+    lineHeight: responsiveHeight(22),
+    textAlign: "center",
+    marginBottom: responsiveHeight(24),
+  },
+  dialogActions: {
+    flexDirection: "row",
+    gap: responsiveWidth(12),
+  },
+  dialogButton: {
+    flex: 1,
+    paddingVertical: responsiveHeight(14),
+    borderRadius: responsiveWidth(12),
+    alignItems: "center",
+  },
+  dialogButtonCancel: {
+    backgroundColor: "#F3F4F6",
+  },
+  dialogButtonConfirm: {
+    backgroundColor: COLORS.iconColor,
+  },
+  dialogButtonTextCancel: {
+    fontFamily: "Montserrat-SemiBold",
+    fontSize: responsiveFont(15),
+    color: COLORS.textSecondary,
+    fontWeight: "600",
+  },
+  dialogButtonTextConfirm: {
+    fontFamily: "Montserrat-SemiBold",
+    fontSize: responsiveFont(15),
+    color: COLORS.white,
+    fontWeight: "600",
   },
 });
 

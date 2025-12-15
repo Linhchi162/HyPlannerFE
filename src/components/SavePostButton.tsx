@@ -64,24 +64,20 @@ export const SavePostButton: React.FC<SavePostButtonProps> = ({
 
   return (
     <TouchableOpacity
-      style={[styles.button, isSaved && styles.savedButton]}
+      style={styles.button}
       onPress={handleToggleSave}
       disabled={isLoading}
     >
       {isLoading ? (
-        <ActivityIndicator size="small" color={isSaved ? "#fff" : "#666"} />
+        <ActivityIndicator size="small" color="#6b7280" />
       ) : (
         <>
           <Bookmark
             size={20}
-            color={isSaved ? "#fff" : "#666"}
-            fill={isSaved ? "#fff" : "transparent"}
+            color={isSaved ? "#ffc107" : "#6b7280"}
+            fill={isSaved ? "#ffc107" : "none"}
           />
-          {showText && (
-            <Text style={[styles.text, isSaved && styles.savedText]}>
-              {isSaved ? "Đã lưu" : "Lưu"}
-            </Text>
-          )}
+          <Text style={[styles.text, isSaved && styles.savedText]}>Lưu</Text>
         </>
       )}
     </TouchableOpacity>
@@ -92,21 +88,17 @@ const styles = StyleSheet.create({
   button: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: responsiveWidth(3),
-    paddingVertical: responsiveHeight(1),
-    borderRadius: 20,
-    backgroundColor: "#f5f5f5",
-  },
-  savedButton: {
-    backgroundColor: "#2196f3",
+    gap: responsiveWidth(6),
+    flex: 1,
+    justifyContent: "center",
+    paddingVertical: responsiveHeight(8),
   },
   text: {
+    fontFamily: "Montserrat-Medium",
     fontSize: responsiveFont(14),
-    color: "#666",
-    marginLeft: responsiveWidth(1),
-    fontWeight: "600",
+    color: "#6b7280",
   },
   savedText: {
-    color: "#fff",
+    color: "#ffc107",
   },
 });

@@ -74,6 +74,7 @@ export type RootStackParamList = {
     currentValue: string;
     field: string;
   };
+  EditWeddingInfo: { eventId: string };
   InvitationLettersScreen: undefined;
   CreateWeddingSite: { template: Template };
   WebsiteManagement: { invitation: InvitationData };
@@ -119,7 +120,9 @@ export type RootStackParamList = {
   AccessoriesHairClip: undefined;
   AccessoriesCrown: undefined;
   Album: undefined;
-  AlbumDetail: { album: any };
+  AlbumDetail: { album?: any; albumId?: string; source?: "my" | "community" };
+  TestCreateAlbum: undefined;
+  AlbumWizardComplete: undefined;
   GroomSuit: undefined;
   GroomMaterial: undefined;
   GroomColor: undefined;
@@ -142,14 +145,19 @@ export type RootStackParamList = {
   TopicGroupDetailScreen: { groupId: string };
   InspireBoardScreen: undefined;
   CommunityAlbumsScreen: undefined;
+  SavedPostsScreen: undefined;
+  SavedAlbumsScreen: undefined;
+  CreateAlbumScreen: undefined;
   GuestManagementScreen: undefined;
   GuestDetailScreen: { guestId: string };
+  NotificationListScreen: { weddingEventId: string };
 };
 
 // Định nghĩa các màn hình trong Tab Navigator
 export type MainTabParamList = {
   Home: undefined;
   WebsiteTab: undefined;
+  Community: undefined;
   MoodBoard: undefined;
   ProfileTab: undefined;
 };

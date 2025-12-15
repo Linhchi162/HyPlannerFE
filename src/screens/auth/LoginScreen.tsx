@@ -23,6 +23,7 @@ import Checkbox from "expo-checkbox";
 import { useDispatch } from "react-redux";
 import { setCredentials } from "../../store/authSlice";
 import { MixpanelService } from "../../service/mixpanelService";
+import { registerForPushNotificationsAsync } from "../../utils/pushNotification";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -66,6 +67,16 @@ const LoginScreen = () => {
           const user = response.data;
 
           dispatch(setCredentials({ user, token, rememberMe: true }));
+
+          // Register and send push token to backend
+          try {
+            const pushToken = await registerForPushNotificationsAsync();
+            if (pushToken) {
+              await apiClient.post("/auth/push-token", { pushToken });
+            }
+          } catch (error) {
+            console.error("Failed to register push token:", error);
+          }
 
           const userId = user.id || user._id;
           MixpanelService.identify(userId);
@@ -129,6 +140,16 @@ const LoginScreen = () => {
 
       dispatch(setCredentials({ user: updatedUser, token, rememberMe: true }));
 
+      // Register and send push token to backend
+      try {
+        const pushToken = await registerForPushNotificationsAsync();
+        if (pushToken) {
+          await apiClient.post("/auth/push-token", { pushToken });
+        }
+      } catch (error) {
+        console.error("Failed to register push token:", error);
+      }
+
       MixpanelService.identify(updatedUser.id);
       MixpanelService.setUser({
         fullName: updatedUser.fullName,
@@ -179,6 +200,16 @@ const LoginScreen = () => {
       await AsyncStorage.setItem("rememberMe", JSON.stringify(rememberMe));
 
       dispatch(setCredentials({ user, token, rememberMe }));
+
+      // Register and send push token to backend
+      try {
+        const pushToken = await registerForPushNotificationsAsync();
+        if (pushToken) {
+          await apiClient.post("/auth/push-token", { pushToken });
+        }
+      } catch (error) {
+        console.error("Failed to register push token:", error);
+      }
 
       const userId = user.id || user._id;
       MixpanelService.identify(userId);

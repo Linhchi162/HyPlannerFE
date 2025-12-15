@@ -39,6 +39,8 @@ export interface Guest {
   isActive: boolean;
   personalInvitationLink?: string;
   invitationLetterId?: string;
+  confirmedViaInvitation?: boolean;
+  invitationConfirmDate?: string;
   createdAt: string;
   updatedAt: string;
 }

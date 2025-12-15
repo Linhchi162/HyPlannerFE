@@ -20,6 +20,7 @@ export interface Album {
   _id: string;
   name: string;
   selections: UserSelection[];
+  customImages?: string[];
   note?: string;
   createdAt: string;
 }
@@ -152,20 +153,19 @@ export const getUserSelections = async (
 };
 
 // Create album
-export const createAlbum = async (albumData: {
-  name: string;
-  note?: string;
-  type:
-    | "wedding-dress"
-    | "vest"
-    | "bride-engage"
-    | "groom-engage"
-    | "tone-color";
-}): Promise<ApiResponse<Album>> => {
+export const createAlbum = async (
+  name: string,
+  authorName?: string,
+  coverImage?: string
+): Promise<ApiResponse<Album>> => {
   try {
     const response = await apiClient.post<ApiResponse<Album>>(
       "/user-selections/albums",
-      albumData
+      {
+        name,
+        authorName: authorName || "",
+        coverImage: coverImage || "",
+      }
     );
     return response.data;
   } catch (error: any) {
@@ -188,5 +188,72 @@ export const getUserAlbums = async (): Promise<ApiResponse<Album[]>> => {
       success: true,
       data: [],
     };
+  }
+};
+
+// Update album
+export const updateAlbum = async (
+  albumId: string,
+  updates: {
+    name?: string;
+    note?: string;
+    customImages?: string[];
+  }
+): Promise<ApiResponse<Album>> => {
+  try {
+    const response = await apiClient.put<ApiResponse<Album>>(
+      `/user-selections/albums/${albumId}`,
+      updates
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error("Error in updateAlbum:", error);
+    throw error;
+  }
+};
+
+// Delete album
+export const deleteAlbum = async (
+  albumId: string
+): Promise<ApiResponse<any>> => {
+  try {
+    const response = await apiClient.delete<ApiResponse<any>>(
+      `/user-selections/albums/${albumId}`
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error("Error in deleteAlbum:", error);
+    throw error;
+  }
+};
+
+// Upload album images
+export const uploadAlbumImages = async (
+  images: { uri: string; type: string; name: string }[]
+): Promise<{ imageUrls: string[] }> => {
+  try {
+    const formData = new FormData();
+
+    images.forEach((image, index) => {
+      formData.append("images", {
+        uri: image.uri,
+        type: image.type,
+        name: image.name || `album-image-${index}.jpg`,
+      } as any);
+    });
+
+    const response = await apiClient.post<{ imageUrls: string[] }>(
+      "/upload/album-images",
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error("Error in uploadAlbumImages:", error);
+    throw error;
   }
 };

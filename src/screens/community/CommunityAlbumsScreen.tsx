@@ -9,9 +9,17 @@ import {
   RefreshControl,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Heart, Bookmark, Eye } from "lucide-react-native";
+import {
+  Heart,
+  Bookmark,
+  Eye,
+  ChevronLeft,
+  Plus,
+  Image as ImageIcon,
+} from "lucide-react-native";
 import * as albumService from "../../service/albumService";
 import AlbumCard from "../../components/AlbumCard";
+import PublishAlbumModal from "./PublishAlbumModal";
 import {
   responsiveWidth,
   responsiveHeight,
@@ -25,8 +33,9 @@ export const CommunityAlbumsScreen = ({ navigation }: any) => {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [selectedFilter, setSelectedFilter] = useState<
-    "all" | "featured" | "trending"
+    "all" | "mine" | "trending"
   >("all");
+  const [showSelectModal, setShowSelectModal] = useState(false);
 
   useEffect(() => {
     loadAlbums();
@@ -38,9 +47,10 @@ export const CommunityAlbumsScreen = ({ navigation }: any) => {
     setIsLoading(true);
     try {
       let result;
-      if (selectedFilter === "featured") {
-        result = await albumService.getFeaturedAlbums(20);
-        setAlbums(result);
+      if (selectedFilter === "mine") {
+        // Lấy albums công khai của user hiện tại (đã đăng lên cộng đồng)
+        const myPublicAlbumsArray = await albumService.getMyPublicAlbums();
+        setAlbums(myPublicAlbumsArray || []);
         setHasMore(false);
       } else {
         const response = await albumService.getAllAlbums(pageNum, 20);
@@ -52,7 +62,8 @@ export const CommunityAlbumsScreen = ({ navigation }: any) => {
           setAlbums(newAlbums);
         }
 
-        setHasMore(response.pagination?.hasNextPage || newAlbums.length === 20);
+        // Check hasNextPage based on currentPage and totalPages
+        setHasMore(response.currentPage < response.totalPages);
         setPage(pageNum);
       }
     } catch (error) {
@@ -75,10 +86,20 @@ export const CommunityAlbumsScreen = ({ navigation }: any) => {
   };
 
   const handleAlbumPress = (albumId: string) => {
-    navigation.navigate("AlbumDetail", { albumId });
+    navigation.navigate("AlbumDetail", { albumId, source: "community" });
   };
 
-  const handleFilterChange = (filter: "all" | "featured" | "trending") => {
+  const handleCreateAlbum = () => {
+    // Mở modal để chọn album riêng tư đăng lên cộng đồng
+    setShowSelectModal(true);
+  };
+
+  const handleAlbumPublished = () => {
+    // Reload albums sau khi đăng thành công
+    loadAlbums(1, false);
+  };
+
+  const handleFilterChange = (filter: "all" | "mine" | "trending") => {
     setSelectedFilter(filter);
     setPage(1);
     setHasMore(true);
@@ -89,16 +110,17 @@ export const CommunityAlbumsScreen = ({ navigation }: any) => {
       <AlbumCard
         id={item._id}
         title={item.name || "Album"}
-        imageUrl={item.images?.[0] || item.coverImage}
+        authorName={item.authorName || item.user?.fullName}
+        imageUrl={item.coverImage || item.images?.[0]}
         onPress={() => handleAlbumPress(item._id)}
       />
       <View style={styles.albumStats}>
         <View style={styles.statItem}>
-          <Heart size={14} color="#ff6b9d" />
+          <Heart size={16} color="#ff6b9d" fill="#ff6b9d" />
           <Text style={styles.statText}>{item.totalVotes || 0}</Text>
         </View>
         <View style={styles.statItem}>
-          <Bookmark size={14} color="#ffc107" />
+          <Bookmark size={16} color="#ffc107" fill="#ffc107" />
           <Text style={styles.statText}>{item.totalSaves || 0}</Text>
         </View>
         {item.averageRating > 0 && (
@@ -109,22 +131,22 @@ export const CommunityAlbumsScreen = ({ navigation }: any) => {
           </View>
         )}
       </View>
-      {item.user && (
-        <Text style={styles.userName} numberOfLines={1}>
-          bởi {item.user.fullName || "Ẩn danh"}
-        </Text>
-      )}
     </View>
   );
 
   const renderHeader = () => (
     <View>
-      <View style={styles.header}>
-        <Text style={styles.title}>Album Cộng Đồng</Text>
-        <Text style={styles.subtitle}>
-          Khám phá ý tưởng từ các cặp đôi khác
-        </Text>
+      {/* Header - Thread Style */}
+      <View style={styles.mainHeader}>
+        <View style={styles.headerTop}>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <ChevronLeft size={24} color="#374151" />
+          </TouchableOpacity>
+          <Text style={styles.logo}>Album ảnh cưới</Text>
+        </View>
       </View>
+
+      <Text style={styles.subtitle}>Khám phá ý tưởng từ các cặp đôi khác</Text>
 
       {/* Filter Tabs */}
       <View style={styles.filterContainer}>
@@ -147,17 +169,17 @@ export const CommunityAlbumsScreen = ({ navigation }: any) => {
         <TouchableOpacity
           style={[
             styles.filterButton,
-            selectedFilter === "featured" && styles.filterButtonActive,
+            selectedFilter === "mine" && styles.filterButtonActive,
           ]}
-          onPress={() => handleFilterChange("featured")}
+          onPress={() => handleFilterChange("mine")}
         >
           <Text
             style={[
               styles.filterText,
-              selectedFilter === "featured" && styles.filterTextActive,
+              selectedFilter === "mine" && styles.filterTextActive,
             ]}
           >
-            💎 Nổi bật
+            Của tôi
           </Text>
         </TouchableOpacity>
       </View>
@@ -181,6 +203,7 @@ export const CommunityAlbumsScreen = ({ navigation }: any) => {
         </View>
       ) : (
         <FlatList
+          key={`community-albums-${selectedFilter}`}
           data={albums}
           keyExtractor={(item) => item._id}
           renderItem={renderAlbum}
@@ -207,6 +230,17 @@ export const CommunityAlbumsScreen = ({ navigation }: any) => {
           showsVerticalScrollIndicator={false}
         />
       )}
+
+      {/* Floating Action Button */}
+      <TouchableOpacity style={styles.fab} onPress={handleCreateAlbum}>
+        <Plus size={28} color="#ffffff" strokeWidth={2.5} />
+      </TouchableOpacity>
+
+      <PublishAlbumModal
+        visible={showSelectModal}
+        onClose={() => setShowSelectModal(false)}
+        onPublished={handleAlbumPublished}
+      />
     </SafeAreaView>
   );
 };
@@ -214,48 +248,82 @@ export const CommunityAlbumsScreen = ({ navigation }: any) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: "#f8f9fa",
   },
-  header: {
-    paddingHorizontal: responsiveWidth(5),
-    paddingTop: responsiveHeight(2),
-    paddingBottom: responsiveHeight(1),
+  mainHeader: {
+    backgroundColor: "#ffffff",
+    paddingHorizontal: responsiveWidth(16),
+    paddingTop: responsiveHeight(8),
+    paddingBottom: responsiveHeight(12),
+    borderBottomWidth: 0.5,
+    borderBottomColor: "#e5e7eb",
+  },
+  headerTop: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  logo: {
+    fontFamily: "Agbalumo",
+    fontSize: responsiveFont(24),
+    color: "#1f2937",
+    flex: 1,
+    textAlign: "center",
+  },
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: responsiveWidth(16),
+    paddingTop: responsiveHeight(12),
+    gap: responsiveWidth(8),
   },
   title: {
-    fontSize: responsiveFont(28),
-    fontWeight: "700",
-    color: "#1a1a1a",
-    marginBottom: responsiveHeight(0.5),
+    fontFamily: "Montserrat-Bold",
+    fontSize: responsiveFont(22),
+    color: "#1f2937",
   },
   subtitle: {
-    fontSize: responsiveFont(14),
-    color: "#666",
+    fontFamily: "Montserrat-Medium",
+    fontSize: responsiveFont(13),
+    color: "#6b7280",
+    textAlign: "center",
+    paddingHorizontal: responsiveWidth(16),
+    paddingTop: responsiveHeight(4),
+    paddingBottom: responsiveHeight(12),
   },
   filterContainer: {
     flexDirection: "row",
-    paddingHorizontal: responsiveWidth(5),
-    marginVertical: responsiveHeight(2),
-    gap: responsiveWidth(3),
+    paddingHorizontal: responsiveWidth(16),
+    gap: responsiveWidth(12),
+    marginBottom: responsiveHeight(12),
   },
   filterButton: {
-    paddingVertical: responsiveHeight(1),
-    paddingHorizontal: responsiveWidth(4),
-    borderRadius: 20,
-    backgroundColor: "#fff",
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#ffffff",
+    paddingVertical: responsiveHeight(12),
+    borderRadius: responsiveWidth(12),
     borderWidth: 1,
     borderColor: "#e5e7eb",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   filterButtonActive: {
-    backgroundColor: "#ff6b9d",
-    borderColor: "#ff6b9d",
+    backgroundColor: "#9333ea",
+    borderColor: "#9333ea",
   },
   filterText: {
+    fontFamily: "Montserrat-SemiBold",
     fontSize: responsiveFont(14),
-    fontWeight: "600",
-    color: "#666",
+    color: "#1f2937",
   },
   filterTextActive: {
-    color: "#fff",
+    color: "#ffffff",
   },
   listContent: {
     paddingHorizontal: responsiveWidth(5),
@@ -271,29 +339,24 @@ const styles = StyleSheet.create({
   albumStats: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: responsiveHeight(0.5),
+    marginTop: responsiveHeight(1),
     paddingHorizontal: responsiveWidth(1),
-    gap: responsiveWidth(2),
+    gap: responsiveWidth(4),
   },
   statItem: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
+    gap: 6,
   },
   statText: {
-    fontSize: responsiveFont(12),
-    color: "#666",
+    fontSize: responsiveFont(14),
+    fontFamily: "Montserrat-SemiBold",
+    color: "#333",
   },
   ratingText: {
-    fontSize: responsiveFont(12),
-    fontWeight: "600",
+    fontSize: responsiveFont(14),
+    fontFamily: "Montserrat-SemiBold",
     color: "#ffc107",
-  },
-  userName: {
-    fontSize: responsiveFont(12),
-    color: "#999",
-    marginTop: 2,
-    paddingHorizontal: responsiveWidth(1),
   },
   loadingContainer: {
     flex: 1,
@@ -311,6 +374,22 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: responsiveFont(16),
     color: "#999",
+  },
+  fab: {
+    position: "absolute",
+    right: responsiveWidth(20),
+    bottom: responsiveHeight(24),
+    width: responsiveWidth(56),
+    height: responsiveWidth(56),
+    borderRadius: responsiveWidth(28),
+    backgroundColor: "#9333ea",
+    justifyContent: "center",
+    alignItems: "center",
+    elevation: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
   },
 });
 

@@ -13,7 +13,7 @@ import {
   Platform,
 } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
-import { ArrowLeft } from "lucide-react-native";
+import { ArrowLeft, Calendar } from "lucide-react-native";
 import { useSelector, useDispatch } from "react-redux";
 import {
   setCredentials,
@@ -25,6 +25,7 @@ import type { StackNavigationProp } from "@react-navigation/stack";
 import apiClient from "../../api/client";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { persistor } from "../../store/store";
+import DateTimePicker from "@react-native-community/datetimepicker";
 
 const COLORS = {
   background: "#F9F9F9",
@@ -55,6 +56,12 @@ const EditProfileScreen = () => {
   const [newPassword, setNewPassword] = useState("");
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
 
+  // State cho DatePicker (ngày cưới)
+  const [selectedDate, setSelectedDate] = useState<Date>(
+    currentValue ? new Date(currentValue) : new Date()
+  );
+  const [showDatePicker, setShowDatePicker] = useState(false);
+
   // === HÀM XỬ LÝ LƯU THÔNG TIN CHUNG ===
   const handleSaveInfo = async () => {
     if (field === "email") {
@@ -80,6 +87,35 @@ const EditProfileScreen = () => {
       }
       return; // Dừng hàm ở đây
     }
+
+    // Xử lý riêng cho weddingDate
+    if (field === "weddingDate") {
+      if (isLoading) return;
+      setIsLoading(true);
+
+      try {
+        const body = { weddingDate: selectedDate.toISOString() };
+        const response = await apiClient.put("/auth/profile", body);
+
+        // Dispatch để cập nhật toàn bộ thông tin user trong Redux
+        dispatch(setCredentials({ user: response.data, token }));
+
+        Alert.alert("Thành công", "Đã cập nhật ngày cưới của bạn.");
+        navigation.goBack();
+      } catch (error) {
+        console.error("Update Wedding Date Error:", error);
+        const errorMessage =
+          typeof error === "object" && error !== null && "message" in error
+            ? (error as { message?: string }).message
+            : undefined;
+        Alert.alert("Lỗi", errorMessage || "Có lỗi xảy ra khi cập nhật");
+      } finally {
+        setIsLoading(false);
+      }
+      return;
+    }
+
+    // Xử lý các trường khác (fullName, v.v.)
     if (isLoading || !value) {
       Alert.alert("Lỗi", "Vui lòng không để trống thông tin.");
       return;
@@ -254,6 +290,53 @@ const EditProfileScreen = () => {
     </View>
   );
 
+  // === RENDER GIAO DIỆN CHỈNH SỬA NGÀY CƯỚI ===
+  const renderWeddingDateForm = () => (
+    <View style={styles.container}>
+      <Text style={styles.inputLabel}>{label}</Text>
+
+      <TouchableOpacity
+        style={styles.datePickerButton}
+        onPress={() => setShowDatePicker(true)}
+      >
+        <Calendar color={COLORS.iconColor} size={20} />
+        <Text style={styles.datePickerText}>
+          {selectedDate.toLocaleDateString("vi-VN", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+          })}
+        </Text>
+      </TouchableOpacity>
+
+      {showDatePicker && (
+        <DateTimePicker
+          value={selectedDate}
+          mode="date"
+          display={Platform.OS === "ios" ? "spinner" : "default"}
+          onChange={(event, date) => {
+            setShowDatePicker(Platform.OS === "ios");
+            if (date) {
+              setSelectedDate(date);
+            }
+          }}
+        />
+      )}
+
+      <TouchableOpacity
+        style={[styles.saveButton, isLoading && styles.saveButtonDisabled]}
+        onPress={handleSaveInfo}
+        disabled={isLoading}
+      >
+        {isLoading ? (
+          <ActivityIndicator color={COLORS.white} />
+        ) : (
+          <Text style={styles.saveButtonText}>Lưu thay đổi</Text>
+        )}
+      </TouchableOpacity>
+    </View>
+  );
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar translucent={false} />
@@ -266,6 +349,8 @@ const EditProfileScreen = () => {
         {/* Điều kiện để render form phù hợp */}
         {field === "password"
           ? renderChangePasswordForm()
+          : field === "weddingDate"
+          ? renderWeddingDateForm()
           : renderEditInfoForm()}
       </ScrollView>
     </SafeAreaView>
@@ -331,6 +416,22 @@ const styles = StyleSheet.create({
   },
   saveButtonDisabled: {
     backgroundColor: "#FAD1D8",
+  },
+  datePickerButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: COLORS.card,
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderColor: "#EAEAEA",
+    gap: 12,
+  },
+  datePickerText: {
+    fontFamily: "Montserrat-Medium",
+    fontSize: 16,
+    color: COLORS.textPrimary,
   },
 });
 

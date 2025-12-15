@@ -9,7 +9,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Search, Plus } from "lucide-react-native";
+import { Search, Plus, ChevronLeft, Users } from "lucide-react-native";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import {
   fetchAllTopicGroups,
@@ -74,24 +74,27 @@ export const TopicGroupsScreen = ({ navigation }: any) => {
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
+      {/* Header - Thread Style */}
       <View style={styles.header}>
-        <Text style={styles.title}>Nhóm Chủ Đề</Text>
-        <TouchableOpacity
-          style={styles.createButton}
-          onPress={handleCreateGroup}
-        >
-          <Plus size={24} color="#fff" />
-        </TouchableOpacity>
+        <View style={styles.headerTop}>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <ChevronLeft size={24} color="#374151" />
+          </TouchableOpacity>
+          <Text style={styles.logo}>Nhóm</Text>
+        </View>
       </View>
+
+      <Text style={styles.subtitle}>
+        Kết nối với những người có cùng sở thích
+      </Text>
 
       {/* Search Bar */}
       <View style={styles.searchContainer}>
-        <Search size={20} color="#999" style={styles.searchIcon} />
+        <Search size={20} color="#9ca3af" style={styles.searchIcon} />
         <TextInput
           style={styles.searchInput}
-          placeholder="Tìm kiếm nhóm..."
-          value={searchQuery}
-          onChangeText={setSearchQuery}
+          placeholder="Tìm kiếm..."
+          placeholderTextColor="#9ca3af"
         />
       </View>
 
@@ -184,6 +187,11 @@ export const TopicGroupsScreen = ({ navigation }: any) => {
           }
         />
       )}
+
+      {/* Floating Action Button */}
+      <TouchableOpacity style={styles.fab} onPress={handleCreateGroup}>
+        <Plus size={28} color="#ffffff" strokeWidth={2.5} />
+      </TouchableOpacity>
     </SafeAreaView>
   );
 };
@@ -191,19 +199,48 @@ export const TopicGroupsScreen = ({ navigation }: any) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: "#f8f9fa",
   },
   header: {
+    backgroundColor: "#ffffff",
+    paddingHorizontal: responsiveWidth(16),
+    paddingTop: responsiveHeight(8),
+    paddingBottom: responsiveHeight(12),
+    borderBottomWidth: 0.5,
+    borderBottomColor: "#e5e7eb",
+  },
+  headerTop: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: responsiveWidth(5),
-    paddingVertical: responsiveHeight(2),
+  },
+  logo: {
+    fontFamily: "Agbalumo",
+    fontSize: responsiveFont(24),
+    color: "#1f2937",
+    flex: 1,
+    textAlign: "center",
+  },
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: responsiveWidth(16),
+    paddingTop: responsiveHeight(12),
+    gap: responsiveWidth(8),
   },
   title: {
-    fontSize: responsiveFont(24),
-    fontWeight: "700",
-    color: "#1a1a1a",
+    fontFamily: "Montserrat-Bold",
+    fontSize: responsiveFont(22),
+    color: "#1f2937",
+  },
+  subtitle: {
+    fontFamily: "Montserrat-Medium",
+    fontSize: responsiveFont(13),
+    color: "#6b7280",
+    textAlign: "center",
+    paddingHorizontal: responsiveWidth(16),
+    paddingTop: responsiveHeight(4),
+    paddingBottom: responsiveHeight(12),
   },
   createButton: {
     backgroundColor: "#e91e63",
@@ -216,73 +253,88 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#fff",
-    marginHorizontal: responsiveWidth(5),
-    marginBottom: responsiveHeight(2),
-    paddingHorizontal: responsiveWidth(4),
-    borderRadius: 25,
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    backgroundColor: "#ffffff",
+    marginHorizontal: responsiveWidth(16),
+    marginBottom: responsiveHeight(8),
+    paddingHorizontal: responsiveWidth(16),
+    paddingVertical: responsiveHeight(10),
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
   },
   searchIcon: {
-    marginRight: responsiveWidth(2),
+    marginRight: responsiveWidth(8),
   },
   searchInput: {
     flex: 1,
-    paddingVertical: responsiveHeight(1.5),
-    fontSize: responsiveFont(15),
-    color: "#333",
+    fontFamily: "Montserrat-Medium",
+    fontSize: responsiveFont(14),
+    color: "#1f2937",
   },
   tabContainer: {
     flexDirection: "row",
-    marginHorizontal: responsiveWidth(5),
-    marginBottom: responsiveHeight(2),
-    backgroundColor: "#fff",
-    borderRadius: 25,
-    padding: 4,
+    paddingHorizontal: responsiveWidth(16),
+    gap: responsiveWidth(12),
+    marginBottom: responsiveHeight(12),
   },
   tab: {
     flex: 1,
-    paddingVertical: responsiveHeight(1),
+    flexDirection: "row",
     alignItems: "center",
-    borderRadius: 20,
+    justifyContent: "center",
+    backgroundColor: "#ffffff",
+    paddingVertical: responsiveHeight(12),
+    borderRadius: responsiveWidth(12),
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   activeTab: {
-    backgroundColor: "#e91e63",
+    backgroundColor: "#ff6b9d",
+    borderColor: "#ff6b9d",
   },
   tabText: {
-    fontSize: responsiveFont(15),
-    color: "#666",
-    fontWeight: "600",
+    fontFamily: "Montserrat-SemiBold",
+    fontSize: responsiveFont(14),
+    color: "#1f2937",
   },
   activeTabText: {
-    color: "#fff",
+    color: "#ffffff",
   },
   categoriesList: {
-    maxHeight: responsiveHeight(5),
-    marginBottom: responsiveHeight(2),
-    paddingHorizontal: responsiveWidth(5),
+    maxHeight: responsiveHeight(50),
+    marginBottom: responsiveHeight(12),
+    paddingHorizontal: responsiveWidth(16),
   },
   categoryChip: {
-    backgroundColor: "#fff",
-    paddingHorizontal: responsiveWidth(4),
-    paddingVertical: responsiveHeight(1),
-    borderRadius: 20,
-    marginRight: responsiveWidth(2),
+    backgroundColor: "#ffffff",
+    paddingHorizontal: responsiveWidth(16),
+    paddingVertical: responsiveHeight(10),
+    borderRadius: responsiveWidth(12),
+    marginRight: responsiveWidth(8),
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   activeCategoryChip: {
-    backgroundColor: "#e91e63",
+    backgroundColor: "#ff6b9d",
+    borderColor: "#ff6b9d",
   },
   categoryText: {
-    fontSize: responsiveFont(14),
-    color: "#666",
-    fontWeight: "600",
+    fontFamily: "Montserrat-SemiBold",
+    fontSize: responsiveFont(13),
+    color: "#1f2937",
   },
   activeCategoryText: {
-    color: "#fff",
+    color: "#ffffff",
   },
   listContent: {
     paddingHorizontal: responsiveWidth(5),
@@ -300,5 +352,21 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: responsiveFont(16),
     color: "#999",
+  },
+  fab: {
+    position: "absolute",
+    right: responsiveWidth(20),
+    bottom: responsiveHeight(24),
+    width: responsiveWidth(56),
+    height: responsiveWidth(56),
+    borderRadius: responsiveWidth(28),
+    backgroundColor: "#ff6b9d",
+    justifyContent: "center",
+    alignItems: "center",
+    elevation: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
   },
 });

@@ -436,16 +436,27 @@ export default function TaskListScreen() {
         state.weddingEvent.getWeddingEvent.weddingEvent.createdAt || new Date()
     )
   );
+
+  // Lấy ngày cưới từ Redux store
+  const weddingDateString = useSelector(
+    (state: RootState) =>
+      state.weddingEvent.getWeddingEvent.weddingEvent.timeToMarried
+  );
+  const weddingDate = weddingDateString
+    ? new Date(weddingDateString)
+    : undefined;
+
   // Xử lý chèn checklist mẫu
   const handleInsertSampleTasks = async () => {
     try {
       setIsInsertingTasks(true);
       // Lấy ngày tạo event từ Redux store
-      // Gọi API để insert sample tasks với ngày tạo event
+      // Gọi API để insert sample tasks với ngày tạo event và ngày cưới
       const result = await insertSampleTasks(
         eventId,
         userId,
         eventCreatedDate,
+        weddingDate, // Truyền thêm ngày cưới
         dispatch
       );
 

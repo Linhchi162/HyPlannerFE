@@ -116,8 +116,8 @@ const styles = StyleSheet.create({
   },
   pinIconContainer: {
     position: "absolute",
-    right: responsiveWidth(3),
-    top: getItemHeight() - responsiveHeight(25),
+    right: responsiveWidth(4),
+    bottom: responsiveHeight(6),
     zIndex: 1,
   },
   pinButton: {

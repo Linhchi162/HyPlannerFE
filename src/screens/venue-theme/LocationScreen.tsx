@@ -3,7 +3,7 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
+  FlatList,
   TouchableOpacity,
   SafeAreaView,
   Dimensions,
@@ -17,6 +17,10 @@ import LocationCard from "../../components/LocationCard";
 import * as venueThemeService from "../../service/venueThemeService";
 import * as userSelectionService from "../../service/userSelectionService";
 import CustomPopup from "../../components/CustomPopup";
+import {
+  useAlbumCreation,
+  AlbumWizardStep,
+} from "../../contexts/AlbumCreationContext";
 import {
   responsiveFont,
   responsiveWidth,
@@ -34,6 +38,8 @@ interface LocationOption {
 
 const LocationScreen = () => {
   const navigation = useNavigation();
+  const { startAlbumCreation, nextStep, currentStep, isCreatingAlbum } =
+    useAlbumCreation();
   const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
   const [popupVisible, setPopupVisible] = useState(false);
   const [popupType, setPopupType] = useState<"success" | "error" | "warning">(
@@ -74,8 +80,8 @@ const LocationScreen = () => {
     const paddingHorizontal = 32; // 16px on each side
     const gap = 8;
     const availableWidth = width - paddingHorizontal;
-    const totalGapWidth = gap; // 1 gap between 2 items
-    return (availableWidth - totalGapWidth) / 2;
+    const totalGapWidth = gap * 2; // 2 gaps between 3 items
+    return (availableWidth - totalGapWidth) / 3;
   };
 
   const getItemHeight = () => {
@@ -116,23 +122,18 @@ const LocationScreen = () => {
       </View>
 
       {/* Location Grid */}
-      <ScrollView
+      <FlatList
+        data={locationOptions}
+        keyExtractor={(item) => item.id}
+        numColumns={3}
+        renderItem={({ item }) => renderLocationItem(item)}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={[
-          styles.scrollContent,
-          {
-            paddingBottom:
-              Platform.OS === "android"
-                ? responsiveHeight(80)
-                : responsiveHeight(24),
-          },
-        ]}
-      >
-        <View style={styles.locationGrid}>
-          {locationOptions.map(renderLocationItem)}
-        </View>
+        columnWrapperStyle={styles.columnWrapper}
+        contentContainerStyle={styles.scrollContent}
+      />
 
-        {/* Action Button */}
+      {/* Fixed Action Button */}
+      <View style={styles.actionButtonContainer}>
         <TouchableOpacity
           style={[
             styles.actionButton,
@@ -142,39 +143,41 @@ const LocationScreen = () => {
             if (selectedLocations.length === 0) return;
             try {
               setPopupType("warning");
-              setPopupTitle("Đang tạo");
+              setPopupTitle("Đang lưu");
               setPopupMessage("Vui lòng đợi trong giây lát...");
               setPopupButtonText(undefined);
               setOnPopupButtonPress(undefined);
               setPopupVisible(true);
+
+              // Lưu selection địa điểm
               await userSelectionService.createSelection(
                 { weddingVenueIds: Array.from(new Set(selectedLocations)) },
                 "wedding-venue"
               );
-              // Tạo album từ selection pinned
-              const albums = await userSelectionService.getUserAlbums();
-              const name = `Album ${
-                Array.isArray(albums.data) ? albums.data.length + 1 : 1
-              }`;
-              await userSelectionService.createAlbum({
-                name,
-                type: "wedding-venue" as any,
-              });
-              setPopupType("success");
-              setPopupTitle("Thành công");
-              setPopupMessage("Đã tạo album địa điểm thành công.");
-              setPopupButtonText("Xem album");
-              setOnPopupButtonPress(() => () => {
-                // @ts-ignore
-                navigation.navigate("Album");
-              });
+
+              // Bắt đầu flow tạo album nếu chưa bắt đầu
+              if (
+                !isCreatingAlbum ||
+                currentStep === AlbumWizardStep.NOT_STARTED
+              ) {
+                startAlbumCreation();
+              }
+
+              // Tiến tới bước tiếp theo trong wizard (LOCATION -> STYLE)
+              if (currentStep === AlbumWizardStep.LOCATION) {
+                nextStep();
+              }
+
+              setPopupVisible(false);
+              // Chuyển sang màn chọn phong cách
+              (navigation as any).navigate("Style");
             } catch (e: any) {
               setPopupType("error");
               setPopupTitle("Thất bại");
               const msg =
                 e?.message ||
                 e?.data?.message ||
-                "Không thể tạo album địa điểm.";
+                "Không thể lưu lựa chọn địa điểm.";
               setPopupMessage(msg);
               setPopupButtonText("Đóng");
               setOnPopupButtonPress(undefined);
@@ -183,9 +186,9 @@ const LocationScreen = () => {
           disabled={selectedLocations.length === 0}
           activeOpacity={0.8}
         >
-          <Text style={styles.actionButtonText}>Hoàn thành</Text>
+          <Text style={styles.actionButtonText}>Tiếp theo</Text>
         </TouchableOpacity>
-      </ScrollView>
+      </View>
       <CustomPopup
         visible={popupVisible}
         type={popupType}
@@ -213,6 +216,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
   },
   headerTitle: {
+    fontFamily: "Agbalumo",
     fontSize: responsiveFont(24),
     fontWeight: "600",
     color: "#1f2937",
@@ -227,23 +231,42 @@ const styles = StyleSheet.create({
     color: "#6b7280",
     textAlign: "center",
   },
-  scrollContent: {},
-  locationGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
+  scrollContent: {
     paddingHorizontal: responsiveWidth(16),
-    gap: responsiveWidth(8),
+    paddingTop: responsiveHeight(16),
+    paddingBottom: responsiveHeight(100),
+  },
+  columnWrapper: {
     justifyContent: "space-between",
+    marginBottom: responsiveHeight(8),
+  },
+  actionButtonContainer: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: "#fff",
+    paddingVertical: responsiveHeight(16),
+    paddingHorizontal: responsiveWidth(16),
+    borderTopWidth: 1,
+    borderTopColor: "#F3F4F6",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: -2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 5,
   },
   actionButton: {
     backgroundColor: "#F9CBD6",
     paddingVertical: responsiveHeight(12),
-    paddingHorizontal: responsiveWidth(16),
     borderRadius: responsiveWidth(100),
-    marginTop: responsiveHeight(12),
     alignItems: "center",
     justifyContent: "center",
     alignSelf: "center",
+    width: "50%",
   },
   actionButtonDisabled: { opacity: 0.5 },
   actionButtonText: {

@@ -78,16 +78,10 @@ const ChooseStyleScreen = () => {
       onPress={() => {
         if (item.id === "5") {
           // Lễ cưới
-          navigation.navigate(
-            "RoleSelection" as never,
-            { from: "wedding" } as never
-          );
+          (navigation as any).navigate("RoleSelection", { from: "wedding" });
         } else if (item.id === "4") {
           // Lễ ăn hỏi
-          navigation.navigate(
-            "RoleSelection" as never,
-            { from: "engagement" } as never
-          );
+          (navigation as any).navigate("RoleSelection", { from: "engagement" });
         } else if (item.id === "6") {
           // Mood board
           navigation.navigate("Album" as never);
@@ -96,7 +90,6 @@ const ChooseStyleScreen = () => {
         }
       }}
     >
-      <Text style={styles.itemNumber}>{item.id}.</Text>
       <Text style={styles.itemTitle}>{item.title}</Text>
     </TouchableOpacity>
   );
@@ -107,9 +100,7 @@ const ChooseStyleScreen = () => {
   return (
     <SafeAreaView style={[styles.container, { paddingTop: topPad }]}>
       <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => navigation.navigate("Main", { screen: "Home" })}
-        >
+        <TouchableOpacity onPress={() => navigation.goBack()}>
           <ChevronLeft size={24} color="#1f2937" />
         </TouchableOpacity>
         <TouchableOpacity
@@ -188,14 +179,15 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     justifyContent: "space-between",
     gap: responsiveWidth(16),
-    paddingVertical: responsiveHeight(20),
+    paddingVertical: responsiveHeight(50),
   },
   menuItem: {
     width: "47%",
     aspectRatio: 4 / 3,
     borderRadius: responsiveWidth(16),
     padding: responsiveWidth(16),
-    justifyContent: "space-between",
+    justifyContent: "center",
+    alignItems: "center",
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
@@ -205,15 +197,11 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
-  itemNumber: {
-    fontSize: responsiveFont(20),
-    fontFamily: fonts.montserratSemiBold,
-    color: "#1f2937",
-  },
   itemTitle: {
     fontSize: responsiveFont(16),
     fontFamily: fonts.montserratMedium,
     color: "#1f2937",
+    textAlign: "center",
   },
 });
 

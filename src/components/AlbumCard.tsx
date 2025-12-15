@@ -13,29 +13,43 @@ import { fonts } from "../theme/fonts";
 const { width } = Dimensions.get("window");
 const DEFAULT_ALBUM_IMAGE_URL =
   "https://www.brides.com/thmb/fZBzhWRjH5ZaCgOqjO7kc1ZJEsQ=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/recirc-texas-garden-glass-tent-wedding-couple-portrait-jose-villa-0924-cbc6f4f2a3c04ed59c464413e1fbc785.JPG";
-const CARD_WIDTH = (width - 48) / 2; // 2 columns with 16px padding on each side and 16px gap
+const CARD_WIDTH = (width - 80) / 2; // 2 columns with 16px padding on each side and 16px gap
+const CARD_HEIGHT = CARD_WIDTH * 0.8; // Make height 80% of width to reduce size
 
 // Ensure consistent measurement when layout changes; if parent padding/gap differs on some screens,
 // we can clamp a minimum width to avoid rounding shrink issues
-const MIN_CARD_WIDTH = 150;
+const MIN_CARD_WIDTH = 40;
+const MIN_CARD_HEIGHT = MIN_CARD_WIDTH * 0.8;
 
 interface AlbumCardProps {
   id: string;
   title: string;
   imageUrl?: string;
+  authorName?: string;
   isAddNew?: boolean;
   onPress: () => void;
+  cardWidth?: number;
 }
 
 const AlbumCard: React.FC<AlbumCardProps> = ({
   title,
   imageUrl,
+  authorName,
   isAddNew,
   onPress,
+  cardWidth,
 }) => {
+  const actualWidth = cardWidth || CARD_WIDTH;
+  const actualHeight = actualWidth * 0.8;
   if (isAddNew) {
     return (
-      <TouchableOpacity style={styles.addNewContainer} onPress={onPress}>
+      <TouchableOpacity
+        style={[
+          styles.addNewContainer,
+          { width: actualWidth, height: actualHeight },
+        ]}
+        onPress={onPress}
+      >
         <Plus size={24} color="#9ca3af" />
         <Text style={styles.addNewText}>{title}</Text>
       </TouchableOpacity>
@@ -43,17 +57,27 @@ const AlbumCard: React.FC<AlbumCardProps> = ({
   }
 
   return (
-    <TouchableOpacity style={styles.container} onPress={onPress}>
+    <TouchableOpacity
+      style={[styles.container, { width: actualWidth, height: actualHeight }]}
+      onPress={onPress}
+    >
       <Image
         source={imageUrl ? imageUrl : DEFAULT_ALBUM_IMAGE_URL}
         style={styles.image}
         contentFit="cover"
-        cachePolicy="immutable"
+        cachePolicy="memory-disk"
         transition={0}
         placeholder={require("../../assets/images/default.png") as any}
       />
       <View style={styles.titleContainer}>
-        <Text style={styles.title}>{title}</Text>
+        <Text style={styles.title} numberOfLines={2}>
+          {title}
+        </Text>
+        {authorName && (
+          <Text style={styles.authorName} numberOfLines={1}>
+            {authorName}
+          </Text>
+        )}
       </View>
     </TouchableOpacity>
   );
@@ -63,10 +87,10 @@ const styles = StyleSheet.create({
   container: {
     width: Math.max(CARD_WIDTH, MIN_CARD_WIDTH),
     minWidth: Math.max(CARD_WIDTH, MIN_CARD_WIDTH),
-    minHeight: Math.max(CARD_WIDTH, MIN_CARD_WIDTH),
-    aspectRatio: 1,
-    borderRadius: 16,
-    marginBottom: 16,
+    height: Math.max(CARD_HEIGHT, MIN_CARD_HEIGHT),
+    minHeight: Math.max(CARD_HEIGHT, MIN_CARD_HEIGHT),
+    borderRadius: 12,
+    marginBottom: 12,
     overflow: "hidden",
     backgroundColor: "#fff",
     shadowColor: "#000",
@@ -81,10 +105,10 @@ const styles = StyleSheet.create({
   addNewContainer: {
     width: Math.max(CARD_WIDTH, MIN_CARD_WIDTH),
     minWidth: Math.max(CARD_WIDTH, MIN_CARD_WIDTH),
-    minHeight: Math.max(CARD_WIDTH, MIN_CARD_WIDTH),
-    aspectRatio: 1,
-    borderRadius: 16,
-    marginBottom: 16,
+    height: Math.max(CARD_HEIGHT, MIN_CARD_HEIGHT),
+    minHeight: Math.max(CARD_HEIGHT, MIN_CARD_HEIGHT),
+    borderRadius: 12,
+    marginBottom: 12,
     backgroundColor: "#f3f4f6",
     justifyContent: "center",
     alignItems: "center",
@@ -100,20 +124,31 @@ const styles = StyleSheet.create({
   },
   titleContainer: {
     position: "absolute",
-    bottom: 0,
+    top: 0,
     left: 0,
     right: 0,
-    padding: 12,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    bottom: 0,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.4)",
+    padding: 8,
   },
   title: {
     fontSize: 14,
-    fontFamily: fonts.montserratMedium,
+    fontFamily: fonts.montserratSemiBold,
     color: "#ffffff",
+    textAlign: "center",
+    marginBottom: 4,
+  },
+  authorName: {
+    fontSize: 12,
+    fontFamily: fonts.montserratMedium,
+    color: "#e5e7eb",
+    textAlign: "center",
   },
   addNewText: {
     marginTop: 8,
-    fontSize: 14,
+    fontSize: 12,
     fontFamily: fonts.montserratMedium,
     color: "#6b7280",
   },

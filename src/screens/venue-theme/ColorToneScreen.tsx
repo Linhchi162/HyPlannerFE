@@ -23,6 +23,10 @@ import * as userSelectionService from "../../service/userSelectionService";
 import { useSelection } from "../../contexts/SelectionContext";
 import CustomPopup from "../../components/CustomPopup";
 import {
+  useAlbumCreation,
+  AlbumWizardStep,
+} from "../../contexts/AlbumCreationContext";
+import {
   responsiveFont,
   responsiveWidth,
   responsiveHeight,
@@ -41,6 +45,7 @@ type ToneType = "wedding" | "engagement";
 
 const ColorToneScreen = () => {
   const navigation = useNavigation();
+  const { nextStep, currentStep } = useAlbumCreation();
   const [selected, setSelected] = useState<string[]>([]);
   const [toneType, setToneType] = useState<ToneType>("wedding");
   const [menuVisible, setMenuVisible] = useState(false);
@@ -90,18 +95,19 @@ const ColorToneScreen = () => {
     fetchData(toneType);
   }, [toneType]);
 
-  const handleCreateAlbum = async () => {
+  const handleProceedToNext = async () => {
     const totalSelected =
       selectedWeddingToneColors.length + selectedEngageToneColors.length;
     if (totalSelected === 0) return;
     try {
       setIsCreatingAlbum(true);
       setPopupType("warning");
-      setPopupTitle("Đang tạo");
+      setPopupTitle("Đang lưu");
       setPopupMessage("Vui lòng đợi trong giây lát...");
       setPopupButtonText(undefined);
       setOnPopupButtonPress(undefined);
       setPopupVisible(true);
+
       // Luôn gửi cả hai mảng để giữ được lựa chọn từ cả hai tab
       await userSelectionService.createSelection(
         {
@@ -111,31 +117,20 @@ const ColorToneScreen = () => {
         "tone-color"
       );
 
-      // Lấy số album hiện có để đặt tên tiếp theo
-      let albumCount = 0;
-      try {
-        const res = await userSelectionService.getUserAlbums();
-        albumCount = Array.isArray(res.data) ? res.data.length : 0;
-      } catch {}
+      // Tiến tới bước tiếp theo trong wizard
+      if (currentStep === AlbumWizardStep.TONE_COLOR) {
+        nextStep();
+      }
 
-      const albumName = `Album ${albumCount + 1}`;
-      await userSelectionService.createAlbum({
-        name: albumName,
-        type: "tone-color",
-      });
-      // Clear local and context selections to avoid carrying over to next album
+      // Clear local selections
       setSelected([]);
-      clearSelections();
-      setPopupType("success");
-      setPopupTitle("Thành công");
-      setPopupMessage("Đã tạo album tone màu thành công.");
-      setPopupButtonText("Xem album");
-      setOnPopupButtonPress(() => () => {
-        // @ts-ignore
-        navigation.navigate("Album");
-      });
+
+      setPopupVisible(false);
+      // Chuyển thẳng sang màn chọn trang phục lễ ăn hỏi cô dâu
+      (navigation as any).navigate("BrideAoDaiStyle");
     } catch (e: any) {
-      const msg = e?.message || e?.data?.message || "Không thể tạo album";
+      const msg =
+        e?.message || e?.data?.message || "Không thể lưu lựa chọn tone màu";
       setPopupType("error");
       setPopupTitle("Thất bại");
       setPopupMessage(msg);
@@ -231,9 +226,10 @@ const ColorToneScreen = () => {
       </View>
 
       <FlatList
+        key="color-tone-grid"
         data={loading ? [] : items}
         keyExtractor={(item) => (item as any)._id || (item as any).id}
-        numColumns={2}
+        numColumns={3}
         renderItem={({ item }) => {
           const itemId = (item as any)._id || (item as any).id;
           return (
@@ -254,24 +250,24 @@ const ColorToneScreen = () => {
         maxToRenderPerBatch={8}
         updateCellsBatchingPeriod={50}
         showsVerticalScrollIndicator={false}
-        ListFooterComponent={
-          <View style={{ paddingTop: 8, paddingBottom: 24 }}>
-            <TouchableOpacity
-              style={[
-                styles.actionButton,
-                selected.length === 0 && styles.actionButtonDisabled,
-              ]}
-              onPress={handleCreateAlbum}
-              disabled={isCreatingAlbum || selected.length === 0}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.actionButtonText}>
-                {isCreatingAlbum ? "Đang tạo..." : "Hoàn thành"}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        }
       />
+
+      {/* Fixed Action Button */}
+      <View style={styles.actionButtonContainer}>
+        <TouchableOpacity
+          style={[
+            styles.actionButton,
+            selected.length === 0 && styles.actionButtonDisabled,
+          ]}
+          onPress={handleProceedToNext}
+          disabled={isCreatingAlbum || selected.length === 0}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.actionButtonText}>
+            {isCreatingAlbum ? "Đang lưu..." : "Tiếp theo"}
+          </Text>
+        </TouchableOpacity>
+      </View>
       <CustomPopup
         visible={popupVisible}
         type={popupType}
@@ -296,8 +292,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
   },
   headerTitle: {
+    fontFamily: "Agbalumo",
     fontSize: responsiveFont(24),
-    fontWeight: "600",
     color: "#1f2937",
   },
   instructionContainer: {
@@ -340,24 +336,41 @@ const styles = StyleSheet.create({
   },
   menuTextActive: { fontWeight: "700" },
   scrollContent: {
-    paddingBottom:
-      Platform.OS === "android" ? responsiveHeight(80) : responsiveHeight(24),
     paddingHorizontal: responsiveWidth(16),
+    paddingTop: responsiveHeight(16),
+    paddingBottom: responsiveHeight(100),
   },
   columnWrapper: {
     justifyContent: "space-between",
-    gap: responsiveWidth(8),
-    paddingTop: responsiveHeight(16),
+    marginBottom: responsiveHeight(8),
+  },
+  actionButtonContainer: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: "#fff",
+    paddingVertical: responsiveHeight(16),
+    paddingHorizontal: responsiveWidth(16),
+    borderTopWidth: 1,
+    borderTopColor: "#F3F4F6",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: -2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 5,
   },
   actionButton: {
     backgroundColor: "#F9CBD6",
     paddingVertical: responsiveHeight(12),
-    paddingHorizontal: responsiveWidth(16),
     borderRadius: responsiveWidth(100),
-    marginHorizontal: responsiveWidth(16),
     alignItems: "center",
     justifyContent: "center",
     alignSelf: "center",
+    width: "50%",
   },
   actionButtonDisabled: { opacity: 0.5 },
   actionButtonText: {

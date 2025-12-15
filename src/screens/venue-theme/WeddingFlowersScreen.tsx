@@ -1,18 +1,16 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Image,
   SafeAreaView,
-  Dimensions,
   StatusBar,
   Platform,
+  Dimensions,
 } from "react-native";
-import { ChevronLeft, Menu } from "lucide-react-native";
-import { useState, useEffect } from "react";
+import { ChevronLeft } from "lucide-react-native";
 import { useNavigation } from "@react-navigation/native";
 import WeddingItemCard from "../../components/WeddingItemCard";
 import { fonts } from "../../theme/fonts";
@@ -24,25 +22,28 @@ import {
   responsiveFont,
   responsiveWidth,
   responsiveHeight,
-  spacing,
 } from "../../../assets/styles/utils/responsive";
-import CustomPopup from "../../components/CustomPopup";
+import {
+  useAlbumCreation,
+  AlbumWizardStep,
+} from "../../contexts/AlbumCreationContext";
 
 const { width } = Dimensions.get("window");
+const GAP = getGridGap();
+const PADDING_HORIZONTAL = 32;
+const ITEM_WIDTH = (width - PADDING_HORIZONTAL - GAP * 2) / 3;
 
 const WeddingFlowersScreen = () => {
   const navigation = useNavigation();
+  const {
+    nextStep,
+    currentStep,
+    isCreatingAlbum: isInWizard,
+  } = useAlbumCreation();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [flowers, setFlowers] = useState<Style[]>([]);
-  const [isCreatingAlbum, setIsCreatingAlbum] = useState(false);
-  const [popupVisible, setPopupVisible] = useState(false);
-  const [popupType, setPopupType] = useState<"success" | "error" | "warning">(
-    "success"
-  );
-  const [popupTitle, setPopupTitle] = useState("");
-  const [popupMessage, setPopupMessage] = useState("");
-  const { selectedFlowers, toggleFlowerSelection, createAlbum } =
+  const { selectedFlowers, toggleFlowerSelection, saveSelections } =
     useSelection();
 
   useEffect(() => {
@@ -62,42 +63,12 @@ const WeddingFlowersScreen = () => {
     fetchFlowers();
   }, []);
 
-  const renderFlowerItem = (item: Style) => {
-    return (
-      <WeddingItemCard
-        key={item._id}
-        id={item._id}
-        name={item.name}
-        image={item.image}
-        isSelected={selectedFlowers.includes(item._id)}
-        onSelect={async () => await toggleFlowerSelection(item._id)}
-      />
-    );
-  };
-
-  const handleCreateAlbum = async () => {
-    setIsCreatingAlbum(true);
-    try {
-      await createAlbum("wedding-dress");
-      setPopupType("success");
-      setPopupTitle("Thành công");
-      setPopupMessage("Album đã được tạo thành công!");
-      setPopupVisible(true);
-    } catch (error: any) {
-      setPopupType("error");
-      setPopupTitle("Lỗi");
-      setPopupMessage(error.message || "Có lỗi xảy ra khi tạo album");
-      setPopupVisible(true);
-    } finally {
-      setIsCreatingAlbum(false);
+  const handleNext = async () => {
+    await saveSelections();
+    if (isInWizard && currentStep === AlbumWizardStep.WEDDING_FLOWERS) {
+      nextStep();
     }
-  };
-
-  const handlePopupClose = () => {
-    setPopupVisible(false);
-    if (popupType === "success") {
-      navigation.navigate("Album" as never);
-    }
+    navigation.navigate("GroomSuit" as never);
   };
 
   const topPad =
@@ -107,30 +78,19 @@ const WeddingFlowersScreen = () => {
     <SafeAreaView style={[styles.container, { paddingTop: topPad }]}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
           <ChevronLeft size={24} color="#1f2937" />
         </TouchableOpacity>
-        <View style={styles.headerTitleContainer}>
-          <Text style={styles.headerTitle}>Hoa cưới</Text>
-          <Text style={styles.headerSubtitle}>Kiểu dáng</Text>
-        </View>
-        <TouchableOpacity>
-          <Menu size={24} color="#1f2937" />
-        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Hoa cưới - Kiểu dáng</Text>
       </View>
 
       {/* Flowers Grid */}
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={[
-          styles.scrollContent,
-          {
-            paddingBottom:
-              Platform.OS === "android"
-                ? responsiveHeight(80)
-                : responsiveHeight(24),
-          },
-        ]}
+        contentContainerStyle={styles.scrollContent}
       >
         {isLoading ? (
           <View style={styles.loadingContainer}>
@@ -141,43 +101,62 @@ const WeddingFlowersScreen = () => {
             <Text style={styles.errorText}>{error}</Text>
           </View>
         ) : (
-          <View style={styles.flowerGrid}>{flowers.map(renderFlowerItem)}</View>
+          <View style={styles.flowerGrid}>
+            {flowers.map((item) => (
+              <View style={{ width: ITEM_WIDTH }} key={item._id}>
+                <WeddingItemCard
+                  id={item._id}
+                  name={item.name}
+                  image={item.image}
+                  isSelected={selectedFlowers.includes(item._id)}
+                  onSelect={async () => await toggleFlowerSelection(item._id)}
+                />
+              </View>
+            ))}
+          </View>
         )}
+      </ScrollView>
 
-        {/* Action Button */}
-        <TouchableOpacity
-          style={[
-            styles.actionButton,
-            isCreatingAlbum && styles.actionButtonDisabled,
-          ]}
-          onPress={handleCreateAlbum}
-          disabled={isCreatingAlbum}
-        >
-          <Text style={styles.actionButtonText}>
-            {isCreatingAlbum ? "Đang tạo album..." : "Hoàn thành"}
-          </Text>
+      {/* Action Button */}
+      <View style={styles.actionButtonContainer}>
+        <TouchableOpacity style={styles.actionButton} onPress={handleNext}>
+          <Text style={styles.actionButtonText}>Chọn vest chú rể</Text>
           <ChevronLeft
             size={16}
             color="#000000"
             style={{ transform: [{ rotate: "180deg" }] }}
           />
         </TouchableOpacity>
-      </ScrollView>
-
-      {/* Custom Popup */}
-      <CustomPopup
-        visible={popupVisible}
-        type={popupType}
-        title={popupTitle}
-        message={popupMessage}
-        onClose={handlePopupClose}
-        buttonText="OK"
-      />
+      </View>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#fff",
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    height: 64,
+    backgroundColor: "#fff",
+    position: "relative",
+  },
+  backButton: {
+    position: "absolute",
+    left: 16,
+    zIndex: 10,
+    padding: 4,
+  },
+  headerTitle: {
+    fontSize: responsiveFont(16),
+    fontFamily: "Agbalumo",
+    color: "#1f2937",
+    textAlign: "center",
+  },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
@@ -193,52 +172,44 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontFamily: fonts.montserratMedium,
   },
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: responsiveWidth(20),
-    height: responsiveHeight(72),
-    backgroundColor: "#FEF0F3",
-  },
-  headerTitleContainer: {
-    alignItems: "center",
-  },
-  headerTitle: {
-    fontSize: responsiveFont(24),
-    fontFamily: fonts.montserratSemiBold,
-    color: "#1f2937",
-  },
-  headerSubtitle: {
-    fontSize: responsiveFont(15),
-    fontFamily: fonts.montserratMedium,
-    color: "#6b7280",
-    marginTop: responsiveHeight(2),
-  },
   scrollContent: {
-    paddingBottom: responsiveHeight(24),
+    paddingBottom: responsiveHeight(100),
   },
   flowerGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    gap: GAP,
+  },
+  actionButtonContainer: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: "#fff",
+    paddingVertical: responsiveHeight(16),
     paddingHorizontal: responsiveWidth(16),
-    paddingTop: responsiveHeight(16),
-    gap: getGridGap(),
+    borderTopWidth: 1,
+    borderTopColor: "#F3F4F6",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: -2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 5,
   },
   actionButton: {
     backgroundColor: "#F9CBD6",
-    paddingVertical: responsiveHeight(8),
-    paddingHorizontal: responsiveWidth(16),
+    paddingVertical: responsiveHeight(12),
     borderRadius: responsiveWidth(100),
-    marginTop: responsiveHeight(16),
-    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     alignSelf: "center",
+    width: "50%",
+    flexDirection: "row",
   },
   actionButtonText: {
     color: "#000000",
@@ -246,9 +217,6 @@ const styles = StyleSheet.create({
     fontSize: responsiveFont(14),
     fontFamily: fonts.montserratSemiBold,
     marginRight: responsiveWidth(4),
-  },
-  actionButtonDisabled: {
-    opacity: 0.6,
   },
 });
 

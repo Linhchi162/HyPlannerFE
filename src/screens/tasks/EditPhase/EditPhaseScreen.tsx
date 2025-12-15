@@ -16,14 +16,14 @@ import {
 } from "@react-navigation/native";
 import { SwipeListView } from "react-native-swipe-list-view";
 import EditPhaseModal from "./EditPhaseModal";
-import { RootStackParamList } from "../../navigation/types";
+import { RootStackParamList } from "../../../navigation/types";
 import {
   responsiveFont,
   responsiveHeight,
   responsiveWidth,
 } from "../../../../assets/styles/utils/responsive";
 import { useDispatch, useSelector } from "react-redux";
-import { AppDispatch, RootState } from "../../store";
+import { AppDispatch, RootState } from "../../../store";
 import {
   deletePhase,
   getPhases,
@@ -178,8 +178,8 @@ function EditPhaseScreen() {
       <View style={styles.rowFront}>
         <View style={styles.phaseCard}>
           <Text style={styles.phaseTitle}>
-            Giai đoạn {item.index + 1}: {formatDate(item.phaseTimeStart)} -{" "}
-            {formatDate(item.phaseTimeEnd)}
+            {/* Giai đoạn {item.index + 1}: {formatDate(item.phaseTimeStart)} -{" "} */}
+            Giai đoạn {item.index + 1}
           </Text>
         </View>
       </View>

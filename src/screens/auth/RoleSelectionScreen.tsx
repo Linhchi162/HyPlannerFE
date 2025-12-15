@@ -52,55 +52,56 @@ const RoleSelectionScreen = () => {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <ChevronLeft size={24} color="#1f2937" />
+          <ChevronLeft size={32} color="#1f2937" />
         </TouchableOpacity>
       </View>
-
       {/* Separator Line */}
       <View style={styles.separator} />
+      {/* Content Container */}
+      <View style={styles.contentContainer}>
+        {/* Title */}
+        <View style={styles.titleContainer}>
+          <Text style={styles.title}>Bạn là</Text>
+        </View>
 
-      {/* Title */}
-      <View style={styles.titleContainer}>
-        <Text style={styles.title}>Bạn là</Text>
-      </View>
-
-      {/* Selection Cards */}
-      <View style={styles.cardsContainer}>
-        {/* Bride Card */}
-        <TouchableOpacity
-          style={styles.card}
-          onPress={handleBrideSelection}
-          activeOpacity={0.8}
-        >
-          <View style={styles.iconContainer}>
-            <View style={styles.brideIcon}>
-              <Image
-                source={require("../../../assets/images/bride-icon.png")}
-                style={styles.iconImage}
-                resizeMode="contain"
-              />
+        {/* Selection Cards */}
+        <View style={styles.cardsContainer}>
+          {/* Bride Card */}
+          <TouchableOpacity
+            style={styles.card}
+            onPress={handleBrideSelection}
+            activeOpacity={0.8}
+          >
+            <View style={styles.iconContainer}>
+              <View style={styles.brideIcon}>
+                <Image
+                  source={require("../../../assets/images/bride-icon.png")}
+                  style={styles.iconImage}
+                  resizeMode="contain"
+                />
+              </View>
             </View>
-          </View>
-          <Text style={styles.cardTitle}>Cô dâu</Text>
-        </TouchableOpacity>
+            <Text style={styles.cardTitle}>Cô dâu</Text>
+          </TouchableOpacity>
 
-        {/* Groom Card */}
-        <TouchableOpacity
-          style={styles.card}
-          onPress={handleGroomSelection}
-          activeOpacity={0.8}
-        >
-          <View style={styles.iconContainer}>
-            <View style={styles.groomIcon}>
-              <Image
-                source={require("../../../assets/images/groom-icon.png")}
-                style={styles.iconImage}
-                resizeMode="contain"
-              />
+          {/* Groom Card */}
+          <TouchableOpacity
+            style={styles.card}
+            onPress={handleGroomSelection}
+            activeOpacity={0.8}
+          >
+            <View style={styles.iconContainer}>
+              <View style={styles.groomIcon}>
+                <Image
+                  source={require("../../../assets/images/groom-icon.png")}
+                  style={styles.iconImage}
+                  resizeMode="contain"
+                />
+              </View>
             </View>
-          </View>
-          <Text style={styles.cardTitle}>Chú rể</Text>
-        </TouchableOpacity>
+            <Text style={styles.cardTitle}>Chú rể</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Footer Hearts */}
@@ -109,7 +110,6 @@ const RoleSelectionScreen = () => {
         <Heart size={12} color="#F9CBD6" fill="#F9CBD6" />
         <Heart size={12} color="#F9CBD6" fill="#F9CBD6" />
       </View>
-
       {/* Popup removed - direct navigate to GroomSuit */}
     </SafeAreaView>
   );
@@ -124,28 +124,32 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
+    paddingVertical: 50,
     height: 64,
+  },
+  contentContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
   titleContainer: {
     alignItems: "center",
-    marginTop: height * 0.05,
+    marginBottom: 60,
   },
   title: {
-    fontSize: 24,
+    fontSize: 48,
     fontFamily: fonts.montserratSemiBold,
     color: "#1f2937",
   },
   cardsContainer: {
-    flex: 1,
-    justifyContent: "flex-start",
+    justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 32,
-    paddingTop: 40,
-    gap: 24,
+    gap: 32,
   },
   card: {
     width: width * 0.8,
-    height: 200,
+    height: 280,
     backgroundColor: "#fff",
     borderRadius: 24,
     borderWidth: 1,
@@ -162,30 +166,30 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   iconContainer: {
-    marginBottom: 12,
+    marginBottom: 20,
   },
   brideIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 128,
+    height: 128,
+    borderRadius: 64,
     backgroundColor: "#FDF2F8",
     justifyContent: "center",
     alignItems: "center",
   },
   groomIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 128,
+    height: 128,
+    borderRadius: 64,
     backgroundColor: "#EFF6FF",
     justifyContent: "center",
     alignItems: "center",
   },
   iconImage: {
-    width: 40,
-    height: 40,
+    width: 80,
+    height: 80,
   },
   cardTitle: {
-    fontSize: 18,
+    fontSize: 36,
     fontFamily: fonts.montserratSemiBold,
     color: "#1f2937",
   },

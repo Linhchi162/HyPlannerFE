@@ -72,7 +72,9 @@ export default function WebsiteManagementScreen() {
     return (
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
+          <TouchableOpacity
+            onPress={() => navigation.navigate("Main", { screen: "Home" })}
+          >
             <ChevronLeft size={24} color="#374151" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Đang tải...</Text>
@@ -216,21 +218,6 @@ export default function WebsiteManagementScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar
-        barStyle="dark-content"
-        backgroundColor="#fbe2e7"
-        translucent={false}
-      />
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <ChevronLeft size={24} color="#374151" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Quản lý Website</Text>
-        <TouchableOpacity>
-          <Share2 size={24} color="#374151" />
-        </TouchableOpacity>
-      </View>
-
       <ScrollView contentContainerStyle={styles.container}>
         <View style={styles.gridContainer}>
           <TouchableOpacity
@@ -365,8 +352,8 @@ export default function WebsiteManagementScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#fff",
     marginTop: StatusBar.currentHeight || 0,
+    backgroundColor: "#f7f7f7",
   },
   header: {
     backgroundColor: "#fbe2e7",
@@ -384,7 +371,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#e07181",
   },
-  container: { padding: 16, backgroundColor: "#f7f7f7", paddingBottom: 100 }, // Thêm paddingBottom
+  container: { padding: 16 }, // Thêm paddingBottom
   gridContainer: {
     flexDirection: "row",
     flexWrap: "wrap",

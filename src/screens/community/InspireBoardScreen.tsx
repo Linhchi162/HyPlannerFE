@@ -6,9 +6,10 @@ import {
   FlatList,
   TouchableOpacity,
   ActivityIndicator,
+  TextInput,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Sparkles } from "lucide-react-native";
+import { Sparkles, ChevronLeft, Search } from "lucide-react-native";
 import * as postService from "../../service/postService";
 import * as albumService from "../../service/albumService";
 import { PostCard } from "../../components/PostCard";
@@ -21,9 +22,8 @@ import {
 
 export const InspireBoardScreen = ({ navigation }: any) => {
   const [selectedTab, setSelectedTab] = useState<"posts" | "albums">("posts");
-  const [featuredPosts, setFeaturedPosts] = useState<any[]>([]);
-  const [featuredAlbums, setFeaturedAlbums] = useState<any[]>([]);
   const [trendingPosts, setTrendingPosts] = useState<any[]>([]);
+  const [trendingAlbums, setTrendingAlbums] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [currentUserId, setCurrentUserId] = useState("");
 
@@ -35,15 +35,13 @@ export const InspireBoardScreen = ({ navigation }: any) => {
     setIsLoading(true);
     try {
       if (selectedTab === "posts") {
-        const [featured, trending] = await Promise.all([
-          postService.getFeaturedPosts(10),
-          postService.getTrendingPosts(10, 7),
-        ]);
-        setFeaturedPosts(featured);
+        // Chỉ lấy trending posts (bài viết trong vòng 7 ngày gần đây)
+        const trending = await postService.getTrendingPosts(20, 7);
         setTrendingPosts(trending);
       } else {
-        const albums = await albumService.getFeaturedAlbums(20);
-        setFeaturedAlbums(albums);
+        // Chỉ lấy trending albums (albums trong vòng 7 ngày gần đây)
+        const trending = await albumService.getTrendingAlbums(20, 7);
+        setTrendingAlbums(trending);
       }
     } catch (error) {
       console.error("Error loading inspire data:", error);
@@ -81,13 +79,28 @@ export const InspireBoardScreen = ({ navigation }: any) => {
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
+      {/* Header - Thread Style */}
       <View style={styles.header}>
-        <Sparkles size={32} color="#ffc107" />
-        <Text style={styles.title}>Bảng Cảm Hứng</Text>
+        <View style={styles.headerTop}>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <ChevronLeft size={24} color="#374151" />
+          </TouchableOpacity>
+          <Text style={styles.logo}>Cảm hứng</Text>
+        </View>
+      </View>
+
+      {/* Search Bar */}
+      <View style={styles.searchContainer}>
+        <Search size={20} color="#9ca3af" style={styles.searchIcon} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Tìm kiếm..."
+          placeholderTextColor="#9ca3af"
+        />
       </View>
 
       <Text style={styles.subtitle}>
-        Những ý tưởng được yêu thích nhất từ cộng đồng
+        Những ý tưởng được yêu thích nhất trong tuần
       </Text>
 
       {/* Tabs */}
@@ -128,45 +141,33 @@ export const InspireBoardScreen = ({ navigation }: any) => {
         <>
           {selectedTab === "posts" ? (
             <FlatList
-              data={featuredPosts.length > 0 ? featuredPosts : trendingPosts}
+              key="inspire-posts-list"
+              data={trendingPosts}
               keyExtractor={(item) => item._id}
               renderItem={renderPost}
               contentContainerStyle={styles.listContent}
-              ListHeaderComponent={
-                featuredPosts.length > 0 ? (
-                  <View style={styles.sectionHeader}>
-                    <Text style={styles.sectionTitle}>⭐ Nổi bật tuần này</Text>
-                  </View>
-                ) : (
-                  <View style={styles.sectionHeader}>
-                    <Text style={styles.sectionTitle}>🔥 Đang thịnh hành</Text>
-                  </View>
-                )
-              }
               ListEmptyComponent={
                 <View style={styles.emptyContainer}>
-                  <Text style={styles.emptyText}>Chưa có bài viết nổi bật</Text>
+                  <Text style={styles.emptyText}>
+                    Chưa có bài viết nổi bật trong tuần này
+                  </Text>
                 </View>
               }
             />
           ) : (
             <FlatList
-              data={featuredAlbums}
+              key="inspire-albums-grid"
+              data={trendingAlbums}
               keyExtractor={(item) => item._id}
               renderItem={renderAlbum}
               contentContainerStyle={styles.listContent}
               numColumns={2}
               columnWrapperStyle={styles.albumRow}
-              ListHeaderComponent={
-                <View style={styles.sectionHeader}>
-                  <Text style={styles.sectionTitle}>
-                    💎 Album được yêu thích
-                  </Text>
-                </View>
-              }
               ListEmptyComponent={
                 <View style={styles.emptyContainer}>
-                  <Text style={styles.emptyText}>Chưa có album nổi bật</Text>
+                  <Text style={styles.emptyText}>
+                    Chưa có album nổi bật trong tuần này
+                  </Text>
                 </View>
               }
             />
@@ -180,51 +181,104 @@ export const InspireBoardScreen = ({ navigation }: any) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: "#f8f9fa",
   },
   header: {
+    backgroundColor: "#ffffff",
+    paddingHorizontal: responsiveWidth(16),
+    paddingTop: responsiveHeight(8),
+    paddingBottom: responsiveHeight(12),
+    borderBottomWidth: 0.5,
+    borderBottomColor: "#e5e7eb",
+  },
+  headerTop: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  logo: {
+    fontFamily: "Agbalumo",
+    fontSize: responsiveFont(24),
+    color: "#1f2937",
+    flex: 1,
+    textAlign: "center",
+  },
+  searchContainer: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: responsiveWidth(5),
-    paddingTop: responsiveHeight(2),
-    paddingBottom: responsiveHeight(1),
+    backgroundColor: "#ffffff",
+    marginHorizontal: responsiveWidth(16),
+    marginTop: responsiveHeight(8),
+    marginBottom: responsiveHeight(8),
+    paddingHorizontal: responsiveWidth(16),
+    paddingVertical: responsiveHeight(10),
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+  },
+  searchIcon: {
+    marginRight: responsiveWidth(8),
+  },
+  searchInput: {
+    flex: 1,
+    fontFamily: "Montserrat-Medium",
+    fontSize: responsiveFont(14),
+    color: "#1f2937",
+  },
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: responsiveWidth(16),
+    paddingTop: responsiveHeight(8),
+    gap: responsiveWidth(8),
   },
   title: {
-    fontSize: responsiveFont(28),
-    fontWeight: "700",
-    color: "#1a1a1a",
-    marginLeft: responsiveWidth(3),
+    fontFamily: "Montserrat-Bold",
+    fontSize: responsiveFont(22),
+    color: "#1f2937",
   },
   subtitle: {
-    fontSize: responsiveFont(14),
-    color: "#666",
-    paddingHorizontal: responsiveWidth(5),
-    marginBottom: responsiveHeight(2),
+    fontFamily: "Montserrat-Medium",
+    fontSize: responsiveFont(13),
+    color: "#6b7280",
+    textAlign: "center",
+    paddingHorizontal: responsiveWidth(16),
+    paddingTop: responsiveHeight(4),
+    paddingBottom: responsiveHeight(12),
   },
   tabContainer: {
     flexDirection: "row",
-    marginHorizontal: responsiveWidth(5),
-    marginBottom: responsiveHeight(2),
-    backgroundColor: "#fff",
-    borderRadius: 25,
-    padding: 4,
+    paddingHorizontal: responsiveWidth(16),
+    gap: responsiveWidth(12),
+    marginBottom: responsiveHeight(12),
   },
   tab: {
     flex: 1,
-    paddingVertical: responsiveHeight(1),
+    flexDirection: "row",
     alignItems: "center",
-    borderRadius: 20,
+    justifyContent: "center",
+    backgroundColor: "#ffffff",
+    paddingVertical: responsiveHeight(12),
+    borderRadius: responsiveWidth(12),
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   activeTab: {
     backgroundColor: "#ffc107",
+    borderColor: "#ffc107",
   },
   tabText: {
-    fontSize: responsiveFont(15),
-    color: "#666",
-    fontWeight: "600",
+    fontFamily: "Montserrat-SemiBold",
+    fontSize: responsiveFont(14),
+    color: "#1f2937",
   },
   activeTabText: {
-    color: "#fff",
+    color: "#ffffff",
   },
   sectionHeader: {
     paddingVertical: responsiveHeight(1.5),

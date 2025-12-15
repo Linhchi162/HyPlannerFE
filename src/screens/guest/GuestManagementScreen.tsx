@@ -15,11 +15,13 @@ import {
   ScrollView,
   Share,
   Platform,
+  ToastAndroid,
 } from "react-native";
 import * as FileSystem from "expo-file-system";
 import * as Sharing from "expo-sharing";
 import * as DocumentPicker from "expo-document-picker";
 import * as Contacts from "expo-contacts";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
@@ -42,6 +44,9 @@ import {
   Upload,
   Bell,
   Mail,
+  Calendar,
+  CheckSquare,
+  Square,
 } from "lucide-react-native";
 import { AppDispatch, RootState } from "../../store";
 import {
@@ -88,8 +93,10 @@ const GuestManagementScreen = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterGroup, setFilterGroup] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<string | null>(null);
+  const [sortByName, setSortByName] = useState<"asc" | "desc" | null>(null);
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [showImportPreview, setShowImportPreview] = useState(false);
@@ -106,7 +113,10 @@ const GuestManagementScreen = () => {
   // Thank you email states
   const [sendingThankYou, setSendingThankYou] = useState(false);
 
-  // Form states
+  // Table configuration states
+  const [guestsPerTable, setGuestsPerTable] = useState(10);
+
+  // Form states for Add
   const [formData, setFormData] = useState({
     name: "",
     phoneNumber: "",
@@ -120,14 +130,39 @@ const GuestManagementScreen = () => {
     notes: "",
   });
 
+  // Form states for Edit
+  const [editFormData, setEditFormData] = useState({
+    name: "",
+    phoneNumber: "",
+    email: "",
+    address: "",
+    relationship: "friend" as "family" | "friend" | "colleague" | "other",
+    group: "groom" as "groom" | "bride" | "both",
+    numberOfCompanions: 0,
+    notes: "",
+    giftType: "none" as "money" | "item" | "both" | "none",
+    giftAmount: "",
+    giftDescription: "",
+    giftReceivedDate: new Date().toISOString(),
+    giftReceivedMethod: "not_received" as
+      | "at_event"
+      | "bank_transfer"
+      | "before_event"
+      | "after_event"
+      | "not_received",
+    giftReturnedGift: false,
+  });
+  const [showEditDatePicker, setShowEditDatePicker] = useState(false);
+
   useEffect(() => {
     MixpanelService.track("Viewed Guest Management");
+
     if (weddingEvent?._id) {
       loadGuests();
       loadTableSuggestions();
       loadNotifications();
     }
-  }, [weddingEvent]);
+  }, [weddingEvent?._id]);
 
   useEffect(() => {
     if (weddingEvent?._id) {
@@ -155,14 +190,29 @@ const GuestManagementScreen = () => {
       dispatch(
         fetchTableSuggestions({
           weddingEventId: weddingEvent._id,
-          guestsPerTable: 10,
+          guestsPerTable: guestsPerTable,
         })
       );
     }
   };
 
+  const handleGuestsPerTableChange = (value: number) => {
+    if (value >= 6 && value <= 15) {
+      setGuestsPerTable(value);
+    }
+  };
+
+  // Reload table suggestions when guestsPerTable changes
+  useEffect(() => {
+    if (weddingEvent?._id) {
+      loadTableSuggestions();
+    }
+  }, [guestsPerTable]);
+
   const loadNotifications = async () => {
-    if (!weddingEvent?._id) return;
+    if (!weddingEvent?._id) {
+      return;
+    }
 
     try {
       setLoadingNotifications(true);
@@ -170,7 +220,13 @@ const GuestManagementScreen = () => {
       setNotifications(response.notifications || []);
       setNotificationStats(response.stats || null);
     } catch (error: any) {
-      console.error("Load notifications error:", error);
+      const errorMsg =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Không thể tải thông báo";
+      if (Platform.OS === "android") {
+        ToastAndroid.show(errorMsg, ToastAndroid.SHORT);
+      }
     } finally {
       setLoadingNotifications(false);
     }
@@ -178,10 +234,17 @@ const GuestManagementScreen = () => {
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await loadGuests();
-    await loadTableSuggestions();
-    await loadNotifications();
-    setRefreshing(false);
+    try {
+      if (weddingEvent?._id) {
+        await Promise.all([
+          loadGuests(),
+          loadTableSuggestions(),
+          loadNotifications(),
+        ]);
+      }
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const handleAddGuest = () => {
@@ -190,12 +253,20 @@ const GuestManagementScreen = () => {
 
   const handleCreateGuest = async () => {
     if (!formData.name.trim()) {
-      Alert.alert("Lỗi", "Vui lòng nhập tên khách mời");
+      if (Platform.OS === "android") {
+        ToastAndroid.show("Vui lòng nhập tên khách mời", ToastAndroid.SHORT);
+      } else {
+        Alert.alert("Lỗi", "Vui lòng nhập tên khách mời");
+      }
       return;
     }
 
     if (!weddingEvent?._id) {
-      Alert.alert("Lỗi", "Không tìm thấy sự kiện cưới");
+      if (Platform.OS === "android") {
+        ToastAndroid.show("Không tìm thấy sự kiện cưới", ToastAndroid.SHORT);
+      } else {
+        Alert.alert("Lỗi", "Không tìm thấy sự kiện cưới");
+      }
       return;
     }
 
@@ -231,7 +302,82 @@ const GuestManagementScreen = () => {
   };
 
   const handleGuestPress = (guest: any) => {
-    navigation.navigate("GuestDetailScreen" as any, { guestId: guest._id });
+    handleEditGuest(guest);
+    setShowEditModal(true);
+  };
+
+  const handleEditGuest = (guest: any) => {
+    setSelectedGuest(guest);
+    setEditFormData({
+      name: guest.name || "",
+      phoneNumber: guest.phoneNumber || "",
+      email: guest.email || "",
+      address: guest.address || "",
+      relationship: guest.relationship || "friend",
+      group: guest.group || "groom",
+      numberOfCompanions: guest.numberOfCompanions || 0,
+      notes: guest.notes || "",
+      giftType: guest.gift?.type || "none",
+      giftAmount: guest.gift?.amount?.toString() || "",
+      giftDescription: guest.gift?.description || "",
+      giftReceivedDate: guest.gift?.receivedDate || new Date().toISOString(),
+      giftReceivedMethod: guest.gift?.receivedMethod || "not_received",
+      giftReturnedGift: guest.gift?.returnedGift || false,
+    });
+    setShowMenuModal(false);
+    setShowEditModal(true);
+  };
+
+  const handleUpdateGuest = async () => {
+    if (!editFormData.name.trim()) {
+      if (Platform.OS === "android") {
+        ToastAndroid.show("Vui lòng nhập tên khách mời", ToastAndroid.SHORT);
+      } else {
+        Alert.alert("Lỗi", "Vui lòng nhập tên khách mời");
+      }
+      return;
+    }
+
+    if (!selectedGuest?._id) {
+      Alert.alert("Lỗi", "Không tìm thấy khách mời");
+      return;
+    }
+
+    try {
+      await dispatch(
+        updateExistingGuest({
+          guestId: selectedGuest._id,
+          data: {
+            name: editFormData.name.trim(),
+            phoneNumber: editFormData.phoneNumber.trim(),
+            email: editFormData.email.trim(),
+            address: editFormData.address.trim(),
+            relationship: editFormData.relationship,
+            group: editFormData.group,
+            numberOfCompanions: editFormData.numberOfCompanions,
+            notes: editFormData.notes.trim(),
+            totalGuests: 1 + editFormData.numberOfCompanions,
+            gift: {
+              type: editFormData.giftType,
+              amount: editFormData.giftAmount
+                ? parseFloat(editFormData.giftAmount)
+                : undefined,
+              description: editFormData.giftDescription,
+              receivedDate: editFormData.giftReceivedDate,
+              receivedMethod: editFormData.giftReceivedMethod,
+              returnedGift: editFormData.giftReturnedGift,
+            },
+          },
+        })
+      ).unwrap();
+
+      setShowEditModal(false);
+      Alert.alert("Thành công", "Đã cập nhật thông tin khách mời!");
+      loadGuests();
+      loadTableSuggestions();
+    } catch (error: any) {
+      Alert.alert("Lỗi", error || "Không thể cập nhật khách mời");
+    }
   };
 
   const handleExportExcel = async () => {
@@ -322,7 +468,6 @@ const GuestManagementScreen = () => {
         file_name: fileName,
       });
     } catch (error: any) {
-      console.error("Export error:", error);
       Alert.alert("Lỗi", "Không thể xuất file: " + error.message);
     } finally {
       setIsExporting(false);
@@ -429,7 +574,6 @@ const GuestManagementScreen = () => {
         guest_count: parsedGuests.length,
       });
     } catch (error: any) {
-      console.error("Import error:", error);
       Alert.alert("Lỗi", "Không thể đọc file: " + error.message);
       setIsImporting(false);
     }
@@ -523,15 +667,33 @@ const GuestManagementScreen = () => {
         guest_count: guestsFromContacts.length,
       });
     } catch (error: any) {
-      console.error("Import from contacts error:", error);
       Alert.alert("Lỗi", "Không thể đọc danh bạ: " + error.message);
       setIsImporting(false);
     }
   };
 
   const handleSendThankYouEmails = () => {
+    if (!weddingEvent?._id) {
+      if (Platform.OS === "android") {
+        ToastAndroid.show(
+          "Không tìm thấy thông tin sự kiện cưới",
+          ToastAndroid.SHORT
+        );
+      } else {
+        Alert.alert("Lỗi", "Không tìm thấy thông tin sự kiện cưới");
+      }
+      return;
+    }
+
     if (!stats || stats.confirmed === 0) {
-      Alert.alert("Thông báo", "Chưa có khách nào xác nhận tham dự");
+      if (Platform.OS === "android") {
+        ToastAndroid.show(
+          "Chưa có khách nào xác nhận tham dự",
+          ToastAndroid.SHORT
+        );
+      } else {
+        Alert.alert("Thông báo", "Chưa có khách nào xác nhận tham dự");
+      }
       return;
     }
 
@@ -547,7 +709,8 @@ const GuestManagementScreen = () => {
               setSendingThankYou(true);
 
               const response = await guestService.sendThankYouEmails(
-                weddingEvent._id
+                weddingEvent._id,
+                {} // Send empty object to ensure req.body is defined
               );
 
               Alert.alert(
@@ -588,12 +751,30 @@ const GuestManagementScreen = () => {
     setShowMenuModal(false);
   };
 
-  const filteredGuests = (guests || []).filter((guest: any) => {
-    const matchesSearch = guest.name
-      .toLowerCase()
-      .includes(searchQuery.toLowerCase());
-    return matchesSearch;
-  });
+  const filteredGuests = (guests || [])
+    .filter((guest: any) => {
+      const matchesSearch = guest.name
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase());
+
+      // Apply group filter
+      const matchesGroup = filterGroup ? guest.group === filterGroup : true;
+
+      // Apply status filter
+      const matchesStatus = filterStatus
+        ? guest.attendanceStatus === filterStatus
+        : true;
+
+      return matchesSearch && matchesGroup && matchesStatus;
+    })
+    .sort((a: any, b: any) => {
+      if (sortByName === "asc") {
+        return a.name.localeCompare(b.name, "vi");
+      } else if (sortByName === "desc") {
+        return b.name.localeCompare(a.name, "vi");
+      }
+      return 0; // Không sắp xếp nếu sortByName là null
+    });
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -636,6 +817,28 @@ const GuestManagementScreen = () => {
     }
   };
 
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
+    }).format(amount);
+  };
+
+  const getRelationshipText = (relationship: string) => {
+    switch (relationship) {
+      case "family":
+        return "Gia đình";
+      case "friend":
+        return "Bạn bè";
+      case "colleague":
+        return "Đồng nghiệp";
+      case "other":
+        return "Khác";
+      default:
+        return relationship;
+    }
+  };
+
   const renderGuestCard = ({ item }: any) => (
     <TouchableOpacity
       style={styles.guestCard}
@@ -643,11 +846,20 @@ const GuestManagementScreen = () => {
     >
       <View style={styles.guestCardHeader}>
         <View style={styles.guestInfo}>
-          <Text style={styles.guestName}>{item.name}</Text>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            <Text style={styles.guestName}>{item.name}</Text>
+            {item.confirmedViaInvitation && (
+              <View style={styles.invitationBadge}>
+                <Text style={styles.invitationBadgeText}>Thiệp mời</Text>
+              </View>
+            )}
+          </View>
           <View style={styles.guestMeta}>
             <Text style={styles.groupBadge}>{getGroupText(item.group)}</Text>
-            {item.category && (
-              <Text style={styles.categoryText}>• {item.category}</Text>
+            {item.relationship && (
+              <Text style={styles.categoryText}>
+                • {getRelationshipText(item.relationship)}
+              </Text>
             )}
           </View>
         </View>
@@ -680,6 +892,52 @@ const GuestManagementScreen = () => {
         )}
       </View>
 
+      {/* Email info for invitation confirmed guests */}
+      {item.confirmedViaInvitation && item.email && (
+        <View style={styles.emailInfo}>
+          <Mail size={12} color="#6b7280" />
+          <Text style={styles.emailText}>{item.email}</Text>
+        </View>
+      )}
+
+      {/* Gift Info Row */}
+      {item.gift?.type && (
+        <View style={styles.guestAdditionalInfo}>
+          {item.gift.type === "money" && item.gift.amount && (
+            <View style={styles.guestInfoTag}>
+              <Text style={styles.guestInfoTagText}>
+                💰 {formatCurrency(item.gift.amount)}
+              </Text>
+            </View>
+          )}
+          {item.gift.type === "item" && item.gift.description && (
+            <View style={styles.guestInfoTag}>
+              <Text style={styles.guestInfoTagText}>
+                🎁 {item.gift.description}
+              </Text>
+            </View>
+          )}
+          {item.gift.type === "both" && (
+            <>
+              {item.gift.amount && (
+                <View style={styles.guestInfoTag}>
+                  <Text style={styles.guestInfoTagText}>
+                    💰 {formatCurrency(item.gift.amount)}
+                  </Text>
+                </View>
+              )}
+              {item.gift.description && (
+                <View style={styles.guestInfoTag}>
+                  <Text style={styles.guestInfoTagText}>
+                    🎁 {item.gift.description}
+                  </Text>
+                </View>
+              )}
+            </>
+          )}
+        </View>
+      )}
+
       {item.notes && (
         <Text style={styles.guestNotes} numberOfLines={1}>
           📝 {item.notes}
@@ -687,6 +945,39 @@ const GuestManagementScreen = () => {
       )}
     </TouchableOpacity>
   );
+
+  // Nếu chưa có wedding event, hiển thị loading hoặc message
+  if (!weddingEvent?._id) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <StatusBar
+          barStyle="dark-content"
+          backgroundColor="#ffffff"
+          translucent={false}
+        />
+
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <ChevronLeft size={24} color="#1f2937" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Quản lý khách mời</Text>
+          <View style={{ width: 24 }} />
+        </View>
+
+        {/* Loading State */}
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#ff6b9d" />
+          <Text style={styles.loadingText}>
+            Đang tải thông tin sự kiện cưới...
+          </Text>
+          <Text style={styles.emptyText}>
+            Vui lòng đảm bảo bạn đã tạo sự kiện cưới
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -729,7 +1020,7 @@ const GuestManagementScreen = () => {
               <UserPlus size={24} color="#ff6b9d" />
             )}
           </TouchableOpacity>
-          <TouchableOpacity
+          {/* <TouchableOpacity
             onPress={handleImportExcel}
             disabled={isImporting}
             style={styles.exportButton}
@@ -753,297 +1044,14 @@ const GuestManagementScreen = () => {
                 color={guests.length === 0 ? "#d1d5db" : "#ff6b9d"}
               />
             )}
-          </TouchableOpacity>
+          </TouchableOpacity> */}
           <TouchableOpacity onPress={handleAddGuest}>
             <Plus size={24} color="#ff6b9d" />
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* Mini CRM Stats Dashboard */}
-      {stats && (
-        <View style={styles.statsSection}>
-          <Text style={styles.sectionTitle}>Tổng quan</Text>
-
-          {/* Main Stats Grid */}
-          <View style={styles.statsGrid}>
-            {/* Tổng khách */}
-            <View style={[styles.statCardNew, { borderLeftColor: "#6366f1" }]}>
-              <View style={styles.statIconContainer}>
-                <Users size={20} color="#6366f1" />
-              </View>
-              <Text style={styles.statNumberNew}>{stats.total}</Text>
-              <Text style={styles.statLabelNew}>Tổng khách mời</Text>
-            </View>
-
-            {/* Đã xác nhận */}
-            <View style={[styles.statCardNew, { borderLeftColor: "#10b981" }]}>
-              <View
-                style={[
-                  styles.statIconContainer,
-                  { backgroundColor: "#d1fae5" },
-                ]}
-              >
-                <CheckCircle size={20} color="#10b981" />
-              </View>
-              <Text style={[styles.statNumberNew, { color: "#10b981" }]}>
-                {stats.confirmed}
-              </Text>
-              <Text style={styles.statLabelNew}>Đã xác nhận</Text>
-            </View>
-
-            {/* Chờ phản hồi */}
-            <View style={[styles.statCardNew, { borderLeftColor: "#f59e0b" }]}>
-              <View
-                style={[
-                  styles.statIconContainer,
-                  { backgroundColor: "#fef3c7" },
-                ]}
-              >
-                <Clock size={20} color="#f59e0b" />
-              </View>
-              <Text style={[styles.statNumberNew, { color: "#f59e0b" }]}>
-                {stats.pending}
-              </Text>
-              <Text style={styles.statLabelNew}>Đang chờ</Text>
-            </View>
-
-            {/* Từ chối */}
-            <View style={[styles.statCardNew, { borderLeftColor: "#ef4444" }]}>
-              <View
-                style={[
-                  styles.statIconContainer,
-                  { backgroundColor: "#fee2e2" },
-                ]}
-              >
-                <XCircle size={20} color="#ef4444" />
-              </View>
-              <Text style={[styles.statNumberNew, { color: "#ef4444" }]}>
-                {stats.declined}
-              </Text>
-              <Text style={styles.statLabelNew}>Từ chối</Text>
-            </View>
-          </View>
-
-          {/* Invitation Stats */}
-          <View style={styles.invitationStats}>
-            <View style={styles.invitationStatItem}>
-              <View style={styles.invitationStatDot} />
-              <Text style={styles.invitationStatText}>
-                Đã gửi thiệp:{" "}
-                <Text style={styles.invitationStatNumber}>
-                  {stats.invitationSent || 0}
-                </Text>
-              </Text>
-            </View>
-            <View style={styles.invitationStatItem}>
-              <View
-                style={[
-                  styles.invitationStatDot,
-                  { backgroundColor: "#9ca3af" },
-                ]}
-              />
-              <Text style={styles.invitationStatText}>
-                Chưa gửi:{" "}
-                <Text style={styles.invitationStatNumber}>
-                  {stats.invitationNotSent || 0}
-                </Text>
-              </Text>
-            </View>
-            <View style={styles.invitationStatItem}>
-              <View
-                style={[
-                  styles.invitationStatDot,
-                  { backgroundColor: "#3b82f6" },
-                ]}
-              />
-              <Text style={styles.invitationStatText}>
-                Đã xem:{" "}
-                <Text style={styles.invitationStatNumber}>
-                  {stats.invitationOpened || 0}
-                </Text>
-              </Text>
-            </View>
-          </View>
-
-          {/* Progress Bar */}
-          {stats.total > 0 && (
-            <View style={styles.progressSection}>
-              <View style={styles.progressHeader}>
-                <Text style={styles.progressLabel}>Tỷ lệ phản hồi</Text>
-                <Text style={styles.progressPercentage}>
-                  {Math.round(
-                    ((stats.confirmed + stats.declined) / stats.total) * 100
-                  )}
-                  %
-                </Text>
-              </View>
-              <View style={styles.progressBarContainer}>
-                <View
-                  style={[
-                    styles.progressBarFill,
-                    {
-                      width: `${
-                        ((stats.confirmed + stats.declined) / stats.total) * 100
-                      }%`,
-                    },
-                  ]}
-                />
-              </View>
-            </View>
-          )}
-        </View>
-      )}
-
-      {/* Enhanced Table Suggestions */}
-      {tableSuggestions && (
-        <View style={styles.tableSuggestionSection}>
-          <View style={styles.tableSuggestionHeaderNew}>
-            <View style={styles.tableSuggestionIconWrapper}>
-              <Table size={24} color="#ff6b9d" />
-            </View>
-            <View style={styles.tableSuggestionTitleWrapper}>
-              <Text style={styles.tableSuggestionTitleNew}>
-                Gợi ý bàn tiệc tự động
-              </Text>
-              <Text style={styles.tableSuggestionSubtitle}>
-                Dựa trên {tableSuggestions.confirmedGuests} khách đã xác nhận
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.tableSuggestionContent}>
-            {/* Main Suggestion */}
-            <View style={styles.tableSuggestionMain}>
-              <Text style={styles.tableSuggestionLabel}>
-                Số bàn khuyến nghị
-              </Text>
-              <View style={styles.tableSuggestionNumberWrapper}>
-                <Text style={styles.tableSuggestionNumberLarge}>
-                  {tableSuggestions.recommendations.recommended}
-                </Text>
-                <Text style={styles.tableSuggestionUnit}>bàn</Text>
-              </View>
-              <Text style={styles.tableSuggestionDetail}>
-                {tableSuggestions.seatsPerTable} ghế/bàn •{" "}
-                {tableSuggestions.reserveTables} bàn dự phòng (15%)
-              </Text>
-            </View>
-
-            {/* Breakdown */}
-            <View style={styles.tableSuggestionBreakdown}>
-              <View style={styles.breakdownItem}>
-                <Text style={styles.breakdownLabel}>Tối thiểu</Text>
-                <Text style={styles.breakdownValue}>
-                  {tableSuggestions.recommendations.minimum} bàn
-                </Text>
-                <Text style={styles.breakdownSubtext}>Khách xác nhận</Text>
-              </View>
-              <View style={styles.breakdownDivider} />
-              <View style={styles.breakdownItem}>
-                <Text style={styles.breakdownLabel}>Tối đa</Text>
-                <Text style={styles.breakdownValue}>
-                  {tableSuggestions.recommendations.maximum} bàn
-                </Text>
-                <Text style={styles.breakdownSubtext}>Nếu tất cả đến</Text>
-              </View>
-            </View>
-
-            {/* Guest Breakdown */}
-            <View style={styles.guestBreakdown}>
-              <View style={styles.guestBreakdownItem}>
-                <View
-                  style={[
-                    styles.guestBreakdownDot,
-                    { backgroundColor: "#10b981" },
-                  ]}
-                />
-                <Text style={styles.guestBreakdownText}>
-                  {tableSuggestions.breakdown.confirmedGuests} đã xác nhận
-                </Text>
-              </View>
-              <View style={styles.guestBreakdownItem}>
-                <View
-                  style={[
-                    styles.guestBreakdownDot,
-                    { backgroundColor: "#f59e0b" },
-                  ]}
-                />
-                <Text style={styles.guestBreakdownText}>
-                  {tableSuggestions.breakdown.pendingGuests} đang chờ
-                </Text>
-              </View>
-              <View style={styles.guestBreakdownItem}>
-                <View
-                  style={[
-                    styles.guestBreakdownDot,
-                    { backgroundColor: "#ef4444" },
-                  ]}
-                />
-                <Text style={styles.guestBreakdownText}>
-                  {tableSuggestions.breakdown.declinedGuests} từ chối
-                </Text>
-              </View>
-            </View>
-
-            {/* Confirmation Rate Badge */}
-            <View style={styles.confirmationRateBadge}>
-              <Text style={styles.confirmationRateText}>
-                Tỷ lệ xác nhận: {tableSuggestions.confirmationRate.toFixed(1)}%
-              </Text>
-            </View>
-          </View>
-        </View>
-      )}
-
-      {/* Send Thank You Emails Section */}
-      {stats && stats.confirmed > 0 && (
-        <View style={styles.thankYouSection}>
-          <View style={styles.thankYouHeader}>
-            <View style={styles.thankYouIconWrapper}>
-              <Mail size={24} color="#ff6b9d" />
-            </View>
-            <View style={styles.thankYouTitleWrapper}>
-              <Text style={styles.thankYouTitle}>Gửi lời cảm ơn</Text>
-              <Text style={styles.thankYouSubtitle}>
-                Gửi email cảm ơn tới {stats.confirmed} khách đã tham dự
-              </Text>
-            </View>
-          </View>
-          <TouchableOpacity
-            style={styles.thankYouButton}
-            onPress={handleSendThankYouEmails}
-            disabled={sendingThankYou}
-          >
-            {sendingThankYou ? (
-              <ActivityIndicator size="small" color="#ffffff" />
-            ) : (
-              <Text style={styles.thankYouButtonText}>Gửi email cảm ơn</Text>
-            )}
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {/* Search and Filter */}
-      <View style={styles.searchContainer}>
-        <View style={styles.searchBox}>
-          <Search size={20} color="#9ca3af" />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Tìm kiếm khách mời..."
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-        </View>
-        <TouchableOpacity
-          style={styles.filterButton}
-          onPress={() => setShowFilterModal(true)}
-        >
-          <Filter size={20} color="#ff6b9d" />
-        </TouchableOpacity>
-      </View>
-
-      {/* Guest List */}
+      {/* Guest List with All Sections */}
       {isLoading && !refreshing ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#ff6b9d" />
@@ -1062,6 +1070,337 @@ const GuestManagementScreen = () => {
               colors={["#ff6b9d"]}
               tintColor="#ff6b9d"
             />
+          }
+          ListHeaderComponent={
+            <>
+              {/* Mini CRM Stats Dashboard */}
+              {stats && (
+                <View style={styles.statsSection}>
+                  <Text style={styles.sectionTitle}>Tổng quan</Text>
+
+                  {/* Main Stats Grid */}
+                  <View style={styles.statsGrid}>
+                    <View
+                      style={[
+                        styles.statCardNew,
+                        { borderLeftColor: "#6366f1" },
+                      ]}
+                    >
+                      <View style={styles.statTopRow}>
+                        <View style={styles.statIconContainer}>
+                          <Users size={20} color="#6366f1" />
+                        </View>
+                        <Text style={styles.statNumberNew}>{stats.total}</Text>
+                      </View>
+                      <Text style={styles.statLabelNew}>Tổng số khách</Text>
+                    </View>
+
+                    <View
+                      style={[
+                        styles.statCardNew,
+                        { borderLeftColor: "#10b981" },
+                      ]}
+                    >
+                      <View style={styles.statTopRow}>
+                        <View
+                          style={[
+                            styles.statIconContainer,
+                            { backgroundColor: "#d1fae5" },
+                          ]}
+                        >
+                          <CheckCircle size={20} color="#10b981" />
+                        </View>
+                        <Text style={styles.statNumberNew}>
+                          {stats.confirmed}
+                        </Text>
+                      </View>
+                      <Text style={styles.statLabelNew}>Xác nhận</Text>
+                    </View>
+
+                    <View
+                      style={[
+                        styles.statCardNew,
+                        { borderLeftColor: "#f59e0b" },
+                      ]}
+                    >
+                      <View style={styles.statTopRow}>
+                        <View
+                          style={[
+                            styles.statIconContainer,
+                            { backgroundColor: "#fef3c7" },
+                          ]}
+                        >
+                          <Clock size={20} color="#f59e0b" />
+                        </View>
+                        <Text style={styles.statNumberNew}>
+                          {stats.pending}
+                        </Text>
+                      </View>
+                      <Text style={styles.statLabelNew}>Chờ phản hồi</Text>
+                    </View>
+
+                    <View
+                      style={[
+                        styles.statCardNew,
+                        { borderLeftColor: "#ef4444" },
+                      ]}
+                    >
+                      <View style={styles.statTopRow}>
+                        <View
+                          style={[
+                            styles.statIconContainer,
+                            { backgroundColor: "#fee2e2" },
+                          ]}
+                        >
+                          <XCircle size={20} color="#ef4444" />
+                        </View>
+                        <Text style={styles.statNumberNew}>
+                          {stats.declined}
+                        </Text>
+                      </View>
+                      <Text style={styles.statLabelNew}>Từ chối</Text>
+                    </View>
+                  </View>
+
+                  {/* Invitation Stats */}
+                  <View style={styles.invitationStats}>
+                    <View style={styles.invitationStatItem}>
+                      <View style={styles.invitationStatDot} />
+                      <Text style={styles.invitationStatText}>
+                        Đã gửi:{" "}
+                        <Text style={styles.invitationStatNumber}>
+                          {stats.invitationSent || 0}
+                        </Text>
+                      </Text>
+                    </View>
+                    <View style={styles.invitationStatItem}>
+                      <View
+                        style={[
+                          styles.invitationStatDot,
+                          { backgroundColor: "#9ca3af" },
+                        ]}
+                      />
+                      <Text style={styles.invitationStatText}>
+                        Chưa gửi:{" "}
+                        <Text style={styles.invitationStatNumber}>
+                          {stats.total - (stats.invitationSent || 0)}
+                        </Text>
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Progress Bar */}
+                  {stats.total > 0 && (
+                    <View style={styles.progressSection}>
+                      <View style={styles.progressHeader}>
+                        <Text style={styles.progressLabel}>Tỷ lệ xác nhận</Text>
+                        <Text style={styles.progressPercentage}>
+                          {Math.round((stats.confirmed / stats.total) * 100)}%
+                        </Text>
+                      </View>
+                      <View style={styles.progressBarContainer}>
+                        <View
+                          style={[
+                            styles.progressBarFill,
+                            {
+                              width: `${
+                                (stats.confirmed / stats.total) * 100
+                              }%`,
+                            },
+                          ]}
+                        />
+                      </View>
+                    </View>
+                  )}
+                </View>
+              )}
+
+              {/* Enhanced Table Suggestions */}
+              {tableSuggestions && (
+                <View style={styles.tableSuggestionSection}>
+                  <View style={styles.tableSuggestionHeaderNew}>
+                    <View style={styles.tableSuggestionIconWrapper}>
+                      <Table size={24} color="#ff6b9d" />
+                    </View>
+                    <View style={styles.tableSuggestionTitleWrapper}>
+                      <Text style={styles.tableSuggestionTitleNew}>
+                        Gợi ý bố trí bàn
+                      </Text>
+                      <Text style={styles.tableSuggestionSubtitle}>
+                        Dựa trên {stats?.confirmed || 0} khách xác nhận
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.tableSuggestionContent}>
+                    {/* Table Configuration */}
+                    <View style={styles.tableConfigSection}>
+                      <Text style={styles.tableConfigLabel}>
+                        Cấu hình bàn tiệc
+                      </Text>
+                      <View style={styles.tableConfigControl}>
+                        <TouchableOpacity
+                          style={styles.tableConfigButton}
+                          onPress={() =>
+                            handleGuestsPerTableChange(guestsPerTable - 1)
+                          }
+                          disabled={guestsPerTable <= 6}
+                        >
+                          <Text
+                            style={[
+                              styles.tableConfigButtonText,
+                              guestsPerTable <= 6 &&
+                                styles.tableConfigButtonDisabled,
+                            ]}
+                          >
+                            −
+                          </Text>
+                        </TouchableOpacity>
+                        <View style={styles.tableConfigValueContainer}>
+                          <Text style={styles.tableConfigValue}>
+                            {guestsPerTable}
+                          </Text>
+                          <Text style={styles.tableConfigUnit}>người/bàn</Text>
+                        </View>
+                        <TouchableOpacity
+                          style={styles.tableConfigButton}
+                          onPress={() =>
+                            handleGuestsPerTableChange(guestsPerTable + 1)
+                          }
+                          disabled={guestsPerTable >= 15}
+                        >
+                          <Text
+                            style={[
+                              styles.tableConfigButtonText,
+                              guestsPerTable >= 15 &&
+                                styles.tableConfigButtonDisabled,
+                            ]}
+                          >
+                            +
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                      <Text style={styles.tableConfigHint}>
+                        Điều chỉnh từ 6 - 15 người/bàn
+                      </Text>
+                    </View>
+
+                    {/* Main Tables Info */}
+                    <View style={styles.tableSuggestionBreakdown}>
+                      <View style={styles.breakdownItem}>
+                        <Text style={styles.breakdownLabel}>
+                          Số bàn tối thiểu
+                        </Text>
+                        <Text style={styles.breakdownValue}>
+                          {tableSuggestions.confirmedTables}
+                        </Text>
+                        <Text style={styles.breakdownSubtext}>bàn</Text>
+                        <Text style={styles.breakdownNote}>
+                          ({tableSuggestions.breakdown?.confirmedGuests || 0}{" "}
+                          khách xác nhận)
+                        </Text>
+                      </View>
+                      <View style={styles.breakdownDivider} />
+                      <View style={styles.breakdownItem}>
+                        <Text style={styles.breakdownLabel}>
+                          Số bàn dự phòng
+                        </Text>
+                        <Text style={styles.breakdownValue}>
+                          {tableSuggestions.reserveTables}
+                        </Text>
+                        <Text style={styles.breakdownSubtext}>bàn</Text>
+                        <Text style={styles.breakdownNote}>(15% dự phòng)</Text>
+                      </View>
+                    </View>
+
+                    {/* Guest Breakdown */}
+                    <View style={styles.guestBreakdownSection}>
+                      <View style={styles.guestBreakdownRow}>
+                        <View style={styles.guestBreakdownItem}>
+                          <View
+                            style={[
+                              styles.guestBreakdownDot,
+                              { backgroundColor: "#10b981" },
+                            ]}
+                          />
+                          <Text style={styles.guestBreakdownText}>
+                            Đã xác nhận:{" "}
+                            {tableSuggestions.breakdown?.confirmedGuests || 0}
+                          </Text>
+                        </View>
+                        <View style={styles.guestBreakdownItem}>
+                          <View
+                            style={[
+                              styles.guestBreakdownDot,
+                              { backgroundColor: "#f59e0b" },
+                            ]}
+                          />
+                          <Text style={styles.guestBreakdownText}>
+                            Chờ phản hồi:{" "}
+                            {tableSuggestions.breakdown?.pendingGuests || 0}
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
+
+                    <View style={styles.confirmationRateBadge}>
+                      <Text style={styles.confirmationRateText}>
+                        ✨ Tỷ lệ xác nhận:{" "}
+                        {stats && stats.total && stats.total > 0
+                          ? Math.round((stats.confirmed / stats.total) * 100)
+                          : 0}
+                        %
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              )}
+
+              {/* Send Thank You Emails Section */}
+              {stats && stats.confirmed > 0 && (
+                <View style={styles.thankYouSection}>
+                  <View style={styles.thankYouHeader}>
+                    <View style={styles.thankYouIconWrapper}>
+                      <Mail size={24} color="#ff6b9d" />
+                    </View>
+                    <View style={styles.thankYouTitleWrapper}>
+                      <Text style={styles.thankYouTitle}>Gửi email cảm ơn</Text>
+                      <Text style={styles.thankYouSubtitle}>
+                        Tới {stats.confirmed} khách đã tham dự
+                      </Text>
+                    </View>
+                  </View>
+                  <TouchableOpacity
+                    style={styles.thankYouButton}
+                    onPress={handleSendThankYouEmails}
+                    disabled={sendingThankYou}
+                  >
+                    <Text style={styles.thankYouButtonText}>
+                      {sendingThankYou ? "Đang gửi..." : "Gửi email ngay"}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+
+              {/* Search and Filter */}
+              <View style={styles.searchContainer}>
+                <View style={styles.searchBox}>
+                  <Search size={20} color="#9ca3af" />
+                  <TextInput
+                    style={styles.searchInput}
+                    placeholder="Tìm kiếm khách mời..."
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                  />
+                </View>
+                <TouchableOpacity
+                  style={styles.filterButton}
+                  onPress={() => setShowFilterModal(true)}
+                >
+                  <Filter size={20} color="#ff6b9d" />
+                </TouchableOpacity>
+              </View>
+            </>
           }
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
@@ -1094,7 +1433,11 @@ const GuestManagementScreen = () => {
               </TouchableOpacity>
             </View>
 
-            <ScrollView style={styles.formContainer}>
+            <ScrollView
+              style={styles.formContainer}
+              contentContainerStyle={{ paddingBottom: responsiveHeight(100) }}
+              showsVerticalScrollIndicator={true}
+            >
               <Text style={styles.label}>
                 Tên khách mời <Text style={styles.required}>*</Text>
               </Text>
@@ -1290,6 +1633,8 @@ const GuestManagementScreen = () => {
                 }
                 multiline
                 numberOfLines={3}
+                textContentType="none"
+                autoComplete="off"
               />
             </ScrollView>
 
@@ -1298,6 +1643,606 @@ const GuestManagementScreen = () => {
               onPress={handleCreateGuest}
             >
               <Text style={styles.submitButtonText}>Thêm khách mời</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Edit Guest Modal */}
+      <Modal
+        visible={showEditModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowEditModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.addModal}>
+            <View style={styles.addModalHeader}>
+              <Text style={styles.addModalTitle}>Chỉnh sửa khách mời</Text>
+              <TouchableOpacity onPress={() => setShowEditModal(false)}>
+                <XCircle size={24} color="#6b7280" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView
+              style={styles.formContainer}
+              contentContainerStyle={{ paddingBottom: responsiveHeight(20) }}
+            >
+              <Text style={styles.label}>Tên khách mời</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Nhập tên khách mời"
+                value={editFormData.name}
+                onChangeText={(text) =>
+                  setEditFormData({ ...editFormData, name: text })
+                }
+              />
+
+              <Text style={styles.label}>Nhóm khách</Text>
+              <View style={styles.buttonGroup}>
+                <TouchableOpacity
+                  style={[
+                    styles.groupButton,
+                    editFormData.group === "groom" && styles.groupButtonActive,
+                  ]}
+                  onPress={() =>
+                    setEditFormData({ ...editFormData, group: "groom" })
+                  }
+                >
+                  <Text
+                    style={[
+                      styles.groupButtonText,
+                      editFormData.group === "groom" &&
+                        styles.groupButtonTextActive,
+                    ]}
+                  >
+                    Nhà trai
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.groupButton,
+                    editFormData.group === "bride" && styles.groupButtonActive,
+                  ]}
+                  onPress={() =>
+                    setEditFormData({ ...editFormData, group: "bride" })
+                  }
+                >
+                  <Text
+                    style={[
+                      styles.groupButtonText,
+                      editFormData.group === "bride" &&
+                        styles.groupButtonTextActive,
+                    ]}
+                  >
+                    Nhà gái
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.groupButton,
+                    editFormData.group === "both" && styles.groupButtonActive,
+                  ]}
+                  onPress={() =>
+                    setEditFormData({ ...editFormData, group: "both" })
+                  }
+                >
+                  <Text
+                    style={[
+                      styles.groupButtonText,
+                      editFormData.group === "both" &&
+                        styles.groupButtonTextActive,
+                    ]}
+                  >
+                    Chung
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              <Text style={styles.label}>Mối quan hệ</Text>
+              <View style={styles.buttonGroup}>
+                <TouchableOpacity
+                  style={[
+                    styles.groupButton,
+                    editFormData.relationship === "family" &&
+                      styles.groupButtonActive,
+                  ]}
+                  onPress={() =>
+                    setEditFormData({ ...editFormData, relationship: "family" })
+                  }
+                >
+                  <Text
+                    style={[
+                      styles.groupButtonText,
+                      editFormData.relationship === "family" &&
+                        styles.groupButtonTextActive,
+                    ]}
+                  >
+                    Gia đình
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.groupButton,
+                    editFormData.relationship === "friend" &&
+                      styles.groupButtonActive,
+                  ]}
+                  onPress={() =>
+                    setEditFormData({ ...editFormData, relationship: "friend" })
+                  }
+                >
+                  <Text
+                    style={[
+                      styles.groupButtonText,
+                      editFormData.relationship === "friend" &&
+                        styles.groupButtonTextActive,
+                    ]}
+                  >
+                    Bạn bè
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.groupButton,
+                    editFormData.relationship === "colleague" &&
+                      styles.groupButtonActive,
+                  ]}
+                  onPress={() =>
+                    setEditFormData({
+                      ...editFormData,
+                      relationship: "colleague",
+                    })
+                  }
+                >
+                  <Text
+                    style={[
+                      styles.groupButtonText,
+                      editFormData.relationship === "colleague" &&
+                        styles.groupButtonTextActive,
+                    ]}
+                  >
+                    Đồng nghiệp
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              <Text style={styles.label}>Số điện thoại</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Số điện thoại"
+                value={editFormData.phoneNumber}
+                onChangeText={(text) =>
+                  setEditFormData({ ...editFormData, phoneNumber: text })
+                }
+                keyboardType="phone-pad"
+              />
+
+              <Text style={styles.label}>
+                Email{" "}
+                {!editFormData.email && (
+                  <Text style={styles.labelWarning}>(chưa có)</Text>
+                )}
+              </Text>
+              <TextInput
+                style={[
+                  styles.input,
+                  !editFormData.email && styles.inputWarning,
+                ]}
+                placeholder="Nhập email để nhận lời cảm ơn"
+                value={editFormData.email}
+                onChangeText={(text) =>
+                  setEditFormData({ ...editFormData, email: text })
+                }
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+              {!editFormData.email && (
+                <Text style={styles.helperText}>
+                  💡 Thêm email để khách có thể nhận email cảm ơn sau lễ cưới
+                </Text>
+              )}
+
+              <Text style={styles.label}>Địa chỉ</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Địa chỉ"
+                value={editFormData.address}
+                onChangeText={(text) =>
+                  setEditFormData({ ...editFormData, address: text })
+                }
+              />
+
+              <Text style={styles.label}>Số người đi cùng</Text>
+              <View style={styles.numberInputContainer}>
+                <TouchableOpacity
+                  style={styles.numberButton}
+                  onPress={() =>
+                    setEditFormData({
+                      ...editFormData,
+                      numberOfCompanions: Math.max(
+                        0,
+                        editFormData.numberOfCompanions - 1
+                      ),
+                    })
+                  }
+                >
+                  <Text style={styles.numberButtonText}>-</Text>
+                </TouchableOpacity>
+                <Text style={styles.numberValue}>
+                  {editFormData.numberOfCompanions}
+                </Text>
+                <TouchableOpacity
+                  style={styles.numberButton}
+                  onPress={() =>
+                    setEditFormData({
+                      ...editFormData,
+                      numberOfCompanions: editFormData.numberOfCompanions + 1,
+                    })
+                  }
+                >
+                  <Text style={styles.numberButtonText}>+</Text>
+                </TouchableOpacity>
+              </View>
+
+              <Text style={styles.label}>Ghi chú</Text>
+              <TextInput
+                style={[styles.input, styles.textArea]}
+                placeholder="VD: Ăn chay, VIP, Thích bàn gần sân khấu..."
+                value={editFormData.notes}
+                onChangeText={(text) =>
+                  setEditFormData({ ...editFormData, notes: text })
+                }
+                multiline
+                numberOfLines={3}
+                textContentType="none"
+                autoComplete="off"
+              />
+
+              {/* Gift Section */}
+              <View style={styles.giftSection}>
+                <View style={styles.giftSectionHeader}>
+                  <Gift size={20} color="#ff6b9d" />
+                  <Text style={styles.giftSectionTitle}>Quà mừng cưới</Text>
+                </View>
+
+                <Text style={styles.label}>Loại quà mừng</Text>
+                <View style={styles.buttonGroup}>
+                  <TouchableOpacity
+                    style={[
+                      styles.groupButton,
+                      editFormData.giftType === "none" &&
+                        styles.groupButtonActive,
+                    ]}
+                    onPress={() =>
+                      setEditFormData({ ...editFormData, giftType: "none" })
+                    }
+                  >
+                    <Text
+                      style={[
+                        styles.groupButtonText,
+                        editFormData.giftType === "none" &&
+                          styles.groupButtonTextActive,
+                      ]}
+                    >
+                      Chưa có
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.groupButton,
+                      editFormData.giftType === "money" &&
+                        styles.groupButtonActive,
+                    ]}
+                    onPress={() =>
+                      setEditFormData({ ...editFormData, giftType: "money" })
+                    }
+                  >
+                    <Text
+                      style={[
+                        styles.groupButtonText,
+                        editFormData.giftType === "money" &&
+                          styles.groupButtonTextActive,
+                      ]}
+                    >
+                      Tiền mặt
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.groupButton,
+                      editFormData.giftType === "item" &&
+                        styles.groupButtonActive,
+                    ]}
+                    onPress={() =>
+                      setEditFormData({ ...editFormData, giftType: "item" })
+                    }
+                  >
+                    <Text
+                      style={[
+                        styles.groupButtonText,
+                        editFormData.giftType === "item" &&
+                          styles.groupButtonTextActive,
+                      ]}
+                    >
+                      Quà tặng
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.groupButton,
+                      editFormData.giftType === "both" &&
+                        styles.groupButtonActive,
+                    ]}
+                    onPress={() =>
+                      setEditFormData({ ...editFormData, giftType: "both" })
+                    }
+                  >
+                    <Text
+                      style={[
+                        styles.groupButtonText,
+                        editFormData.giftType === "both" &&
+                          styles.groupButtonTextActive,
+                      ]}
+                    >
+                      Cả hai
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* Gift Amount */}
+                {(editFormData.giftType === "money" ||
+                  editFormData.giftType === "both") && (
+                  <>
+                    <Text style={styles.label}>Số tiền (VNĐ)</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Nhập số tiền"
+                      value={formatCurrency(
+                        parseInt(editFormData.giftAmount || "0")
+                      )}
+                      onChangeText={(text) =>
+                        setEditFormData({
+                          ...editFormData,
+                          giftAmount: text.replace(/[^0-9]/g, ""),
+                        })
+                      }
+                      keyboardType="numeric"
+                    />
+                    {editFormData.giftAmount && (
+                      <Text style={styles.amountPreview}>
+                        {parseInt(editFormData.giftAmount).toLocaleString(
+                          "vi-VN"
+                        )}{" "}
+                        đồng
+                      </Text>
+                    )}
+                  </>
+                )}
+
+                {/* Gift Description */}
+                {editFormData.giftType !== "none" && (
+                  <>
+                    <Text style={styles.label}>Mô tả quà tặng</Text>
+                    <TextInput
+                      style={[styles.input, styles.textArea]}
+                      placeholder="VD: Bộ chén sứ, Tranh treo tường, Voucher du lịch..."
+                      value={editFormData.giftDescription}
+                      onChangeText={(text) =>
+                        setEditFormData({
+                          ...editFormData,
+                          giftDescription: text,
+                        })
+                      }
+                      multiline
+                      numberOfLines={3}
+                    />
+                  </>
+                )}
+
+                {/* Received Date */}
+                {editFormData.giftType !== "none" && (
+                  <>
+                    <Text style={styles.label}>Ngày nhận quà</Text>
+                    <TouchableOpacity
+                      style={styles.datePickerButton}
+                      onPress={() => setShowEditDatePicker(true)}
+                    >
+                      <Calendar size={20} color="#6b7280" />
+                      <Text style={styles.datePickerText}>
+                        {new Date(
+                          editFormData.giftReceivedDate
+                        ).toLocaleDateString("vi-VN")}
+                      </Text>
+                    </TouchableOpacity>
+                    {showEditDatePicker && (
+                      <DateTimePicker
+                        value={new Date(editFormData.giftReceivedDate)}
+                        mode="date"
+                        display={Platform.OS === "ios" ? "spinner" : "default"}
+                        onChange={(event, selectedDate) => {
+                          setShowEditDatePicker(Platform.OS === "ios");
+                          if (selectedDate) {
+                            setEditFormData({
+                              ...editFormData,
+                              giftReceivedDate: selectedDate.toISOString(),
+                            });
+                          }
+                        }}
+                      />
+                    )}
+                  </>
+                )}
+
+                {/* Received Method */}
+                {editFormData.giftType !== "none" && (
+                  <>
+                    <Text style={styles.label}>Hình thức nhận quà</Text>
+                    <ScrollView
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      style={styles.methodScrollView}
+                    >
+                      <TouchableOpacity
+                        style={[
+                          styles.methodButton,
+                          editFormData.giftReceivedMethod === "at_event" &&
+                            styles.methodButtonActive,
+                        ]}
+                        onPress={() =>
+                          setEditFormData({
+                            ...editFormData,
+                            giftReceivedMethod: "at_event",
+                          })
+                        }
+                      >
+                        <Text
+                          style={[
+                            styles.methodButtonText,
+                            editFormData.giftReceivedMethod === "at_event" &&
+                              styles.methodButtonTextActive,
+                          ]}
+                        >
+                          Tại tiệc
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[
+                          styles.methodButton,
+                          editFormData.giftReceivedMethod === "bank_transfer" &&
+                            styles.methodButtonActive,
+                        ]}
+                        onPress={() =>
+                          setEditFormData({
+                            ...editFormData,
+                            giftReceivedMethod: "bank_transfer",
+                          })
+                        }
+                      >
+                        <Text
+                          style={[
+                            styles.methodButtonText,
+                            editFormData.giftReceivedMethod ===
+                              "bank_transfer" && styles.methodButtonTextActive,
+                          ]}
+                        >
+                          Chuyển khoản
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[
+                          styles.methodButton,
+                          editFormData.giftReceivedMethod === "before_event" &&
+                            styles.methodButtonActive,
+                        ]}
+                        onPress={() =>
+                          setEditFormData({
+                            ...editFormData,
+                            giftReceivedMethod: "before_event",
+                          })
+                        }
+                      >
+                        <Text
+                          style={[
+                            styles.methodButtonText,
+                            editFormData.giftReceivedMethod ===
+                              "before_event" && styles.methodButtonTextActive,
+                          ]}
+                        >
+                          Trước tiệc
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[
+                          styles.methodButton,
+                          editFormData.giftReceivedMethod === "after_event" &&
+                            styles.methodButtonActive,
+                        ]}
+                        onPress={() =>
+                          setEditFormData({
+                            ...editFormData,
+                            giftReceivedMethod: "after_event",
+                          })
+                        }
+                      >
+                        <Text
+                          style={[
+                            styles.methodButtonText,
+                            editFormData.giftReceivedMethod === "after_event" &&
+                              styles.methodButtonTextActive,
+                          ]}
+                        >
+                          Sau tiệc
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[
+                          styles.methodButton,
+                          editFormData.giftReceivedMethod === "not_received" &&
+                            styles.methodButtonActive,
+                        ]}
+                        onPress={() =>
+                          setEditFormData({
+                            ...editFormData,
+                            giftReceivedMethod: "not_received",
+                          })
+                        }
+                      >
+                        <Text
+                          style={[
+                            styles.methodButtonText,
+                            editFormData.giftReceivedMethod ===
+                              "not_received" && styles.methodButtonTextActive,
+                          ]}
+                        >
+                          Chưa nhận
+                        </Text>
+                      </TouchableOpacity>
+                    </ScrollView>
+                  </>
+                )}
+
+                {/* Returned Gift Checkbox */}
+                {editFormData.giftType !== "none" && (
+                  <>
+                    <TouchableOpacity
+                      style={styles.checkboxRow}
+                      onPress={() =>
+                        setEditFormData({
+                          ...editFormData,
+                          giftReturnedGift: !editFormData.giftReturnedGift,
+                        })
+                      }
+                    >
+                      {editFormData.giftReturnedGift ? (
+                        <CheckSquare size={24} color="#ff6b9d" />
+                      ) : (
+                        <Square size={24} color="#6b7280" />
+                      )}
+                      <Text style={styles.checkboxLabel}>Đã trả lễ</Text>
+                    </TouchableOpacity>
+                    <Text style={styles.checkboxHint}>
+                      Đánh dấu nếu bạn đã tặng quà đáp lễ cho khách mời này
+                    </Text>
+                  </>
+                )}
+
+                {editFormData.giftType !== "none" && (
+                  <View style={styles.giftInfoCard}>
+                    <Gift size={16} color="#ff6b9d" />
+                    <Text style={styles.giftInfoText}>
+                      Thông tin quà mừng giúp bạn ghi nhận và tổng kết sau lễ
+                      cưới
+                    </Text>
+                  </View>
+                )}
+              </View>
+            </ScrollView>
+
+            <TouchableOpacity
+              style={styles.submitButton}
+              onPress={handleUpdateGuest}
+            >
+              <Text style={styles.submitButtonText}>Cập nhật</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -1377,6 +2322,25 @@ const GuestManagementScreen = () => {
                     ]}
                   >
                     Nhà gái
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.filterButton,
+                    filterGroup === "both" && styles.filterButtonActive,
+                  ]}
+                  onPress={() => {
+                    setFilterGroup("both");
+                    setShowFilterModal(false);
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.filterButtonText,
+                      filterGroup === "both" && styles.filterButtonTextActive,
+                    ]}
+                  >
+                    Chung
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -1464,11 +2428,73 @@ const GuestManagementScreen = () => {
                 </TouchableOpacity>
               </View>
 
+              <Text style={styles.filterSectionTitle}>Sắp xếp theo tên</Text>
+              <View style={styles.filterButtonGroup}>
+                <TouchableOpacity
+                  style={[
+                    styles.filterButton,
+                    sortByName === null && styles.filterButtonActive,
+                  ]}
+                  onPress={() => {
+                    setSortByName(null);
+                    setShowFilterModal(false);
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.filterButtonText,
+                      sortByName === null && styles.filterButtonTextActive,
+                    ]}
+                  >
+                    Mặc định
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.filterButton,
+                    sortByName === "asc" && styles.filterButtonActive,
+                  ]}
+                  onPress={() => {
+                    setSortByName("asc");
+                    setShowFilterModal(false);
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.filterButtonText,
+                      sortByName === "asc" && styles.filterButtonTextActive,
+                    ]}
+                  >
+                    A → Z
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.filterButton,
+                    sortByName === "desc" && styles.filterButtonActive,
+                  ]}
+                  onPress={() => {
+                    setSortByName("desc");
+                    setShowFilterModal(false);
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.filterButtonText,
+                      sortByName === "desc" && styles.filterButtonTextActive,
+                    ]}
+                  >
+                    Z → A
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
               <TouchableOpacity
                 style={styles.clearFilterButton}
                 onPress={() => {
                   setFilterGroup(null);
                   setFilterStatus(null);
+                  setSortByName(null);
                   setShowFilterModal(false);
                 }}
               >
@@ -1496,10 +2522,7 @@ const GuestManagementScreen = () => {
 
             <TouchableOpacity
               style={styles.menuItem}
-              onPress={() => {
-                setShowMenuModal(false);
-                handleGuestPress(selectedGuest);
-              }}
+              onPress={() => handleEditGuest(selectedGuest)}
             >
               <Edit size={20} color="#6b7280" />
               <Text style={styles.menuItemText}>Chỉnh sửa</Text>
@@ -1574,7 +2597,11 @@ const GuestManagementScreen = () => {
                 </Text>
               </View>
             ) : (
-              <ScrollView style={styles.notificationsList}>
+              <ScrollView
+                style={styles.notificationsList}
+                contentContainerStyle={{ paddingBottom: responsiveHeight(20) }}
+                showsVerticalScrollIndicator={true}
+              >
                 {notificationStats && (
                   <View style={styles.notificationStatsCard}>
                     <Text style={styles.notificationStatsTitle}>Tổng quan</Text>
@@ -1640,13 +2667,6 @@ const GuestManagementScreen = () => {
                 ))}
               </ScrollView>
             )}
-
-            <TouchableOpacity
-              style={styles.notificationsCloseButton}
-              onPress={() => setShowNotificationsModal(false)}
-            >
-              <Text style={styles.notificationsCloseButtonText}>Đóng</Text>
-            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -1744,8 +2764,8 @@ const styles = StyleSheet.create({
     borderBottomColor: "#f3f4f6",
   },
   headerTitle: {
-    fontFamily: "Montserrat-SemiBold",
-    fontSize: responsiveFont(22),
+    fontFamily: "Agbalumo",
+    fontSize: responsiveFont(16),
     color: "#1f2937",
   },
   headerButtons: {
@@ -1759,7 +2779,8 @@ const styles = StyleSheet.create({
   // New Mini CRM Stats Styles
   statsSection: {
     paddingHorizontal: responsiveWidth(16),
-    paddingVertical: responsiveHeight(16),
+    paddingTop: responsiveHeight(16),
+    paddingBottom: responsiveHeight(8),
   },
   sectionTitle: {
     fontFamily: "Montserrat-Bold",
@@ -1793,13 +2814,17 @@ const styles = StyleSheet.create({
     backgroundColor: "#ede9fe",
     alignItems: "center",
     justifyContent: "center",
+    marginRight: responsiveWidth(12),
+  },
+  statTopRow: {
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: responsiveHeight(8),
   },
   statNumberNew: {
     fontFamily: "Montserrat-Bold",
     fontSize: responsiveFont(28),
     color: "#1f2937",
-    marginBottom: responsiveHeight(4),
   },
   statLabelNew: {
     fontFamily: "Montserrat-Medium",
@@ -1915,6 +2940,67 @@ const styles = StyleSheet.create({
   tableSuggestionContent: {
     padding: responsiveWidth(16),
   },
+  tableConfigSection: {
+    backgroundColor: "#f9fafb",
+    padding: responsiveWidth(16),
+    borderRadius: responsiveWidth(8),
+    marginBottom: responsiveHeight(12),
+    alignItems: "center",
+  },
+  tableConfigLabel: {
+    fontFamily: "Montserrat-Medium",
+    fontSize: responsiveFont(12),
+    color: "#6b7280",
+    marginBottom: responsiveHeight(8),
+  },
+  tableConfigControl: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: responsiveWidth(16),
+    marginBottom: responsiveHeight(8),
+  },
+  tableConfigButton: {
+    width: responsiveWidth(40),
+    height: responsiveWidth(40),
+    borderRadius: responsiveWidth(20),
+    backgroundColor: "#ff6b9d",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#ff6b9d",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  tableConfigButtonText: {
+    fontFamily: "Montserrat-Bold",
+    fontSize: responsiveFont(24),
+    color: "#ffffff",
+  },
+  tableConfigButtonDisabled: {
+    color: "#d1d5db",
+  },
+  tableConfigValueContainer: {
+    alignItems: "center",
+    minWidth: responsiveWidth(100),
+  },
+  tableConfigValue: {
+    fontFamily: "Montserrat-Bold",
+    fontSize: responsiveFont(32),
+    color: "#ff6b9d",
+    lineHeight: responsiveFont(36),
+  },
+  tableConfigUnit: {
+    fontFamily: "Montserrat-Medium",
+    fontSize: responsiveFont(12),
+    color: "#6b7280",
+  },
+  tableConfigHint: {
+    fontFamily: "Montserrat-Regular",
+    fontSize: responsiveFont(11),
+    color: "#9ca3af",
+    textAlign: "center",
+  },
   tableSuggestionMain: {
     alignItems: "center",
     paddingVertical: responsiveHeight(16),
@@ -1968,14 +3054,21 @@ const styles = StyleSheet.create({
   },
   breakdownValue: {
     fontFamily: "Montserrat-Bold",
-    fontSize: responsiveFont(18),
-    color: "#1f2937",
+    fontSize: responsiveFont(24),
+    color: "#ff6b9d",
     marginBottom: responsiveHeight(4),
   },
   breakdownSubtext: {
     fontFamily: "Montserrat-Regular",
     fontSize: responsiveFont(11),
     color: "#9ca3af",
+  },
+  breakdownNote: {
+    fontFamily: "Montserrat-Regular",
+    fontSize: responsiveFont(10),
+    color: "#9ca3af",
+    marginTop: responsiveHeight(4),
+    textAlign: "center",
   },
   breakdownDivider: {
     width: 1,
@@ -1985,6 +3078,15 @@ const styles = StyleSheet.create({
   guestBreakdown: {
     paddingVertical: responsiveHeight(16),
     gap: responsiveHeight(8),
+  },
+  guestBreakdownSection: {
+    paddingVertical: responsiveHeight(12),
+    paddingHorizontal: responsiveWidth(8),
+  },
+  guestBreakdownRow: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    gap: responsiveWidth(12),
   },
   guestBreakdownItem: {
     flexDirection: "row",
@@ -2071,7 +3173,8 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: "row",
     paddingHorizontal: responsiveWidth(16),
-    paddingBottom: responsiveHeight(16),
+    paddingTop: responsiveHeight(8),
+    paddingBottom: responsiveHeight(12),
     gap: responsiveWidth(12),
   },
   searchBox: {
@@ -2091,7 +3194,7 @@ const styles = StyleSheet.create({
     paddingVertical: responsiveHeight(12),
   },
   filterButton: {
-    width: responsiveWidth(48),
+    width: responsiveWidth(70),
     height: responsiveWidth(48),
     backgroundColor: "#fef3f2",
     borderRadius: responsiveWidth(12),
@@ -2110,7 +3213,7 @@ const styles = StyleSheet.create({
     marginTop: responsiveHeight(12),
   },
   listContent: {
-    padding: responsiveWidth(16),
+    paddingHorizontal: responsiveWidth(16),
     paddingBottom:
       Platform.OS === "ios" ? responsiveHeight(100) : responsiveHeight(80),
   },
@@ -2182,6 +3285,23 @@ const styles = StyleSheet.create({
     marginTop: responsiveHeight(8),
     fontStyle: "italic",
   },
+  guestAdditionalInfo: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: responsiveWidth(8),
+    marginTop: responsiveHeight(8),
+  },
+  guestInfoTag: {
+    backgroundColor: "#f3f4f6",
+    paddingHorizontal: responsiveWidth(10),
+    paddingVertical: responsiveHeight(4),
+    borderRadius: responsiveWidth(6),
+  },
+  guestInfoTagText: {
+    fontFamily: "Montserrat-Medium",
+    fontSize: responsiveFont(11),
+    color: "#4b5563",
+  },
   emptyContainer: {
     alignItems: "center",
     justifyContent: "center",
@@ -2215,6 +3335,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: responsiveWidth(20),
     borderTopRightRadius: responsiveWidth(20),
     maxHeight: "90%",
+    flex: 1,
   },
   addModalHeader: {
     flexDirection: "row",
@@ -2235,8 +3356,10 @@ const styles = StyleSheet.create({
     color: "#9ca3af",
   },
   formContainer: {
-    padding: responsiveWidth(20),
-    maxHeight: responsiveHeight(500),
+    flex: 1,
+    paddingHorizontal: responsiveWidth(20),
+    paddingTop: responsiveHeight(12),
+    paddingBottom: responsiveHeight(20),
   },
   label: {
     fontFamily: "Montserrat-Medium",
@@ -2270,7 +3393,7 @@ const styles = StyleSheet.create({
   groupButton: {
     flex: 1,
     paddingVertical: responsiveHeight(10),
-    paddingHorizontal: responsiveWidth(12),
+    paddingHorizontal: responsiveWidth(8),
     borderRadius: responsiveWidth(8),
     backgroundColor: "#f9fafb",
     borderWidth: 1,
@@ -2283,7 +3406,7 @@ const styles = StyleSheet.create({
   },
   groupButtonText: {
     fontFamily: "Montserrat-Medium",
-    fontSize: responsiveFont(13),
+    fontSize: responsiveFont(11),
     color: "#6b7280",
   },
   groupButtonTextActive: {
@@ -2385,7 +3508,7 @@ const styles = StyleSheet.create({
   },
   filterButtonText: {
     fontFamily: "Montserrat-Medium",
-    fontSize: responsiveFont(14),
+    fontSize: responsiveFont(12),
     color: "#6b7280",
   },
   filterButtonTextActive: {
@@ -2500,7 +3623,7 @@ const styles = StyleSheet.create({
   // Notification badge
   notificationBadge: {
     position: "absolute",
-    top: -4,
+    top: -8,
     right: -4,
     backgroundColor: "#ef4444",
     borderRadius: 10,
@@ -2509,10 +3632,13 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 4,
+    display: "flex",
   },
   notificationBadgeText: {
+    top: -1,
+    right: 0,
     fontFamily: "Montserrat-Bold",
-    fontSize: responsiveFont(11),
+    fontSize: responsiveFont(9),
     color: "#ffffff",
   },
   // Thank you section
@@ -2575,7 +3701,9 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: responsiveWidth(20),
     borderTopRightRadius: responsiveWidth(20),
     maxHeight: "85%",
+    minHeight: "60%",
     marginTop: "auto",
+    flex: 1,
   },
   notificationsHeader: {
     flexDirection: "row",
@@ -2611,7 +3739,7 @@ const styles = StyleSheet.create({
     marginTop: responsiveHeight(12),
   },
   notificationsList: {
-    maxHeight: responsiveHeight(500),
+    flex: 1,
     padding: responsiveWidth(16),
   },
   notificationStatsCard: {
@@ -2630,7 +3758,8 @@ const styles = StyleSheet.create({
     fontFamily: "Montserrat-Regular",
     fontSize: responsiveFont(13),
     color: "#6b7280",
-    marginBottom: responsiveHeight(4),
+    marginBottom: responsiveHeight(6),
+    lineHeight: responsiveHeight(20),
   },
   notificationItem: {
     backgroundColor: "#ffffff",
@@ -2680,7 +3809,8 @@ const styles = StyleSheet.create({
     fontFamily: "Montserrat-Regular",
     fontSize: responsiveFont(13),
     color: "#6b7280",
-    lineHeight: 20,
+    lineHeight: responsiveHeight(22),
+    marginTop: responsiveHeight(4),
   },
   notificationAction: {
     fontFamily: "Montserrat-Medium",
@@ -2688,17 +3818,167 @@ const styles = StyleSheet.create({
     color: "#ff6b9d",
     marginTop: responsiveHeight(8),
   },
-  notificationsCloseButton: {
-    backgroundColor: "#ff6b9d",
-    margin: responsiveWidth(20),
-    paddingVertical: responsiveHeight(14),
-    borderRadius: responsiveWidth(12),
+  notificationsFooter: {
+    paddingHorizontal: responsiveWidth(20),
+    paddingVertical: responsiveHeight(12),
+    borderTopWidth: 1,
+    borderTopColor: "#f3f4f6",
     alignItems: "center",
+  },
+  notificationsCloseButton: {
+    padding: responsiveWidth(20),
+    alignItems: "center",
+    borderTopWidth: 1,
+    borderTopColor: "#f3f4f6",
   },
   notificationsCloseButtonText: {
     fontFamily: "Montserrat-SemiBold",
     fontSize: responsiveFont(15),
-    color: "#ffffff",
+    color: "#ff6b9d",
+  },
+  // Invitation badge
+  invitationBadge: {
+    backgroundColor: "#dbeafe",
+    paddingHorizontal: responsiveWidth(8),
+    paddingVertical: responsiveHeight(3),
+    borderRadius: responsiveWidth(6),
+  },
+  invitationBadgeText: {
+    fontFamily: "Montserrat-SemiBold",
+    fontSize: responsiveFont(10),
+    color: "#1e40af",
+  },
+  // Email info
+  emailInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: responsiveHeight(8),
+    paddingTop: responsiveHeight(8),
+    borderTopWidth: 1,
+    borderTopColor: "#f3f4f6",
+  },
+  emailText: {
+    fontFamily: "Montserrat-Regular",
+    fontSize: responsiveFont(12),
+    color: "#6b7280",
+  },
+  // Email warning styles
+  labelWarning: {
+    color: "#f59e0b",
+    fontSize: responsiveFont(12),
+  },
+  inputWarning: {
+    borderColor: "#fbbf24",
+    backgroundColor: "#fffbeb",
+  },
+  helperText: {
+    fontFamily: "Montserrat-Regular",
+    fontSize: responsiveFont(12),
+    color: "#6b7280",
+    marginTop: responsiveHeight(6),
+    fontStyle: "italic",
+  },
+  // Gift section styles
+  giftSection: {
+    marginTop: responsiveHeight(20),
+    paddingTop: responsiveHeight(20),
+    borderTopWidth: 1,
+    borderTopColor: "#f3f4f6",
+  },
+  giftSectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: responsiveHeight(16),
+  },
+  giftSectionTitle: {
+    fontFamily: "Montserrat-SemiBold",
+    fontSize: responsiveFont(16),
+    color: "#1f2937",
+    marginLeft: responsiveWidth(8),
+  },
+  amountPreview: {
+    fontFamily: "Montserrat-SemiBold",
+    fontSize: responsiveFont(13),
+    color: "#059669",
+    marginTop: responsiveHeight(6),
+  },
+  datePickerButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#d1d5db",
+    borderRadius: responsiveWidth(8),
+    paddingHorizontal: responsiveWidth(16),
+    paddingVertical: responsiveHeight(12),
+    marginTop: responsiveHeight(8),
+  },
+  datePickerText: {
+    fontFamily: "Montserrat-Regular",
+    fontSize: responsiveFont(14),
+    color: "#1f2937",
+    marginLeft: responsiveWidth(8),
+  },
+  methodScrollView: {
+    marginTop: responsiveHeight(8),
+  },
+  methodButton: {
+    paddingHorizontal: responsiveWidth(16),
+    paddingVertical: responsiveHeight(10),
+    borderRadius: responsiveWidth(8),
+    backgroundColor: "#f9fafb",
+    borderWidth: 1,
+    borderColor: "#d1d5db",
+    marginRight: responsiveWidth(8),
+  },
+  methodButtonActive: {
+    backgroundColor: "#fce7f3",
+    borderColor: "#ff6b9d",
+  },
+  methodButtonText: {
+    fontFamily: "Montserrat-Medium",
+    fontSize: responsiveFont(13),
+    color: "#6b7280",
+  },
+  methodButtonTextActive: {
+    color: "#ff6b9d",
+  },
+  checkboxRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    marginTop: responsiveHeight(16),
+  },
+  checkboxLabel: {
+    fontFamily: "Montserrat-Medium",
+    fontSize: responsiveFont(14),
+    color: "#1f2937",
+    flex: 1,
+    marginLeft: responsiveWidth(8),
+  },
+  checkboxHint: {
+    fontFamily: "Montserrat-Regular",
+    fontSize: responsiveFont(12),
+    color: "#6b7280",
+    marginTop: responsiveHeight(4),
+    marginLeft: responsiveWidth(32),
+  },
+  giftInfoCard: {
+    flexDirection: "row",
+    backgroundColor: "#f0f9ff",
+    borderLeftWidth: 3,
+    borderLeftColor: "#3b82f6",
+    padding: responsiveWidth(12),
+    borderRadius: responsiveWidth(8),
+    marginTop: responsiveHeight(12),
+  },
+  giftInfoText: {
+    fontFamily: "Montserrat-Regular",
+    fontSize: responsiveFont(12),
+    color: "#1e40af",
+    flex: 1,
+    marginLeft: responsiveWidth(8),
+    lineHeight: responsiveHeight(18),
   },
 });
 

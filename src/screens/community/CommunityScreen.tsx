@@ -24,6 +24,7 @@ import {
   Sparkles,
   Users,
   Image as ImageIcon,
+  Bookmark,
 } from "lucide-react-native";
 import { AppDispatch, RootState } from "../../store";
 import {
@@ -58,6 +59,7 @@ const CommunityScreen = () => {
     currentUser?._id?.toString() || currentUser?.id?.toString() || "";
 
   const [refreshing, setRefreshing] = useState(false);
+  const [showSavedMenu, setShowSavedMenu] = useState(false);
 
   useEffect(() => {
     MixpanelService.track("Viewed Community");
@@ -113,6 +115,16 @@ const CommunityScreen = () => {
     navigation.navigate("CreatePostScreen", { postId });
   };
 
+  const handleNavigateToSavedPosts = () => {
+    setShowSavedMenu(false);
+    navigation.navigate("SavedPostsScreen");
+  };
+
+  const handleNavigateToSavedAlbums = () => {
+    setShowSavedMenu(false);
+    navigation.navigate("SavedAlbumsScreen");
+  };
+
   const renderPost = ({ item }: any) => (
     <PostCard
       post={item}
@@ -133,36 +145,42 @@ const CommunityScreen = () => {
         translucent={false}
       />
 
-      {/* Header - Thread Style */}
-      <View style={styles.header}>
-        <View style={styles.headerTop}>
-          <TouchableOpacity
-            onPress={() =>
-              navigation.navigate("Main", { screen: "Home" } as never)
-            }
-          >
-            <Image
-              source={{
-                uri: currentUser?.avatarUrl || "https://via.placeholder.com/40",
-              }}
-              style={styles.avatar}
-            />
-          </TouchableOpacity>
-          <Text style={styles.logo}>HyPlanner</Text>
-          <TouchableOpacity style={styles.menuButton}>
-            <MoreHorizontal size={24} color="#1f2937" />
-          </TouchableOpacity>
+      {/* Search Bar with Bookmark Button */}
+      <View style={styles.searchRow}>
+        <View style={styles.searchContainer}>
+          <Search size={20} color="#9ca3af" style={styles.searchIcon} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Tìm kiếm..."
+            placeholderTextColor="#9ca3af"
+          />
         </View>
-      </View>
+        <TouchableOpacity
+          style={styles.bookmarkButton}
+          onPress={() => setShowSavedMenu(!showSavedMenu)}
+        >
+          <Bookmark size={24} color="#374151" />
+        </TouchableOpacity>
 
-      {/* Search Bar */}
-      <View style={styles.searchContainer}>
-        <Search size={20} color="#9ca3af" style={styles.searchIcon} />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Tìm kiếm..."
-          placeholderTextColor="#9ca3af"
-        />
+        {/* Saved Menu Popup */}
+        {showSavedMenu && (
+          <View style={styles.savedMenu}>
+            <TouchableOpacity
+              style={styles.savedMenuItem}
+              onPress={handleNavigateToSavedPosts}
+            >
+              <Bookmark size={18} color="#1f2937" />
+              <Text style={styles.savedMenuText}>Bài viết đã lưu</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.savedMenuItem}
+              onPress={handleNavigateToSavedAlbums}
+            >
+              <ImageIcon size={18} color="#1f2937" />
+              <Text style={styles.savedMenuText}>Album đã lưu</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
 
       {/* Quick Access Buttons */}
@@ -234,45 +252,19 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#f8f9fa",
   },
-  header: {
-    backgroundColor: "#ffffff",
+  searchRow: {
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: responsiveWidth(16),
-    paddingTop: responsiveHeight(8),
-    paddingBottom: responsiveHeight(12),
-    borderBottomWidth: 0.5,
-    borderBottomColor: "#e5e7eb",
-  },
-  headerTop: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  avatar: {
-    width: responsiveWidth(40),
-    height: responsiveWidth(40),
-    borderRadius: responsiveWidth(20),
-    backgroundColor: "#e5e7eb",
-  },
-  logo: {
-    fontFamily: "Agbalumo",
-    fontSize: responsiveFont(24),
-    color: "#1f2937",
-    flex: 1,
-    textAlign: "center",
-  },
-  menuButton: {
-    width: responsiveWidth(40),
-    height: responsiveWidth(40),
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  searchContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#ffffff",
-    marginHorizontal: responsiveWidth(16),
     marginTop: responsiveHeight(12),
     marginBottom: responsiveHeight(8),
+    gap: responsiveWidth(12),
+  },
+  searchContainer: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#ffffff",
     paddingHorizontal: responsiveWidth(16),
     height: responsiveHeight(44),
     borderRadius: responsiveWidth(22),
@@ -285,6 +277,44 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontFamily: "Montserrat-Medium",
+    fontSize: responsiveFont(14),
+    color: "#1f2937",
+  },
+  bookmarkButton: {
+    width: responsiveWidth(44),
+    height: responsiveWidth(44),
+    backgroundColor: "#ffffff",
+    borderRadius: responsiveWidth(22),
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+  },
+  savedMenu: {
+    position: "absolute",
+    top: responsiveHeight(56),
+    right: responsiveWidth(16),
+    backgroundColor: "#ffffff",
+    borderRadius: responsiveWidth(12),
+    padding: responsiveWidth(8),
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+    zIndex: 1000,
+    minWidth: responsiveWidth(180),
+  },
+  savedMenuItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: responsiveWidth(12),
+    paddingVertical: responsiveHeight(12),
+    paddingHorizontal: responsiveWidth(12),
+    borderRadius: responsiveWidth(8),
+  },
+  savedMenuText: {
+    fontFamily: "Montserrat-SemiBold",
     fontSize: responsiveFont(14),
     color: "#1f2937",
   },
@@ -353,18 +383,13 @@ const styles = StyleSheet.create({
     position: "absolute",
     right: responsiveWidth(16),
     bottom:
-      Platform.OS === "android" ? responsiveHeight(40) : responsiveHeight(24),
+      Platform.OS === "android" ? responsiveHeight(100) : responsiveHeight(48),
     width: responsiveWidth(56),
     height: responsiveWidth(56),
     borderRadius: responsiveWidth(28),
-    backgroundColor: "#1f2937",
+    backgroundColor: "#f8b2e4ff",
     justifyContent: "center",
     alignItems: "center",
-    elevation: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
   },
 });
 

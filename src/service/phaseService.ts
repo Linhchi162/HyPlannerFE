@@ -91,12 +91,13 @@ export const deletePhase = async (phaseId: string, dispatch: Dispatch) => {
 export const insertSampleTasks = async (
   eventId: string,
   creatorId: string,
-  eventCreatedDate: Date, // Thêm tham số này
-  dispatch: Dispatch
+  eventCreatedDate: Date, // Ngày tạo event
+  weddingDate?: Date, // Ngày cưới (optional)
+  dispatch?: Dispatch
 ) => {
   try {
-    // Tạo data từ sampleData với creatorId và ngày tạo event
-    const phasesData = taskListData(creatorId, eventCreatedDate);
+    // Tạo data từ sampleData với creatorId, ngày tạo event và ngày cưới
+    const phasesData = taskListData(creatorId, eventCreatedDate, weddingDate);
 
     const response = await axios.post(
       `${API_BASE_URL}/weddingEvents/checkAndInsertTasks`,

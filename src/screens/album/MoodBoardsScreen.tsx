@@ -1,5 +1,10 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
+import {
+  responsiveFont,
+  responsiveWidth,
+  responsiveHeight,
+} from "../../../assets/styles/utils/responsive";
 
 const MoodBoardsScreen = () => {
   return (
@@ -17,10 +22,9 @@ const stylesMoodBoards = StyleSheet.create({
     alignItems: "center",
   },
   title: {
-    fontSize: 24,
+    fontSize: responsiveFont(24),
     fontWeight: "bold",
   },
 });
 
 export default MoodBoardsScreen;
-

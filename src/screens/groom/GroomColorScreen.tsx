@@ -8,6 +8,7 @@ import {
   SafeAreaView,
   StatusBar,
   Platform,
+  Dimensions,
 } from "react-native";
 import { ChevronLeft } from "lucide-react-native";
 import { useNavigation } from "@react-navigation/native";
@@ -16,12 +17,23 @@ import WeddingItemCard from "../../components/WeddingItemCard";
 import * as groomSuitService from "../../service/groomSuitService";
 import { Style } from "../../store/weddingCostume";
 import { useSelection } from "../../contexts/SelectionContext";
-import { getGridGap } from "../../../assets/styles/utils/responsive";
+import {
+  getGridGap,
+  responsiveFont,
+  responsiveWidth,
+  responsiveHeight,
+} from "../../../assets/styles/utils/responsive";
+
+const { width } = Dimensions.get("window");
+const GAP = getGridGap();
+const PADDING_HORIZONTAL = 32;
+const ITEM_WIDTH = (width - PADDING_HORIZONTAL - GAP * 2) / 3;
 
 const GroomColorScreen = () => {
   const navigation = useNavigation();
   const [items, setItems] = useState<Style[]>([]);
-  const { selectedGroomVestColors, toggleGroomVestColor } = useSelection();
+  const { selectedGroomVestColors, toggleGroomVestColor, saveSelections } =
+    useSelection();
 
   useEffect(() => {
     const fetch = async () => {
@@ -39,14 +51,13 @@ const GroomColorScreen = () => {
   return (
     <SafeAreaView style={[styles.container, { paddingTop: topPad }]}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
           <ChevronLeft size={24} color="#1f2937" />
         </TouchableOpacity>
-        <View style={styles.headerTitleContainer}>
-          <Text style={styles.headerTitle}>Vest chú rể</Text>
-          <Text style={styles.headerSubtitle}>Màu sắc</Text>
-        </View>
-        <View style={{ width: 24 }} />
+        <Text style={styles.headerTitle}>Vest chú rể - Màu sắc</Text>
       </View>
 
       <ScrollView
@@ -55,20 +66,26 @@ const GroomColorScreen = () => {
       >
         <View style={styles.grid}>
           {items.map((item) => (
-            <WeddingItemCard
-              key={item._id}
-              id={item._id}
-              name={item.name}
-              image={item.image}
-              isSelected={selectedGroomVestColors.includes(item._id)}
-              onSelect={async () => await toggleGroomVestColor(item._id)}
-            />
+            <View style={{ width: ITEM_WIDTH }} key={item._id}>
+              <WeddingItemCard
+                id={item._id}
+                name={item.name}
+                image={item.image}
+                isSelected={selectedGroomVestColors.includes(item._id)}
+                onSelect={async () => await toggleGroomVestColor(item._id)}
+              />
+            </View>
           ))}
         </View>
+      </ScrollView>
 
+      <View style={styles.actionButtonContainer}>
         <TouchableOpacity
           style={styles.actionButton}
-          onPress={() => navigation.navigate("GroomAccessoriesLapel" as never)}
+          onPress={async () => {
+            await saveSelections();
+            navigation.navigate("GroomAccessoriesLapel" as never);
+          }}
         >
           <Text style={styles.actionButtonText}>Chọn phụ kiện</Text>
           <ChevronLeft
@@ -77,7 +94,7 @@ const GroomColorScreen = () => {
             style={{ transform: [{ rotate: "180deg" }] }}
           />
         </TouchableOpacity>
-      </ScrollView>
+      </View>
     </SafeAreaView>
   );
 };
@@ -87,46 +104,65 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
+    justifyContent: "center",
     height: 64,
-    backgroundColor: "#FEF0F3",
+    position: "relative",
   },
-  headerTitleContainer: { alignItems: "center" },
+  backButton: {
+    position: "absolute",
+    left: 16,
+    zIndex: 10,
+    padding: 4,
+  },
   headerTitle: {
-    fontSize: 20,
-    fontFamily: fonts.montserratSemiBold,
+    fontSize: responsiveFont(16),
+    fontFamily: "Agbalumo",
     color: "#1f2937",
+    textAlign: "center",
   },
-  headerSubtitle: {
-    fontSize: 14,
-    fontFamily: fonts.montserratMedium,
-    color: "#6b7280",
-    marginTop: 2,
+  scrollContent: {
+    paddingBottom: responsiveHeight(100),
   },
-  scrollContent: { paddingBottom: 24 },
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",
     paddingHorizontal: 16,
     paddingTop: 16,
-    gap: getGridGap(),
+    gap: GAP,
+  },
+  actionButtonContainer: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: "#fff",
+    paddingVertical: responsiveHeight(16),
+    paddingHorizontal: responsiveWidth(16),
+    borderTopWidth: 1,
+    borderTopColor: "#F3F4F6",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: -2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 5,
   },
   actionButton: {
     backgroundColor: "#F9CBD6",
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 100,
-    marginTop: 16,
-    flexDirection: "row",
+    paddingVertical: responsiveHeight(12),
+    borderRadius: responsiveWidth(100),
     alignItems: "center",
     justifyContent: "center",
     alignSelf: "center",
+    width: "50%",
+    flexDirection: "row",
   },
   actionButtonText: {
     color: "#000000",
     textAlign: "center",
-    fontSize: 14,
+    fontSize: responsiveFont(14),
     fontFamily: fonts.montserratSemiBold,
     marginRight: 4,
   },

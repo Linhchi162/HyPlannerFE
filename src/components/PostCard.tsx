@@ -6,6 +6,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   Dimensions,
+  Linking,
 } from "react-native";
 import {
   Heart,
@@ -13,6 +14,7 @@ import {
   MoreVertical,
   Trash2,
   Edit,
+  Bookmark,
 } from "lucide-react-native";
 import { Post } from "../service/postService";
 import {
@@ -21,6 +23,7 @@ import {
   responsiveFont,
 } from "../../assets/styles/utils/responsive";
 import { ImageViewer } from "./ImageViewer";
+import { SavePostButton } from "./SavePostButton";
 
 const { width } = Dimensions.get("window");
 
@@ -223,7 +226,9 @@ export const PostCard: React.FC<PostCardProps> = ({
         <View style={styles.userInfo}>
           <Image
             source={{
-              uri: post.userId?.picture || "https://via.placeholder.com/40",
+              uri:
+                post.userId?.picture ||
+                "https://res.cloudinary.com/dz93cdipk/image/upload/v1734248891/default-avatar_qkbbzr.png",
             }}
             style={styles.avatar}
           />
@@ -273,7 +278,28 @@ export const PostCard: React.FC<PostCardProps> = ({
 
       {/* Content */}
       <TouchableOpacity onPress={onPress} activeOpacity={0.9}>
-        <Text style={styles.content}>{post.content}</Text>
+        <Text style={styles.content}>
+          {post.content.split(/\s+/).map((word, index) => {
+            const urlRegex = /(https?:\/\/[^\s]+)/g;
+            if (urlRegex.test(word)) {
+              return (
+                <Text
+                  key={index}
+                  style={styles.linkText}
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    Linking.openURL(word).catch((err) =>
+                      console.error("Failed to open URL:", err)
+                    );
+                  }}
+                >
+                  {word}{" "}
+                </Text>
+              );
+            }
+            return word + " ";
+          })}
+        </Text>
       </TouchableOpacity>
 
       {/* Images with smart layout */}
@@ -319,6 +345,8 @@ export const PostCard: React.FC<PostCardProps> = ({
           <MessageCircle size={20} color="#6b7280" />
           <Text style={styles.actionText}>Bình luận</Text>
         </TouchableOpacity>
+
+        <SavePostButton postId={post._id} />
       </View>
     </View>
   );
@@ -392,6 +420,11 @@ const styles = StyleSheet.create({
     lineHeight: responsiveHeight(20),
     paddingHorizontal: responsiveWidth(16),
     marginBottom: responsiveHeight(12),
+  },
+  linkText: {
+    color: "#3b82f6",
+    textDecorationLine: "underline",
+    fontFamily: "Montserrat-SemiBold",
   },
   // === Styles cho ảnh đơn ===
   singleImage: {
