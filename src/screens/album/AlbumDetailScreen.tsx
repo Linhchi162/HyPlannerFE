@@ -16,6 +16,8 @@ import {
   ActivityIndicator,
   Modal,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { LinearGradient } from "expo-linear-gradient";
 import {
   ChevronLeft,
   Edit2,
@@ -24,9 +26,13 @@ import {
   Camera,
   Heart,
   Bookmark,
+  X,
+  Filter,
+  Share,
 } from "lucide-react-native";
 import { useState, useEffect, useMemo } from "react";
 import { useNavigation, useRoute } from "@react-navigation/native";
+import * as Clipboard from "expo-clipboard";
 import WeddingItemCard from "../../components/WeddingItemCard";
 import { fonts } from "../../theme/fonts";
 import { Album } from "../../service/userSelectionService";
@@ -41,6 +47,13 @@ import {
 import * as userSelectionService from "../../service/userSelectionService";
 import * as albumService from "../../service/albumService";
 import * as ImagePicker from "expo-image-picker";
+import { useSelector } from "react-redux";
+import { selectCurrentUser } from "../../store/authSlice";
+import {
+  canAddImageToAlbum,
+  getMaxImagesPerAlbum,
+  getUpgradeMessage,
+} from "../../utils/accountLimits";
 
 const { width } = Dimensions.get("window");
 
@@ -54,6 +67,7 @@ const AlbumDetailScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const params = route.params as RouteParams;
+  const insets = useSafeAreaInsets();
   const initialAlbum = params?.album;
   const albumId = params?.albumId;
   const source = params?.source || "my"; // default to 'my' if not specified
@@ -84,6 +98,9 @@ const AlbumDetailScreen = () => {
   const [likeCount, setLikeCount] = useState(0);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [showImageViewer, setShowImageViewer] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [shareCode, setShareCode] = useState<string>("");
+  const [isGeneratingCode, setIsGeneratingCode] = useState(false);
 
   const handleOpenFilterModal = () => {
     setTempSelectedCategories([...categoryFilter]);
@@ -118,6 +135,31 @@ const AlbumDetailScreen = () => {
   const handleCloseImageViewer = () => {
     setShowImageViewer(false);
     setSelectedImage(null);
+  };
+
+  const handleGenerateShareCode = async () => {
+    if (!album) return;
+
+    try {
+      setIsGeneratingCode(true);
+      const response = await albumService.generateShareCode(album._id);
+      setShareCode(response.shareCode);
+      setShowShareModal(true);
+    } catch (error: any) {
+      console.error("Error generating share code:", error);
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "Không thể tạo mã share";
+      Alert.alert("Lỗi", errorMessage);
+    } finally {
+      setIsGeneratingCode(false);
+    }
+  };
+
+  const handleCopyShareCode = async () => {
+    await Clipboard.setString(shareCode);
+    Alert.alert("Thành công", "Đã sao chép mã share code");
   };
 
   // Load album if only albumId is provided
@@ -250,6 +292,25 @@ const AlbumDetailScreen = () => {
   };
 
   const handlePickImages = async () => {
+    // Lấy thông tin user và kiểm tra giới hạn
+    const state = require("../../store").store.getState();
+    const user = selectCurrentUser(state);
+    const accountType = user?.accountType || "FREE";
+    const currentImageCount = customImages.length + pendingImages.length;
+    const maxImages = getMaxImagesPerAlbum(accountType);
+
+    // Kiểm tra giới hạn trước khi cho phép chọn ảnh
+    if (!canAddImageToAlbum(currentImageCount, accountType)) {
+      Alert.alert("Nâng cấp tài khoản", getUpgradeMessage("albumImage"), [
+        { text: "Hủy", style: "cancel" },
+        {
+          text: "Nâng cấp",
+          onPress: () => (navigation as any).navigate("UpgradeAccountScreen"),
+        },
+      ]);
+      return;
+    }
+
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
       Alert.alert("Lỗi", "Cần quyền truy cập thư viện ảnh");
@@ -257,11 +318,19 @@ const AlbumDetailScreen = () => {
     }
 
     try {
+      // Tính số ảnh còn có thể chọn
+      const remainingSlots =
+        maxImages !== null ? maxImages - currentImageCount : 10;
+      const selectionLimit = Math.min(
+        remainingSlots > 0 ? remainingSlots : 1,
+        10
+      );
+
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: "images" as any,
         allowsMultipleSelection: true,
         quality: 0.8,
-        selectionLimit: 10,
+        selectionLimit: selectionLimit,
       });
 
       if (!result.canceled && result.assets.length > 0) {
@@ -280,6 +349,28 @@ const AlbumDetailScreen = () => {
 
   const handleConfirmUpload = async () => {
     if (!album || pendingImages.length === 0) return;
+
+    // Kiểm tra giới hạn trước khi upload
+    const state = require("../../store").store.getState();
+    const user = selectCurrentUser(state);
+    const accountType = user?.accountType || "FREE";
+    const totalAfterUpload = customImages.length + pendingImages.length;
+    const maxImages = getMaxImagesPerAlbum(accountType);
+
+    if (maxImages !== null && totalAfterUpload > maxImages) {
+      Alert.alert(
+        "Vượt quá giới hạn",
+        `Bạn chỉ có thể upload tối đa ${maxImages} ảnh. Hiện tại có ${customImages.length} ảnh, bạn đang thêm ${pendingImages.length} ảnh.`,
+        [
+          { text: "OK", style: "cancel" },
+          {
+            text: "Nâng cấp",
+            onPress: () => (navigation as any).navigate("UpgradeAccountScreen"),
+          },
+        ]
+      );
+      return;
+    }
 
     try {
       setIsUploading(true);
@@ -763,16 +854,16 @@ const AlbumDetailScreen = () => {
             showPinButton={false}
           />
         </TouchableOpacity>
-        <View
-          style={[
-            styles.categoryBadge,
-            { backgroundColor: item.categoryColor },
-          ]}
+        <LinearGradient
+          colors={["rgba(255, 255, 255, 0.95)", "rgba(255, 255, 255, 0)"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0, y: 1 }}
+          style={styles.categoryBadge}
         >
           <Text style={styles.categoryText} numberOfLines={1}>
             {displayCategory}
           </Text>
-        </View>
+        </LinearGradient>
       </View>
     );
   };
@@ -864,8 +955,19 @@ const AlbumDetailScreen = () => {
         </View>
         <View style={styles.headerActions}>
           {source === "my" ? (
-            // My album: show upload and delete buttons
+            // My album: show export, upload and delete buttons
             <>
+              <TouchableOpacity
+                onPress={handleGenerateShareCode}
+                disabled={isGeneratingCode}
+                style={styles.headerIconButton}
+              >
+                {isGeneratingCode ? (
+                  <ActivityIndicator size="small" color="#1f2937" />
+                ) : (
+                  <Share size={24} color="#1f2937" />
+                )}
+              </TouchableOpacity>
               <TouchableOpacity
                 onPress={handlePickImages}
                 disabled={isUploading}
@@ -1079,6 +1181,42 @@ const AlbumDetailScreen = () => {
         </View>
       </Modal>
 
+      {/* Share Code Modal */}
+      <Modal
+        visible={showShareModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowShareModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Chia sẻ Album</Text>
+              <TouchableOpacity onPress={() => setShowShareModal(false)}>
+                <Text style={styles.modalCloseButton}>×</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.shareCodeContainer}>
+              <Text style={styles.shareCodeLabel}>Mã chia sẻ:</Text>
+              <View style={styles.shareCodeBox}>
+                <Text style={styles.shareCodeText}>{shareCode}</Text>
+              </View>
+              <Text style={styles.shareCodeHint}>
+                Chia sẻ mã này để người khác có thể sao chép album của bạn
+              </Text>
+            </View>
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.applyButton}
+                onPress={handleCopyShareCode}
+              >
+                <Text style={styles.applyButtonText}>Sao chép mã</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       {/* Album Items Grid - FlatList to avoid image recycling issues */}
       <FlatList
         key={`album-items-${categoryFilter}`}
@@ -1087,7 +1225,15 @@ const AlbumDetailScreen = () => {
         numColumns={3}
         columnWrapperStyle={styles.columnWrapper}
         renderItem={({ item, index }) => renderAlbumItem(item, index)}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          {
+            paddingBottom:
+              Platform.OS === "android"
+                ? responsiveHeight(24) + insets.bottom
+                : responsiveHeight(24),
+          },
+        ]}
         removeClippedSubviews
         windowSize={5}
         initialNumToRender={6}
@@ -1376,17 +1522,22 @@ const styles = StyleSheet.create({
   },
   categoryBadge: {
     position: "absolute",
-    top: spacing.sm,
-    left: responsiveWidth(18),
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    borderRadius: borderRadius.md,
+    left: 0,
+    right: 0,
+    width: "100%",
+    paddingVertical: spacing.md,
     zIndex: 1,
+    alignItems: "center",
+    justifyContent: "center",
   },
   categoryText: {
-    fontSize: responsiveFont(10),
+    fontSize: responsiveFont(11),
     fontFamily: fonts.montserratSemiBold,
     color: "#1f2937",
+    textAlign: "center",
+    textShadowColor: "rgba(255, 255, 255, 0.9)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
   loadingContainer: {
     flex: 1,
@@ -1448,6 +1599,37 @@ const styles = StyleSheet.create({
   fullImage: {
     width: "100%",
     height: "100%",
+  },
+  shareCodeContainer: {
+    padding: responsiveWidth(16),
+    gap: spacing.md,
+  },
+  shareCodeLabel: {
+    fontSize: responsiveFont(16),
+    fontFamily: fonts.montserratSemiBold,
+    color: "#1f2937",
+    textAlign: "center",
+  },
+  shareCodeBox: {
+    backgroundColor: "#F3F4F6",
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.xl,
+    borderRadius: borderRadius.lg,
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: "#F9CBD6",
+  },
+  shareCodeText: {
+    fontSize: responsiveFont(28),
+    fontFamily: fonts.montserratSemiBold,
+    color: "#1f2937",
+    letterSpacing: 4,
+  },
+  shareCodeHint: {
+    fontSize: responsiveFont(12),
+    fontFamily: fonts.montserratMedium,
+    color: "#6b7280",
+    textAlign: "center",
   },
 });
 

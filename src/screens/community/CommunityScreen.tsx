@@ -51,7 +51,10 @@ const CommunityScreen = () => {
   const navigation = useNavigation<CommunityScreenNavigationProp>();
   const dispatch = useDispatch<AppDispatch>();
 
-  const { posts, isLoading } = useSelector((state: RootState) => state.posts);
+  // ✅ Add pagination selectors
+  const { posts, isLoading, currentPage, hasMore, isLoadingMore } = useSelector(
+    (state: RootState) => state.posts
+  );
   const currentUser = useSelector((state: RootState) => state.auth.user);
 
   // Đảm bảo lấy ID dưới dạng chuỗi
@@ -63,13 +66,22 @@ const CommunityScreen = () => {
 
   useEffect(() => {
     MixpanelService.track("Viewed Community");
-    dispatch(fetchAllPosts());
+    // ✅ Fetch first page with pagination
+    dispatch(fetchAllPosts({ page: 1, limit: 20 }));
   }, [dispatch]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await dispatch(fetchAllPosts());
+    // ✅ Refresh from page 1
+    await dispatch(fetchAllPosts({ page: 1, limit: 20 }));
     setRefreshing(false);
+  };
+
+  // ✅ Add load more handler for infinite scroll
+  const handleLoadMore = () => {
+    if (!isLoading && !isLoadingMore && hasMore) {
+      dispatch(fetchAllPosts({ page: currentPage + 1, limit: 20 }));
+    }
   };
 
   const handlePostPress = (postId: string) => {
@@ -141,8 +153,8 @@ const CommunityScreen = () => {
     <SafeAreaView style={styles.container}>
       <StatusBar
         barStyle="dark-content"
-        backgroundColor="#ffffff"
-        translucent={false}
+        backgroundColor="transparent"
+        translucent={true}
       />
 
       {/* Search Bar with Bookmark Button */}
@@ -209,7 +221,7 @@ const CommunityScreen = () => {
       </View>
 
       {/* Posts List */}
-      {isLoading && !refreshing ? (
+      {isLoading && !refreshing && posts.length === 0 ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#1f2937" />
         </View>
@@ -220,6 +232,12 @@ const CommunityScreen = () => {
           keyExtractor={(item) => item._id}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
+          // ✅ OPTIMIZED: Performance improvements for large lists
+          windowSize={10}
+          maxToRenderPerBatch={5}
+          updateCellsBatchingPeriod={50}
+          removeClippedSubviews={true}
+          initialNumToRender={10}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -227,6 +245,16 @@ const CommunityScreen = () => {
               colors={["#1f2937"]}
               tintColor="#1f2937"
             />
+          }
+          // ✅ Add infinite scroll
+          onEndReached={handleLoadMore}
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={
+            isLoadingMore ? (
+              <View style={styles.loadMoreContainer}>
+                <ActivityIndicator size="small" color="#1f2937" />
+              </View>
+            ) : null
           }
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
@@ -379,11 +407,17 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: responsiveHeight(20),
   },
+  // ✅ Add load more indicator style
+  loadMoreContainer: {
+    paddingVertical: responsiveHeight(16),
+    alignItems: "center",
+    justifyContent: "center",
+  },
   fab: {
     position: "absolute",
     right: responsiveWidth(16),
     bottom:
-      Platform.OS === "android" ? responsiveHeight(100) : responsiveHeight(48),
+      Platform.OS === "android" ? responsiveHeight(140) : responsiveHeight(60),
     width: responsiveWidth(56),
     height: responsiveWidth(56),
     borderRadius: responsiveWidth(28),

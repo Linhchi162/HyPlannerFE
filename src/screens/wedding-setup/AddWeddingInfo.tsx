@@ -25,6 +25,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "../../store";
 import { selectCurrentUser } from "../../store/authSlice";
 import { MixpanelService } from "../../service/mixpanelService";
+import logger from "../../utils/logger";
 
 interface AddWeddingAppBarProps {
   onBack: () => void;
@@ -113,7 +114,9 @@ export default function AddWeddingInfo() {
         routes: [{ name: "Main" }], // Điều hướng đến 'Main', tự động hiển thị tab Home
       });
     } catch (error) {
-      console.error("Error creating wedding event:", error);
+      logger.error("Error creating wedding event:", error);
+      // Hiển thị thông báo lỗi cho người dùng
+      setBudgetError("Không thể tạo kế hoạch. Vui lòng thử lại.");
     }
   };
   const formatNumber = (value: number): string => {

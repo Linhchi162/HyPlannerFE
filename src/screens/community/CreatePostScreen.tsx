@@ -33,6 +33,12 @@ import {
 } from "../../../assets/styles/utils/responsive";
 import { MixpanelService } from "../../service/mixpanelService";
 import apiClient from "../../api/client";
+import { selectCurrentUser } from "../../store/authSlice";
+import {
+  canAddImageToPost,
+  getMaxImagesPerPost,
+  getUpgradeMessage,
+} from "../../utils/accountLimits";
 
 type CreatePostScreenRouteProp = RouteProp<
   RootStackParamList,
@@ -79,6 +85,24 @@ const CreatePostScreen = () => {
   // Hàm chọn ảnh từ thiết bị
   const handlePickImages = async () => {
     try {
+      // Lấy thông tin user
+      const state = require("../../store").store.getState();
+      const user = selectCurrentUser(state);
+      const accountType = user?.accountType || "FREE";
+
+      // Kiểm tra giới hạn ảnh
+      const maxImages = getMaxImagesPerPost(accountType);
+      if (!canAddImageToPost(images.length, accountType)) {
+        Alert.alert("Nâng cấp tài khoản", getUpgradeMessage("postImage"), [
+          { text: "Hủy", style: "cancel" },
+          {
+            text: "Nâng cấp",
+            onPress: () => (navigation as any).navigate("UpgradeAccountScreen"),
+          },
+        ]);
+        return;
+      }
+
       const permissionResult =
         await ImagePicker.requestMediaLibraryPermissionsAsync();
 
@@ -90,10 +114,11 @@ const CreatePostScreen = () => {
         return;
       }
 
+      const remainingSlots = maxImages - images.length;
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ["images"],
         allowsMultipleSelection: true,
-        selectionLimit: 5 - images.length, // Giới hạn tối đa 5 ảnh
+        selectionLimit: remainingSlots > 0 ? remainingSlots : 1,
         quality: 0.8,
       });
 

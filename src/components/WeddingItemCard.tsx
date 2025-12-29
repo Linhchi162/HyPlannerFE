@@ -54,14 +54,12 @@ const WeddingItemCard: React.FC<WeddingItemCardProps> = ({
       <View style={styles.imageContainer}>
         <Image
           source={
-            image
-              ? encodeURI(image)
-              : require("../../assets/images/default.png")
+            image ? { uri: image } : require("../../assets/images/default.png")
           }
           style={styles.image}
           contentFit="cover"
           transition={0}
-          cachePolicy="immutable"
+          cachePolicy="memory-disk"
           placeholder={require("../../assets/images/default.png") as any}
           recyclingKey={id}
         />

@@ -98,6 +98,7 @@ export type RootStackParamList = {
   EditTask: { taskId: string; eventId: string };
   AddBudget: { groupActivityId: string; eventId: string };
   EditBudget: { activityId: string; eventId: string };
+  EditBudgetGroupScreen: { eventId: string };
   AddMember: {
     existingMembers?: Member[];
     onSelect?: (selectedMembers: Member[]) => void;

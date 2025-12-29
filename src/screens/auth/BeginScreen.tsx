@@ -7,6 +7,7 @@ import {
   StatusBar,
   Platform,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useState } from "react";
 import { LogIn, UserPlus } from "lucide-react-native";
 import { useNavigation, type NavigationProp } from "@react-navigation/native";
@@ -21,6 +22,7 @@ import {
 } from "../../../assets/styles/utils/responsive";
 
 export default function BeginScreen() {
+  const insets = useSafeAreaInsets();
   const [isLoginPressed, setIsLoginPressed] = useState(false);
   const [isRegisterPressed, setIsRegisterPressed] = useState(false);
 
@@ -41,7 +43,17 @@ export default function BeginScreen() {
         backgroundColor="#f9f9f9"
         translucent={false}
       />
-      <View style={styles.content}>
+      <View
+        style={[
+          styles.content,
+          {
+            paddingBottom:
+              Platform.OS === "android"
+                ? responsiveHeight(32) + insets.bottom
+                : responsiveHeight(32),
+          },
+        ]}
+      >
         <View style={styles.mainArea}>
           <Text style={styles.title}>Hỷ Planner</Text>
           <Text style={styles.subtitle}>Chào mừng đến với ứng dụng</Text>
@@ -141,14 +153,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
   },
   loginButtonText: {
     fontFamily: "Montserrat-Medium",
@@ -162,19 +166,10 @@ const styles = StyleSheet.create({
     paddingVertical: responsiveHeight(20),
     paddingHorizontal: responsiveWidth(32),
     borderRadius: borderRadius.lg,
-    borderWidth: 2,
     borderColor: "#e5e7eb",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
   },
   registerButtonText: {
     fontFamily: "Montserrat-Medium",

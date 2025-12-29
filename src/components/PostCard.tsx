@@ -1,13 +1,14 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   View,
   Text,
-  Image,
   StyleSheet,
   TouchableOpacity,
   Dimensions,
   Linking,
 } from "react-native";
+// ✅ OPTIMIZED: Use expo-image for better caching and performance
+import { Image } from "expo-image";
 import {
   Heart,
   MessageCircle,
@@ -37,7 +38,8 @@ interface PostCardProps {
   onEdit?: () => void;
 }
 
-export const PostCard: React.FC<PostCardProps> = ({
+// ✅ OPTIMIZED: Wrap with React.memo to prevent unnecessary re-renders
+const PostCardComponent: React.FC<PostCardProps> = ({
   post,
   currentUserId,
   onPress,
@@ -79,8 +81,9 @@ export const PostCard: React.FC<PostCardProps> = ({
     }
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
+  // ✅ OPTIMIZED: Memoize date formatting to avoid recalculation on every render
+  const formattedDate = useMemo(() => {
+    const date = new Date(post.createdAt);
     const now = new Date();
     const diff = now.getTime() - date.getTime();
     const minutes = Math.floor(diff / 60000);
@@ -92,7 +95,7 @@ export const PostCard: React.FC<PostCardProps> = ({
     if (hours < 24) return `${hours} giờ trước`;
     if (days < 7) return `${days} ngày trước`;
     return date.toLocaleDateString("vi-VN");
-  };
+  }, [post.createdAt]);
 
   const handleImagePress = (index: number) => {
     setSelectedImageIndex(index);
@@ -115,7 +118,9 @@ export const PostCard: React.FC<PostCardProps> = ({
           <Image
             source={{ uri: post.images[0] }}
             style={styles.singleImage}
-            resizeMode="cover"
+            contentFit="cover"
+            cachePolicy="memory-disk"
+            transition={200}
           />
         </TouchableOpacity>
       );
@@ -133,7 +138,9 @@ export const PostCard: React.FC<PostCardProps> = ({
               <Image
                 source={{ uri: img }}
                 style={styles.halfImage}
-                resizeMode="cover"
+                contentFit="cover"
+                cachePolicy="memory-disk"
+                transition={200}
               />
             </TouchableOpacity>
           ))}
@@ -151,7 +158,9 @@ export const PostCard: React.FC<PostCardProps> = ({
             <Image
               source={{ uri: post.images[0] }}
               style={styles.threeImagesLargeImage}
-              resizeMode="cover"
+              contentFit="cover"
+              cachePolicy="memory-disk"
+              transition={200}
             />
           </TouchableOpacity>
           <View style={styles.threeImagesRight}>
@@ -164,7 +173,9 @@ export const PostCard: React.FC<PostCardProps> = ({
                 <Image
                   source={{ uri: img }}
                   style={styles.threeImagesSmallImage}
-                  resizeMode="cover"
+                  contentFit="cover"
+                  cachePolicy="memory-disk"
+                  transition={200}
                 />
               </TouchableOpacity>
             ))}
@@ -236,7 +247,7 @@ export const PostCard: React.FC<PostCardProps> = ({
             <Text style={styles.userName}>
               {post.userId?.fullName || "Người dùng ẩn danh"}
             </Text>
-            <Text style={styles.timestamp}>{formatDate(post.createdAt)}</Text>
+            <Text style={styles.timestamp}>{formattedDate}</Text>
           </View>
         </View>
         {isMyPost && (
@@ -550,3 +561,6 @@ const styles = StyleSheet.create({
     color: "#6b7280",
   },
 });
+
+// ✅ OPTIMIZED: Export memoized component to prevent unnecessary re-renders
+export const PostCard = React.memo(PostCardComponent);

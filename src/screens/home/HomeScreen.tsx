@@ -14,9 +14,11 @@ import {
   ActivityIndicator,
   Animated,
   Platform,
+  Alert,
 } from "react-native";
 import { useSelector, useDispatch } from "react-redux";
 import { selectCurrentUser } from "../../store/authSlice";
+import { getAccountLimits, getUpgradeMessage } from "../../utils/accountLimits";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { useNavigation } from "@react-navigation/native";
 import { RootStackParamList } from "../../navigation/types"; // Đảm bảo đường dẫn này đúng
@@ -52,24 +54,60 @@ const { width } = Dimensions.get("window");
 
 const weddingImages = [
   {
-    uri: "https://images.unsplash.com/photo-1606216794074-735e91aa2c92?w=400&h=500&fit=crop",
-    caption: "Váy cưới vintage",
+    uri: "https://res.cloudinary.com/dqtemoeoz/image/upload/v1766667227/9_mpexd8.jpg",
+    caption: "",
   },
   {
-    uri: "https://images.unsplash.com/photo-1519741497674-611481863552?w=400&h=500&fit=crop",
-    caption: "Hoa cưới lãng mạn",
+    uri: "https://res.cloudinary.com/dqtemoeoz/image/upload/v1766667221/8_twob09.jpg",
+    caption: "",
   },
   {
-    uri: "https://tuandiamond.vn/wp-content/uploads/2024/08/nhan-cuoi-kim-cuong-tu-nhien-cao-cap-nc1489.jpg",
-    caption: "Nhẫn cưới đẹp",
+    uri: "https://res.cloudinary.com/dqtemoeoz/image/upload/v1766667216/7_ff4esl.jpg",
+    caption: "",
   },
   {
-    uri: "https://images.unsplash.com/photo-1583939003579-730e3918a45a?w=400&h=500&fit=crop",
-    caption: "Tiệc cưới sang trọng",
+    uri: "https://res.cloudinary.com/dqtemoeoz/image/upload/v1766667210/6_vdxezp.jpg",
+    caption: "",
   },
   {
-    uri: "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=400&h=500&fit=crop",
-    caption: "Trang trí cưới",
+    uri: "https://res.cloudinary.com/dqtemoeoz/image/upload/v1766667204/5_e5n5n2.jpg",
+    caption: "",
+  },
+  {
+    uri: "https://res.cloudinary.com/dqtemoeoz/image/upload/v1766667199/4_usqqek.jpg",
+    caption: "",
+  },
+  {
+    uri: "https://res.cloudinary.com/dqtemoeoz/image/upload/v1766667193/3_g7ynch.jpg",
+    caption: "",
+  },
+  {
+    uri: "https://res.cloudinary.com/dqtemoeoz/image/upload/v1766667188/2_shfqfm.jpg",
+    caption: "",
+  },
+  {
+    uri: "https://res.cloudinary.com/dqtemoeoz/image/upload/v1766667182/13_hfsuim.jpg",
+    caption: "",
+  },
+  {
+    uri: "https://res.cloudinary.com/dqtemoeoz/image/upload/v1766667176/12_bsrzrf.jpg",
+    caption: "",
+  },
+  {
+    uri: "https://res.cloudinary.com/dqtemoeoz/image/upload/v1766667171/10_sjvfve.jpg",
+    caption: "",
+  },
+  {
+    uri: "https://res.cloudinary.com/dqtemoeoz/image/upload/v1766667165/11_skvxvv.jpg",
+    caption: "",
+  },
+  {
+    uri: "https://res.cloudinary.com/dqtemoeoz/image/upload/v1766667160/14_z9rmd1.jpg",
+    caption: "",
+  },
+  {
+    uri: "https://res.cloudinary.com/dqtemoeoz/image/upload/v1766667154/1_j0brfb.jpg",
+    caption: "",
   },
 ];
 
@@ -84,6 +122,9 @@ const HomeScreen = () => {
   const member = weddingEvent?.member || [];
 
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [randomImages, setRandomImages] = useState<typeof weddingImages>([]);
+  const scrollViewRef = React.useRef<ScrollView>(null);
+  const scrollAnimation = React.useRef(new Animated.Value(0)).current;
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const dispatch = useDispatch<AppDispatch>();
 
@@ -102,23 +143,29 @@ const HomeScreen = () => {
 
   useEffect(() => {
     MixpanelService.track("Viewed Dashboard");
+
+    // Random chọn 7 ảnh từ weddingImages
+    const shuffled = [...weddingImages].sort(() => Math.random() - 0.5);
+    setRandomImages(shuffled.slice(0, 7));
   }, []);
 
-  useEffect(() => {
-    const fetchWeddingInfo = async () => {
-      const userId = user?.id || user?._id;
-      if (userId) {
-        try {
-          await getWeddingEvent(userId, dispatch);
-        } catch (err) {
-          console.error("Error fetching wedding info:", err);
-        }
-      }
-    };
-    fetchWeddingInfo();
-  }, [dispatch, user]);
+  // ❌ REMOVED: Duplicate API call - data now fetched centrally in App.tsx via useAppInitialization
+  // useEffect(() => {
+  //   const fetchWeddingInfo = async () => {
+  //     const userId = user?.id || user?._id;
+  //     if (userId) {
+  //       try {
+  //         await getWeddingEvent(userId, dispatch);
+  //       } catch (err) {
+  //         console.error("Error fetching wedding info:", err);
+  //       }
+  //     }
+  //   };
+  //   fetchWeddingInfo();
+  // }, [dispatch, user]);
 
   // Tính toán countdown theo giây và update mỗi giây
+  // ✅ OPTIMIZED: Chỉ update khi seconds thay đổi
   useEffect(() => {
     if (!weddingEvent?.timeToMarried) {
       return;
@@ -146,7 +193,13 @@ const HomeScreen = () => {
       const minutes = Math.floor((totalSeconds % (60 * 60)) / 60);
       const seconds = totalSeconds % 60;
 
-      setTimeLeft({ days, hours, minutes, seconds, totalSeconds });
+      // ✅ CHỈ UPDATE KHI SECONDS THAY ĐỔI (tránh re-render không cần thiết)
+      setTimeLeft((prev) => {
+        if (prev.seconds !== seconds) {
+          return { days, hours, minutes, seconds, totalSeconds };
+        }
+        return prev;
+      });
     };
 
     calculateTimeLeft();
@@ -156,6 +209,7 @@ const HomeScreen = () => {
   }, [weddingEvent?.timeToMarried]);
 
   // Hiệu ứng animation cho trái tim (nhấp nháy)
+  // ✅ OPTIMIZED: Sử dụng useRef để tránh recreation của Animated.Value
   useEffect(() => {
     const pulseAnimation = Animated.loop(
       Animated.sequence([
@@ -189,7 +243,50 @@ const HomeScreen = () => {
     pulseAnimation.start();
 
     return () => pulseAnimation.stop();
-  }, [heartScale, heartOpacity]);
+  }, []); // ✅ FIXED: Empty deps array - animation chỉ start 1 lần
+
+  // Auto-scroll carousel với transition mượt mà
+  useEffect(() => {
+    if (randomImages.length === 0) return;
+
+    const autoScrollInterval = setInterval(() => {
+      setCurrentImageIndex((prevIndex) => {
+        const nextIndex = (prevIndex + 1) % randomImages.length;
+        const targetX = nextIndex * width;
+
+        // Sử dụng Animated.timing để có transition mượt mà hơn
+        Animated.timing(scrollAnimation, {
+          toValue: targetX,
+          duration: 2000, // ← Transition mượt mà trong 2 giây
+          useNativeDriver: false,
+        }).start(() => {
+          // Callback sau khi animation hoàn thành
+          scrollViewRef.current?.scrollTo({
+            x: targetX,
+            animated: false,
+          });
+        });
+
+        return nextIndex;
+      });
+    }, 5000); // Hiển thị mỗi ảnh 8 giây
+
+    return () => clearInterval(autoScrollInterval);
+  }, [randomImages.length, scrollAnimation]);
+
+  // ✅ Listener để sync scrollAnimation với ScrollView
+  useEffect(() => {
+    const listenerId = scrollAnimation.addListener(({ value }) => {
+      scrollViewRef.current?.scrollTo({
+        x: value,
+        animated: false, // Không dùng animation của ScrollView
+      });
+    });
+
+    return () => {
+      scrollAnimation.removeListener(listenerId);
+    };
+  }, [scrollAnimation]);
 
   // --- TÍNH TOÁN SỐ NGÀY ĐẾM NGƯỢC ĐỘNG (giữ lại cho các phần khác nếu cần) ---
   const daysLeft = useMemo(() => {
@@ -213,6 +310,21 @@ const HomeScreen = () => {
     const scrollPosition = event.nativeEvent.contentOffset.x;
     const imageIndex = Math.round(scrollPosition / width);
     setCurrentImageIndex(imageIndex);
+  };
+
+  const handleMomentumScrollEnd = (
+    event: NativeSyntheticEvent<NativeScrollEvent>
+  ) => {
+    const scrollPosition = event.nativeEvent.contentOffset.x;
+    const imageIndex = Math.round(scrollPosition / width);
+
+    // Nếu đã đến ảnh cuối cùng, scroll về ảnh đầu tiên
+    if (imageIndex >= randomImages.length - 1) {
+      setTimeout(() => {
+        scrollViewRef.current?.scrollTo({ x: 0, animated: true });
+        setCurrentImageIndex(0);
+      }, 300);
+    }
   };
 
   // --- XỬ LÝ CÁC TRẠNG THÁI UI ---
@@ -255,8 +367,8 @@ const HomeScreen = () => {
     <SafeAreaView style={styles.container}>
       <StatusBar
         barStyle="dark-content"
-        backgroundColor="#ffffff"
-        translucent={false}
+        backgroundColor="transparent"
+        translucent={true}
       />
       <ScrollView
         style={styles.scrollView}
@@ -331,14 +443,17 @@ const HomeScreen = () => {
         {/* Wedding Image Carousel */}
         <View style={styles.imageSection}>
           <ScrollView
+            ref={scrollViewRef}
             horizontal
             pagingEnabled
             showsHorizontalScrollIndicator={false}
             onScroll={handleScroll}
+            onMomentumScrollEnd={handleMomentumScrollEnd}
             scrollEventThrottle={16}
             style={styles.carouselContainer}
+            scrollEnabled={false}
           >
-            {weddingImages.map((image, index) => (
+            {randomImages.map((image, index) => (
               <View key={index} style={styles.imageContainer}>
                 <Image
                   source={{ uri: image.uri }}
@@ -349,7 +464,7 @@ const HomeScreen = () => {
             ))}
           </ScrollView>
           <Text style={styles.imageCaption}>
-            {weddingImages[currentImageIndex].caption}
+            {randomImages[currentImageIndex]?.caption || ""}
           </Text>
         </View>
 
@@ -465,12 +580,31 @@ const HomeScreen = () => {
           {(user?.id || user?._id) === weddingEvent.creatorId && (
             <TouchableOpacity
               style={styles.menuItem}
-              onPress={() =>
+              onPress={() => {
+                const accountType = user?.accountType || "FREE";
+                const limits = getAccountLimits(accountType);
+
+                if (!limits.canAccessWhoIsNext) {
+                  Alert.alert(
+                    "Nâng cấp tài khoản",
+                    getUpgradeMessage("whoIsNext"),
+                    [
+                      { text: "Hủy", style: "cancel" },
+                      {
+                        text: "Nâng cấp",
+                        onPress: () =>
+                          navigation.navigate("UpgradeAccountScreen"),
+                      },
+                    ]
+                  );
+                  return;
+                }
+
                 navigation.navigate("WhoIsNextMarried", {
                   member,
                   creatorId: weddingEvent.creatorId,
-                })
-              }
+                });
+              }}
             >
               <View style={styles.menuItemLeft}>
                 <View style={styles.menuIcon}>
@@ -498,6 +632,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#ffffff",
+    paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
   },
   scrollView: {
     flex: 1,

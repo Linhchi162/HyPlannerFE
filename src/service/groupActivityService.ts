@@ -78,3 +78,36 @@ export const insertSampleGroupActivity = async (eventId: string) => {
     throw new Error(message);
   }
 };
+
+export const updateGroupActivity = async (
+  groupId: string,
+  groupName: string,
+  dispatch: Dispatch
+) => {
+  try {
+    await apiClient.put(`/groupActivities/updateGroupActivity/${groupId}`, {
+      groupName,
+    });
+  } catch (error: any) {
+    const message =
+      error.response && error.response.data && error.response.data.message
+        ? error.response.data.message
+        : "Error updating group activity";
+    throw new Error(message);
+  }
+};
+
+export const deleteGroupActivity = async (
+  groupId: string,
+  dispatch: Dispatch
+) => {
+  try {
+    await apiClient.delete(`/groupActivities/deleteGroupActivity/${groupId}`);
+  } catch (error: any) {
+    const message =
+      error.response && error.response.data && error.response.data.message
+        ? error.response.data.message
+        : "Error deleting group activity";
+    throw new Error(message);
+  }
+};

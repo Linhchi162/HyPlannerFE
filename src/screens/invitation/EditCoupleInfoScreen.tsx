@@ -36,6 +36,8 @@ import {
 import apiClient from "../../api/client";
 import { useAppDispatch } from "../../store/hooks";
 import { fetchUserInvitation } from "../../store/invitationSlice";
+import logger from "../../utils/logger";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type EditCoupleInfoRouteProp = RouteProp<RootStackParamList, "EditCoupleInfo">;
 
@@ -59,6 +61,7 @@ export default function EditCoupleInfo() {
   const route = useRoute<EditCoupleInfoRouteProp>();
   const { invitation, sectionType, title } = route.params;
   const dispatch = useAppDispatch();
+  const insets = useSafeAreaInsets();
 
   const [data, setData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -109,9 +112,9 @@ export default function EditCoupleInfo() {
         });
 
         const cloudinaryUrl = response.data.imageUrls[0];
-        console.log("Cloudinary URL:", cloudinaryUrl);
+        logger.log("Cloudinary URL:", cloudinaryUrl);
         setCurrentItem({ ...currentItem, [fieldName]: cloudinaryUrl });
-        console.log("Updated currentItem:", {
+        logger.log("Updated currentItem:", {
           ...currentItem,
           [fieldName]: cloudinaryUrl,
         });
@@ -119,8 +122,8 @@ export default function EditCoupleInfo() {
         Alert.alert("Thành công", "Đã tải ảnh lên!");
       }
     } catch (error: any) {
-      console.error("Lỗi upload ảnh:", error);
-      console.error("Error response:", error.response?.data);
+      logger.error("Lỗi upload ảnh:", error);
+      logger.error("Error response:", error.response?.data);
       Alert.alert("Lỗi", "Không thể tải ảnh lên. Vui lòng thử lại.");
     } finally {
       setUploadingImage(false);
@@ -178,7 +181,7 @@ export default function EditCoupleInfo() {
         payload = data;
         break;
       case "album":
-        console.log("Saving album data:", data);
+        logger.log("Saving album data:", data);
         payload = { album: data };
         break;
       case "loveStory":
@@ -196,20 +199,20 @@ export default function EditCoupleInfo() {
         break;
     }
 
-    console.log("Payload to send:", JSON.stringify(payload, null, 2));
+    logger.log("Payload to send:", JSON.stringify(payload, null, 2));
 
     try {
       const response = await apiClient.put(
         "/invitation/my-invitation",
         payload
       );
-      console.log("Update response:", response.data);
+      logger.log("Update response:", response.data);
       dispatch(fetchUserInvitation());
       Alert.alert("Thành công", `Đã cập nhật mục "${title}"!`);
       navigation.goBack();
     } catch (error: any) {
-      console.error("Error updating invitation:", error);
-      console.error("Error response:", error.response?.data);
+      logger.error("Error updating invitation:", error);
+      logger.error("Error response:", error.response?.data);
       const errorMessage =
         error.response?.data?.message ||
         error.message ||
@@ -277,9 +280,9 @@ export default function EditCoupleInfo() {
 
   // ... (Hàm handleSaveItemInModal giữ nguyên)
   const handleSaveItemInModal = () => {
-    console.log("handleSaveItemInModal - sectionType:", sectionType);
-    console.log("handleSaveItemInModal - currentItem:", currentItem);
-    console.log("handleSaveItemInModal - isEditing:", isEditing);
+    logger.log("handleSaveItemInModal - sectionType:", sectionType);
+    logger.log("handleSaveItemInModal - currentItem:", currentItem);
+    logger.log("handleSaveItemInModal - isEditing:", isEditing);
 
     if (sectionType === "album") {
       // Sửa validation để chấp nhận URL từ Cloudinary
@@ -293,11 +296,11 @@ export default function EditCoupleInfo() {
       if (isEditing) {
         const newAlbum = [...(data as string[])];
         newAlbum[currentItem.index] = currentItem.url;
-        console.log("Updated album (editing):", newAlbum);
+        logger.log("Updated album (editing):", newAlbum);
         setData(newAlbum);
       } else {
         const newAlbum = [...(data as string[]), currentItem.url];
-        console.log("Updated album (adding):", newAlbum);
+        logger.log("Updated album (adding):", newAlbum);
         setData(newAlbum);
       }
     } else {
@@ -776,7 +779,13 @@ export default function EditCoupleInfo() {
       {renderModal()}
 
       <TouchableOpacity
-        style={styles.saveButton}
+        style={[
+          styles.saveButton,
+          {
+            marginBottom:
+              Platform.OS === "android" ? Math.max(insets.bottom, 20) : 20,
+          },
+        ]}
         onPress={handleSaveChanges}
         disabled={isLoading}
       >

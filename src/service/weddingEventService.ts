@@ -1,5 +1,6 @@
 import { Dispatch } from "@reduxjs/toolkit";
 import axios from "axios";
+import logger from "../utils/logger";
 import {
   createWeddingEventFailure,
   createWeddingEventStart,
@@ -27,12 +28,12 @@ export const getWeddingEvent = async (userId: string, dispatch: Dispatch) => {
     );
     dispatch(getWeddingEventSuccess(response.data as any));
   } catch (error: any) {
-    console.log("Error object:", error);
+    logger.log("Error object:", error);
     const message =
       error.response && error.response.data && error.response.data.message
         ? error.response.data.message
         : "Error fetching wedding event";
-    console.error("Get Wedding Event Error:", message);
+    logger.error("Get Wedding Event Error:", message);
     dispatch(getWeddingEventFailure(message));
   }
 };
@@ -51,13 +52,17 @@ export const createWeddingEvent = async (
   try {
     await apiClient.post(`/weddingEvents/createWeddingEvent`, weddingData);
     dispatch(createWeddingEventSuccess());
+
+    // Sau khi tạo thành công, fetch lại wedding event để lưu vào Redux
+    await getWeddingEvent(weddingData.creatorId, dispatch);
   } catch (error: any) {
     const message =
       error.response && error.response.data && error.response.data.message
         ? error.response.data.message
-        : "Error fetching tasks";
-    console.error("Get Tasks Error:", message);
+        : "Error creating wedding event";
+    logger.error("Create Wedding Event Error:", message);
     dispatch(createWeddingEventFailure(message));
+    throw error;
   }
 };
 
@@ -105,6 +110,23 @@ export const leaveWeddingEvent = async (
   }
 };
 
+export const deleteWeddingEvent = async (
+  eventId: string,
+  dispatch: Dispatch
+) => {
+  try {
+    await apiClient.delete(`/weddingEvents/deleteWeddingEvent/${eventId}`);
+    logger.log("Wedding event deleted successfully");
+  } catch (error: any) {
+    const message =
+      error.response && error.response.data && error.response.data.message
+        ? error.response.data.message
+        : "Error deleting wedding event";
+    logger.error("Delete Wedding Event Error:", message);
+    throw message;
+  }
+};
+
 export const updateWeddingEvent = async (
   eventId: string,
   updateData: {
@@ -129,7 +151,7 @@ export const updateWeddingEvent = async (
       error.response && error.response.data && error.response.data.message
         ? error.response.data.message
         : "Error updating wedding event";
-    console.error("Update Wedding Event Error:", message);
+    logger.error("Update Wedding Event Error:", message);
     throw message;
   }
 };

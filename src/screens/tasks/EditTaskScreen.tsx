@@ -34,6 +34,7 @@ import { getPhases } from "../../service/phaseService";
 import { Member } from "../../store/weddingEventSlice";
 import { RootStackParamList } from "../../navigation/types";
 import { MixpanelService } from "../../service/mixpanelService";
+import logger from "../../utils/logger";
 
 type CreateTaskAppbarProps = {
   onBack: () => void;
@@ -119,7 +120,7 @@ export default function EditTaskScreen() {
         await getTasks(taskId, dispatch);
         MixpanelService.track("Viewed Edit Task Screen", { "Task ID": taskId });
       } catch (error) {
-        console.error("Error fetching task:", error);
+        logger.error("Error fetching task:", error);
       } finally {
         setLoadingTask(false);
       }
@@ -163,7 +164,7 @@ export default function EditTaskScreen() {
       setActionLoading(false);
       navigation.goBack();
     } catch (error) {
-      console.error("Error saving task:", error);
+      logger.error("Error saving task:", error);
     }
   };
   const formatNumber = (value: number): string => {

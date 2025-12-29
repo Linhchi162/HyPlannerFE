@@ -190,3 +190,21 @@ export const checkAlbumInteraction = async (
   const response = await apiClient.get(`/albums/${albumId}/check-interaction`);
   return response.data;
 };
+
+// Generate share code for album
+export const generateShareCode = async (
+  albumId: string
+): Promise<{ success: boolean; shareCode: string; message: string }> => {
+  const response = await apiClient.post(
+    `/albums/${albumId}/generate-share-code`
+  );
+  return response.data;
+};
+
+// Clone album by share code
+export const cloneAlbumByCode = async (
+  shareCode: string
+): Promise<{ success: boolean; album: Album; message: string }> => {
+  const response = await apiClient.post("/albums/clone-by-code", { shareCode });
+  return response.data;
+};

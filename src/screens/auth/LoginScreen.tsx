@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
   Platform,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation, NavigationProp } from "@react-navigation/native";
 import * as WebBrowser from "expo-web-browser";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -24,6 +25,7 @@ import { useDispatch } from "react-redux";
 import { setCredentials } from "../../store/authSlice";
 import { MixpanelService } from "../../service/mixpanelService";
 import { registerForPushNotificationsAsync } from "../../utils/pushNotification";
+import logger from "../../utils/logger";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -35,6 +37,7 @@ const isValidEmail = (email: string) => {
 };
 
 const LoginScreen = () => {
+  const insets = useSafeAreaInsets();
   const [loading, setLoading] = useState(false);
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const dispatch = useDispatch();
@@ -75,7 +78,7 @@ const LoginScreen = () => {
               await apiClient.post("/auth/push-token", { pushToken });
             }
           } catch (error) {
-            console.error("Failed to register push token:", error);
+            logger.error("Failed to register push token:", error);
           }
 
           const userId = user.id || user._id;
@@ -99,7 +102,7 @@ const LoginScreen = () => {
         }
       }
     } catch (error) {
-      console.error("Error during Google sign-in:", error);
+      logger.error("Error during Google sign-in:", error);
       Alert.alert("Lỗi", "Đăng nhập Google thất bại. Vui lòng thử lại.");
     } finally {
       setLoading(false);
@@ -147,7 +150,7 @@ const LoginScreen = () => {
           await apiClient.post("/auth/push-token", { pushToken });
         }
       } catch (error) {
-        console.error("Failed to register push token:", error);
+        logger.error("Failed to register push token:", error);
       }
 
       MixpanelService.identify(updatedUser.id);
@@ -166,7 +169,7 @@ const LoginScreen = () => {
         routes: [{ name: "InviteOrCreate" }],
       });
     } catch (error) {
-      console.error("Error during Facebook login:", error);
+      logger.error("Error during Facebook login:", error);
       Alert.alert("Lỗi", `Đăng nhập Facebook thất bại.`);
     } finally {
       setLoading(false);
@@ -208,7 +211,7 @@ const LoginScreen = () => {
           await apiClient.post("/auth/push-token", { pushToken });
         }
       } catch (error) {
-        console.error("Failed to register push token:", error);
+        logger.error("Failed to register push token:", error);
       }
 
       const userId = user.id || user._id;
@@ -238,7 +241,14 @@ const LoginScreen = () => {
         backgroundColor="#FFFFFF"
         translucent={false}
       />
-      <View style={styles.container}>
+      <View
+        style={[
+          styles.container,
+          {
+            paddingBottom: Platform.OS === "android" ? 40 + insets.bottom : 40,
+          },
+        ]}
+      >
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.title}>Đăng nhập</Text>
@@ -274,9 +284,9 @@ const LoginScreen = () => {
               onPress={() => setIsPasswordVisible(!isPasswordVisible)}
             >
               {isPasswordVisible ? (
-                <EyeOff color="#8A8A8A" size={44} />
+                <EyeOff color="#8A8A8A" size={22} />
               ) : (
-                <Eye color="#8A8A8A" size={44} />
+                <Eye color="#8A8A8A" size={22} />
               )}
             </TouchableOpacity>
           </View>
@@ -327,14 +337,14 @@ const LoginScreen = () => {
             onPress={handleGoogleSignIn}
             disabled={loading}
           >
-            <AntDesign name="google" size={56} color="#2D2D2D" />
+            <AntDesign name="google" size={24} color="#2D2D2D" />
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.socialButton}
             onPress={handleFacebookLogin}
             disabled={loading}
           >
-            <FontAwesome name="facebook-f" size={56} color="#2D2D2D" />
+            <FontAwesome name="facebook-f" size={24} color="#2D2D2D" />
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.socialButton}
@@ -343,7 +353,7 @@ const LoginScreen = () => {
             }
             disabled={loading}
           >
-            <FontAwesome name="user" size={56} color="#2D2D2D" />
+            <FontAwesome name="user" size={24} color="#2D2D2D" />
           </TouchableOpacity>
         </View>
 
@@ -377,16 +387,16 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: "Agbalumo",
-    fontSize: 64,
+    fontSize: 48,
     color: "#e56e8a",
     marginBottom: 8,
   },
   subtitle: {
     fontFamily: "Montserrat-Medium",
-    fontSize: 28,
+    fontSize: 16,
     color: "#6B7280",
     textAlign: "center",
-    lineHeight: 40,
+    lineHeight: 24,
     paddingHorizontal: 16,
   },
 
@@ -396,19 +406,19 @@ const styles = StyleSheet.create({
   },
   label: {
     fontFamily: "Montserrat-Medium",
-    fontSize: 32,
+    fontSize: 16,
     fontWeight: "500",
     color: "#1F2937",
     marginBottom: 4,
   },
   input: {
     fontFamily: "Montserrat-Medium",
-    height: 80,
+    height: 50,
     borderWidth: 1,
     borderColor: "#E5E7EB",
     borderRadius: 10,
     paddingHorizontal: 16,
-    fontSize: 32,
+    fontSize: 16,
     color: "#1F2937",
     backgroundColor: "#FFFFFF",
   },
@@ -416,7 +426,7 @@ const styles = StyleSheet.create({
   passwordContainer: {
     flexDirection: "row",
     alignItems: "center",
-    height: 80,
+    height: 50,
     borderWidth: 1,
     borderColor: "#E5E7EB",
     borderRadius: 10,
@@ -426,7 +436,7 @@ const styles = StyleSheet.create({
   inputPassword: {
     flex: 1,
     fontFamily: "Montserrat-Medium",
-    fontSize: 32,
+    fontSize: 16,
     color: "#1F2937",
     paddingHorizontal: 16,
   },
@@ -445,24 +455,24 @@ const styles = StyleSheet.create({
   },
   checkbox: {
     borderRadius: 4,
-    width: 40,
-    height: 40,
+    width: 20,
+    height: 20,
     borderColor: "#D1D5DB",
   },
   checkboxLabel: {
     fontFamily: "Montserrat-Medium",
-    fontSize: 28,
+    fontSize: 14,
     color: "#6B7280",
   },
   forgotPassword: {
     fontFamily: "Montserrat-Medium",
-    fontSize: 28,
+    fontSize: 14,
     color: "#e56e8a",
     fontWeight: "600",
   },
 
   loginButton: {
-    height: 80,
+    height: 50,
     backgroundColor: "#e56e8a",
     borderRadius: 10,
     justifyContent: "center",
@@ -471,7 +481,7 @@ const styles = StyleSheet.create({
   },
   loginButtonText: {
     fontFamily: "Montserrat-Medium",
-    fontSize: 36,
+    fontSize: 18,
     fontWeight: "700",
     color: "#FFFFFF",
   },
@@ -488,7 +498,7 @@ const styles = StyleSheet.create({
   },
   separatorText: {
     fontFamily: "Montserrat-Medium",
-    fontSize: 28,
+    fontSize: 14,
     color: "#9CA3AF",
     marginHorizontal: 16,
   },
@@ -500,9 +510,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
   },
   socialButton: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     borderWidth: 1,
     borderColor: "#E5E7EB",
     justifyContent: "center",
@@ -519,7 +529,7 @@ const styles = StyleSheet.create({
   },
   signupText: {
     fontFamily: "Montserrat-Medium",
-    fontSize: 28,
+    fontSize: 14,
     color: "#6B7280",
   },
   signupLink: {

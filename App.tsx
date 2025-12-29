@@ -1,7 +1,6 @@
 import "react-native-gesture-handler";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import React, { useEffect, useState, useRef } from "react";
-import AppNavigator from "./src/navigation/AppNavigator";
 import { PaperProvider } from "react-native-paper";
 import * as Font from "expo-font";
 import { Provider, useSelector } from "react-redux";
@@ -20,6 +19,8 @@ import {
 } from "./src/utils/pushNotification";
 import { updatePushToken } from "./src/service/authService";
 import { selectCurrentToken } from "./src/store/authSlice";
+import { useAppInitialization } from "./src/hooks/useAppInitialization";
+import ErrorBoundary from "./src/components/ErrorBoundary";
 
 // Component to handle push token registration after auth
 function PushTokenRegistrar() {
@@ -32,7 +33,6 @@ function PushTokenRegistrar() {
       registerForPushNotificationsAsync()
         .then(async (pushToken) => {
           if (pushToken) {
-            console.log("📱 Registering push token with server...");
             await updatePushToken(pushToken);
             setTokenRegistered(true);
           }
@@ -51,10 +51,16 @@ function PushTokenRegistrar() {
   return null;
 }
 
+// ✅ Component to initialize app data centrally
+function AppDataInitializer() {
+  useAppInitialization();
+  return null;
+}
+
 export default function App() {
   const [fontsLoaded, setFontsLoaded] = useState(false);
-  const notificationListener = useRef<Notifications.Subscription>();
-  const responseListener = useRef<Notifications.Subscription>();
+  const notificationListener = useRef<Notifications.Subscription | null>(null);
+  const responseListener = useRef<Notifications.Subscription | null>(null);
 
   useEffect(() => {
     Font.loadAsync({
@@ -103,21 +109,24 @@ export default function App() {
   }, []);
   if (!fontsLoaded) return null;
   return (
-    <SafeAreaProvider>
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <PaperProvider>
-          <Provider store={store}>
-            <PersistGate loading={null} persistor={persistor}>
-              <PushTokenRegistrar />
-              <SelectionProvider>
-                <AlbumCreationProvider>
-                  <RootStackNavigator />
-                </AlbumCreationProvider>
-              </SelectionProvider>
-            </PersistGate>
-          </Provider>
-        </PaperProvider>
-      </GestureHandlerRootView>
-    </SafeAreaProvider>
+    <ErrorBoundary>
+      <SafeAreaProvider>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          <PaperProvider>
+            <Provider store={store}>
+              <PersistGate loading={null} persistor={persistor}>
+                <PushTokenRegistrar />
+                <AppDataInitializer />
+                <SelectionProvider>
+                  <AlbumCreationProvider>
+                    <RootStackNavigator />
+                  </AlbumCreationProvider>
+                </SelectionProvider>
+              </PersistGate>
+            </Provider>
+          </PaperProvider>
+        </GestureHandlerRootView>
+      </SafeAreaProvider>
+    </ErrorBoundary>
   );
 }

@@ -247,7 +247,6 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: "#ffffff",
-    paddingTop: StatusBar.currentHeight || 0,
   },
   centerContainer: {
     flex: 1,

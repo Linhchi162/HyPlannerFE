@@ -12,6 +12,7 @@ import {
   getFeedbackStart,
   getFeedbackSuccess,
 } from "../store/feedbackSlice";
+import logger from "../utils/logger";
 
 // Lấy feedback
 // Lấy feedback của user hiện tại
@@ -20,7 +21,7 @@ export const getMyFeedback = async (userId: string, dispatch: Dispatch) => {
   dispatch(getFeedbackStart());
   try {
     const response = await apiClient.get(`/feedback/my-feedback/${userId}`);
-    console.log("Fetched My Feedback kkkkkkk:", response.data);
+    logger.log("Fetched My Feedback:", response.data);
     dispatch(getFeedbackSuccess(response.data as any));
   } catch (error: any) {
     const message =

@@ -14,8 +14,13 @@ import {
   TextInput,
   Modal,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { LinearGradient } from "expo-linear-gradient";
 import { ChevronLeft } from "lucide-react-native";
 import { useNavigation } from "@react-navigation/native";
+import { AntDesign } from "@expo/vector-icons";
+import { Download } from "lucide-react-native";
+import * as Clipboard from "expo-clipboard";
 import WeddingItemCard from "../../components/WeddingItemCard";
 import CreateAlbumModal from "./CreateAlbumModal";
 import { fonts } from "../../theme/fonts";
@@ -35,6 +40,10 @@ import * as brideEngageService from "../../service/brideEngageService";
 import * as groomEngageService from "../../service/groomEngageService";
 import * as userSelectionService from "../../service/userSelectionService";
 import * as albumService from "../../service/albumService";
+import { useSelector } from "react-redux";
+import { RootState } from "../../store";
+import { selectCurrentUser } from "../../store/authSlice";
+import { canCreateAlbum, getUpgradeMessage } from "../../utils/accountLimits";
 
 const { width } = Dimensions.get("window");
 
@@ -49,8 +58,12 @@ interface ItemWithCategory {
 
 const TestCreateAlbum = () => {
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
+  const user = useSelector(selectCurrentUser);
+  const accountType = user?.accountType || "FREE";
 
   const [allItems, setAllItems] = useState<ItemWithCategory[]>([]);
+  const [currentAlbumCount, setCurrentAlbumCount] = useState<number>(0);
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -61,6 +74,9 @@ const TestCreateAlbum = () => {
     string[]
   >([]);
   const [showMetadataModal, setShowMetadataModal] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importCode, setImportCode] = useState("");
+  const [isImporting, setIsImporting] = useState(false);
 
   const categories = useMemo(() => {
     const set = new Set<string>();
@@ -89,7 +105,7 @@ const TestCreateAlbum = () => {
       "Vest - Chất liệu",
       "Vest - Màu sắc",
       "Vest - Ve áo",
-      "Vest - Túi áo",
+      "Vest - Túi ngực, túi hông,..",
       "Vest - Trang trí",
     ];
     return ordered.filter((c) => set.has(c));
@@ -97,15 +113,79 @@ const TestCreateAlbum = () => {
 
   useEffect(() => {
     loadAllItems();
+    loadAlbumCount();
   }, []);
+
+  const loadAlbumCount = async () => {
+    try {
+      const albums = await albumService.getMyAlbums();
+      setCurrentAlbumCount(albums.length);
+    } catch (error) {
+      console.error("Error loading album count:", error);
+    }
+  };
 
   const loadAllItems = async () => {
     try {
       setIsLoading(true);
       const items: ItemWithCategory[] = [];
 
-      // Load wedding venues
-      const venuesRes = await venueThemeService.getWeddingVenues();
+      // ✅ FIX SEQUENTIAL API CALLS - Gọi tất cả API parallel với Promise.all
+      const [
+        venuesRes,
+        themesRes,
+        weddingToneColorsRes,
+        engageToneColorsRes,
+        brideStylesRes,
+        brideMaterialsRes,
+        bridePatternsRes,
+        brideHeadwearsRes,
+        groomOutfitsRes,
+        groomAccessoriesRes,
+        stylesRes,
+        materialsRes,
+        necklinesRes,
+        detailsRes,
+        veilsRes,
+        jewelryRes,
+        hairpinsRes,
+        crownsRes,
+        flowersRes,
+        vestStylesRes,
+        vestMaterialsRes,
+        vestColorsRes,
+        vestLapelsRes,
+        vestPocketsRes,
+        vestDecorationsRes,
+      ] = await Promise.all([
+        venueThemeService.getWeddingVenues(),
+        venueThemeService.getWeddingThemes(),
+        toneService.getWeddingToneColors(),
+        toneService.getEngageToneColors(),
+        brideEngageService.getAllBrideEngageStyles(),
+        brideEngageService.getAllBrideEngageMaterials(),
+        brideEngageService.getAllBrideEngagePatterns(),
+        brideEngageService.getAllBrideEngageHeadwears(),
+        groomEngageService.getAllGroomEngageOutfits(),
+        groomEngageService.getAllGroomEngageAccessories(),
+        weddingCostumeService.getAllStyles(),
+        weddingCostumeService.getAllMaterials(),
+        weddingCostumeService.getAllNecklines(),
+        weddingCostumeService.getAllDetails(),
+        weddingCostumeService.getAllVeils(),
+        weddingCostumeService.getAllJewelry(),
+        weddingCostumeService.getAllHairpins(),
+        weddingCostumeService.getAllCrowns(),
+        weddingCostumeService.getAllFlowers(),
+        groomSuitService.getVestStyles(),
+        groomSuitService.getVestMaterials(),
+        groomSuitService.getVestColors(),
+        groomSuitService.getVestLapels(),
+        groomSuitService.getVestPockets(),
+        groomSuitService.getVestDecorations(),
+      ]);
+
+      // Process wedding venues
       if (venuesRes.success && venuesRes.data) {
         venuesRes.data.forEach((venue: any) => {
           items.push({
@@ -119,8 +199,7 @@ const TestCreateAlbum = () => {
         });
       }
 
-      // Load wedding themes
-      const themesRes = await venueThemeService.getWeddingThemes();
+      // Process wedding themes
       if (themesRes.success && themesRes.data) {
         themesRes.data.forEach((theme: any) => {
           items.push({
@@ -134,8 +213,7 @@ const TestCreateAlbum = () => {
         });
       }
 
-      // Load tone colors
-      const weddingToneColorsRes = await toneService.getWeddingToneColors();
+      // Process wedding tone colors
       if (weddingToneColorsRes.success && weddingToneColorsRes.data) {
         weddingToneColorsRes.data.forEach((color: any) => {
           items.push({
@@ -149,7 +227,7 @@ const TestCreateAlbum = () => {
         });
       }
 
-      const engageToneColorsRes = await toneService.getEngageToneColors();
+      // Process engage tone colors
       if (engageToneColorsRes.success && engageToneColorsRes.data) {
         engageToneColorsRes.data.forEach((color: any) => {
           items.push({
@@ -163,8 +241,7 @@ const TestCreateAlbum = () => {
         });
       }
 
-      // Load bride engagement (áo dài)
-      const brideStylesRes = await brideEngageService.getAllBrideEngageStyles();
+      // Process bride engagement styles
       if (brideStylesRes.success && brideStylesRes.data) {
         brideStylesRes.data.forEach((style: any) => {
           items.push({
@@ -178,8 +255,7 @@ const TestCreateAlbum = () => {
         });
       }
 
-      const brideMaterialsRes =
-        await brideEngageService.getAllBrideEngageMaterials();
+      // Process bride materials
       if (brideMaterialsRes.success && brideMaterialsRes.data) {
         brideMaterialsRes.data.forEach((material: any) => {
           items.push({
@@ -193,8 +269,7 @@ const TestCreateAlbum = () => {
         });
       }
 
-      const bridePatternsRes =
-        await brideEngageService.getAllBrideEngagePatterns();
+      // Process bride patterns
       if (bridePatternsRes.success && bridePatternsRes.data) {
         bridePatternsRes.data.forEach((pattern: any) => {
           items.push({
@@ -208,8 +283,7 @@ const TestCreateAlbum = () => {
         });
       }
 
-      const brideHeadwearsRes =
-        await brideEngageService.getAllBrideEngageHeadwears();
+      // Process bride headwears
       if (brideHeadwearsRes.success && brideHeadwearsRes.data) {
         brideHeadwearsRes.data.forEach((headwear: any) => {
           items.push({
@@ -223,9 +297,7 @@ const TestCreateAlbum = () => {
         });
       }
 
-      // Load groom engagement
-      const groomOutfitsRes =
-        await groomEngageService.getAllGroomEngageOutfits();
+      // Process groom outfits
       if (groomOutfitsRes.success && groomOutfitsRes.data) {
         groomOutfitsRes.data.forEach((outfit: any) => {
           items.push({
@@ -239,8 +311,7 @@ const TestCreateAlbum = () => {
         });
       }
 
-      const groomAccessoriesRes =
-        await groomEngageService.getAllGroomEngageAccessories();
+      // Process groom accessories
       if (groomAccessoriesRes.success && groomAccessoriesRes.data) {
         groomAccessoriesRes.data.forEach((accessory: any) => {
           items.push({
@@ -254,8 +325,7 @@ const TestCreateAlbum = () => {
         });
       }
 
-      // Load wedding dress
-      const stylesRes = await weddingCostumeService.getAllStyles();
+      // Process wedding dress styles
       if (stylesRes.success && stylesRes.data) {
         stylesRes.data.forEach((style: any) => {
           items.push({
@@ -269,7 +339,7 @@ const TestCreateAlbum = () => {
         });
       }
 
-      const materialsRes = await weddingCostumeService.getAllMaterials();
+      // Process materials
       if (materialsRes.success && materialsRes.data) {
         materialsRes.data.forEach((material: any) => {
           items.push({
@@ -283,7 +353,7 @@ const TestCreateAlbum = () => {
         });
       }
 
-      const necklinesRes = await weddingCostumeService.getAllNecklines();
+      // Process necklines
       if (necklinesRes.success && necklinesRes.data) {
         necklinesRes.data.forEach((neckline: any) => {
           items.push({
@@ -297,7 +367,7 @@ const TestCreateAlbum = () => {
         });
       }
 
-      const detailsRes = await weddingCostumeService.getAllDetails();
+      // Process details
       if (detailsRes.success && detailsRes.data) {
         detailsRes.data.forEach((detail: any) => {
           items.push({
@@ -311,8 +381,7 @@ const TestCreateAlbum = () => {
         });
       }
 
-      // Load accessories
-      const veilsRes = await weddingCostumeService.getAllVeils();
+      // Process veils
       if (veilsRes.success && veilsRes.data) {
         veilsRes.data.forEach((veil: any) => {
           items.push({
@@ -326,7 +395,7 @@ const TestCreateAlbum = () => {
         });
       }
 
-      const jewelryRes = await weddingCostumeService.getAllJewelry();
+      // Process jewelry
       if (jewelryRes.success && jewelryRes.data) {
         jewelryRes.data.forEach((item: any) => {
           items.push({
@@ -340,7 +409,7 @@ const TestCreateAlbum = () => {
         });
       }
 
-      const hairpinsRes = await weddingCostumeService.getAllHairpins();
+      // Process hairpins
       if (hairpinsRes.success && hairpinsRes.data) {
         hairpinsRes.data.forEach((hairpin: any) => {
           items.push({
@@ -354,7 +423,7 @@ const TestCreateAlbum = () => {
         });
       }
 
-      const crownsRes = await weddingCostumeService.getAllCrowns();
+      // Process crowns
       if (crownsRes.success && crownsRes.data) {
         crownsRes.data.forEach((crown: any) => {
           items.push({
@@ -368,8 +437,7 @@ const TestCreateAlbum = () => {
         });
       }
 
-      // Load flowers
-      const flowersRes = await weddingCostumeService.getAllFlowers();
+      // Process flowers
       if (flowersRes.success && flowersRes.data) {
         flowersRes.data.forEach((flower: any) => {
           items.push({
@@ -383,8 +451,7 @@ const TestCreateAlbum = () => {
         });
       }
 
-      // Load groom suit
-      const vestStylesRes = await groomSuitService.getVestStyles();
+      // Process vest styles
       if (vestStylesRes.success && vestStylesRes.data) {
         vestStylesRes.data.forEach((style: any) => {
           items.push({
@@ -398,7 +465,7 @@ const TestCreateAlbum = () => {
         });
       }
 
-      const vestMaterialsRes = await groomSuitService.getVestMaterials();
+      // Process vest materials
       if (vestMaterialsRes.success && vestMaterialsRes.data) {
         vestMaterialsRes.data.forEach((material: any) => {
           items.push({
@@ -412,7 +479,7 @@ const TestCreateAlbum = () => {
         });
       }
 
-      const vestColorsRes = await groomSuitService.getVestColors();
+      // Process vest colors
       if (vestColorsRes.success && vestColorsRes.data) {
         vestColorsRes.data.forEach((color: any) => {
           items.push({
@@ -426,7 +493,7 @@ const TestCreateAlbum = () => {
         });
       }
 
-      const vestLapelsRes = await groomSuitService.getVestLapels();
+      // Process vest lapels
       if (vestLapelsRes.success && vestLapelsRes.data) {
         vestLapelsRes.data.forEach((lapel: any) => {
           items.push({
@@ -440,21 +507,21 @@ const TestCreateAlbum = () => {
         });
       }
 
-      const vestPocketsRes = await groomSuitService.getVestPockets();
+      // Process vest pockets
       if (vestPocketsRes.success && vestPocketsRes.data) {
         vestPocketsRes.data.forEach((pocket: any) => {
           items.push({
             _id: pocket._id,
             name: pocket.name,
             image: pocket.image,
-            category: "Vest - Túi áo",
+            category: "Vest - Túi ngực, túi hông,..",
             categoryColor: "#FAE8FF",
             isSelected: false,
           });
         });
       }
 
-      const vestDecorationsRes = await groomSuitService.getVestDecorations();
+      // Process vest decorations
       if (vestDecorationsRes.success && vestDecorationsRes.data) {
         vestDecorationsRes.data.forEach((decoration: any) => {
           items.push({
@@ -519,7 +586,53 @@ const TestCreateAlbum = () => {
       Alert.alert("Thông báo", "Vui lòng chọn ít nhất một ảnh");
       return;
     }
+
+    // Kiểm tra giới hạn album
+    if (!canCreateAlbum(currentAlbumCount, accountType)) {
+      Alert.alert("Nâng cấp tài khoản", getUpgradeMessage("album"), [
+        { text: "Hủy", style: "cancel" },
+        {
+          text: "Nâng cấp",
+          onPress: () => (navigation as any).navigate("UpgradeAccountScreen"),
+        },
+      ]);
+      return;
+    }
+
     setShowMetadataModal(true);
+  };
+
+  const handleImportAlbum = async () => {
+    if (!importCode.trim()) {
+      Alert.alert("Lỗi", "Vui lòng nhập mã share code");
+      return;
+    }
+
+    try {
+      setIsImporting(true);
+      const response = await albumService.cloneAlbumByCode(
+        importCode.toUpperCase()
+      );
+
+      Alert.alert(
+        "Thành công",
+        `Đã import album "${response.album.name}" thành công!`,
+        [
+          {
+            text: "OK",
+            onPress: () => {
+              setShowImportModal(false);
+              setImportCode("");
+              navigation.goBack();
+            },
+          },
+        ]
+      );
+    } catch (error: any) {
+      Alert.alert("Lỗi", error.message || "Không thể import album");
+    } finally {
+      setIsImporting(false);
+    }
   };
 
   const handleConfirmSave = async (
@@ -639,7 +752,7 @@ const TestCreateAlbum = () => {
           case "Vest - Ve áo":
             selectionData.vestLapels.push(itemData);
             break;
-          case "Vest - Túi áo":
+          case "Vest - Túi ngực, túi hông,..":
             selectionData.vestPockets.push(itemData);
             break;
           case "Vest - Trang trí":
@@ -873,7 +986,7 @@ const TestCreateAlbum = () => {
         "Vest - Chất liệu": "Chất liệu Vest",
         "Vest - Màu sắc": "Màu sắc Vest",
         "Vest - Ve áo": "Ve áo Vest",
-        "Vest - Túi áo": "Túi áo Vest",
+        "Vest - Túi ngực, túi hông,..": "Túi áo Vest",
         "Vest - Trang trí": "Trang trí Vest",
       };
       return categoryMap[item.category] || item.category;
@@ -889,16 +1002,25 @@ const TestCreateAlbum = () => {
           onSelect={() => handleToggleSelection(item._id)}
           showPinButton={false}
         />
-        <View
-          style={[
-            styles.categoryBadge,
-            { backgroundColor: item.categoryColor },
-          ]}
+        <LinearGradient
+          colors={["rgba(255, 255, 255, 0.95)", "rgba(255, 255, 255, 0)"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0, y: 1 }}
+          style={styles.categoryBadge}
         >
           <Text style={styles.categoryText} numberOfLines={1}>
             {displayCategory}
           </Text>
-        </View>
+        </LinearGradient>
+        {isSelected && (
+          <View style={styles.checkmarkContainer}>
+            <AntDesign
+              name="checkcircle"
+              size={responsiveFont(20)}
+              color="#F9CBD6"
+            />
+          </View>
+        )}
       </View>
     );
   };
@@ -930,7 +1052,12 @@ const TestCreateAlbum = () => {
             Đã chọn: {selectedItems.size}
           </Text>
         </View>
-        <View style={{ width: 24 }} />
+        <TouchableOpacity
+          style={styles.importButton}
+          onPress={() => setShowImportModal(true)}
+        >
+          <Download size={24} color="#1f2937" />
+        </TouchableOpacity>
       </View>
 
       {/* Filter Bar */}
@@ -1040,6 +1167,70 @@ const TestCreateAlbum = () => {
         isEdit={true}
       />
 
+      {/* Import Album Modal */}
+      <Modal
+        visible={showImportModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowImportModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Import Album</Text>
+              <TouchableOpacity onPress={() => setShowImportModal(false)}>
+                <Text style={styles.modalCloseButton}>×</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.importContainer}>
+              <Text style={styles.importLabel}>
+                Nhập mã share code (8 ký tự):
+              </Text>
+              <TextInput
+                style={styles.importInput}
+                value={importCode}
+                onChangeText={setImportCode}
+                placeholder="VD: ABC12345"
+                placeholderTextColor="#9CA3AF"
+                maxLength={8}
+                autoCapitalize="characters"
+                autoCorrect={false}
+              />
+              <Text style={styles.importHint}>
+                Nhập mã chia sẻ để sao chép album từ người khác
+              </Text>
+            </View>
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.clearButton}
+                onPress={() => {
+                  setShowImportModal(false);
+                  setImportCode("");
+                }}
+              >
+                <Text style={styles.clearButtonText}>Hủy</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.applyButton,
+                  isImporting && styles.applyButtonDisabled,
+                ]}
+                onPress={handleImportAlbum}
+                disabled={isImporting || !importCode.trim()}
+              >
+                {isImporting ? (
+                  <ActivityIndicator size="small" color="#1f2937" />
+                ) : (
+                  <Text style={styles.applyButtonText}>Import</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       {/* Items Grid */}
       <FlatList
         data={pagedItems}
@@ -1068,7 +1259,17 @@ const TestCreateAlbum = () => {
       />
 
       {/* Save Button */}
-      <View style={styles.saveButtonContainer}>
+      <View
+        style={[
+          styles.saveButtonContainer,
+          {
+            paddingBottom:
+              Platform.OS === "android"
+                ? Math.max(insets.bottom, spacing.md)
+                : spacing.md,
+          },
+        ]}
+      >
         <TouchableOpacity
           style={[
             styles.saveButton,
@@ -1270,17 +1471,35 @@ const styles = StyleSheet.create({
   },
   categoryBadge: {
     position: "absolute",
-    top: spacing.sm,
-    left: responsiveWidth(18),
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    borderRadius: borderRadius.md,
+    left: 0,
+    right: 0,
+    width: "100%",
+    paddingVertical: spacing.md,
     zIndex: 1,
+    alignItems: "center",
+    justifyContent: "center",
   },
   categoryText: {
-    fontSize: responsiveFont(10),
+    fontSize: responsiveFont(11),
     fontFamily: fonts.montserratSemiBold,
     color: "#1f2937",
+    textAlign: "center",
+    textShadowColor: "rgba(255, 255, 255, 0.9)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
+  },
+  checkmarkContainer: {
+    position: "absolute",
+    top: spacing.sm,
+    right: spacing.sm,
+    borderRadius: 100,
+    padding: 2,
+    zIndex: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   saveButtonContainer: {
     position: "absolute",
@@ -1307,6 +1526,40 @@ const styles = StyleSheet.create({
     fontSize: responsiveFont(16),
     fontFamily: fonts.montserratSemiBold,
     color: "#1f2937",
+  },
+  importButton: {
+    padding: spacing.xs,
+  },
+  importContainer: {
+    padding: responsiveWidth(16),
+    gap: spacing.md,
+  },
+  importLabel: {
+    fontSize: responsiveFont(16),
+    fontFamily: fonts.montserratSemiBold,
+    color: "#1f2937",
+  },
+  importInput: {
+    backgroundColor: "#F3F4F6",
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    borderRadius: borderRadius.lg,
+    fontSize: responsiveFont(18),
+    fontFamily: fonts.montserratSemiBold,
+    color: "#1f2937",
+    textAlign: "center",
+    letterSpacing: 2,
+    borderWidth: 2,
+    borderColor: "#F9CBD6",
+  },
+  importHint: {
+    fontSize: responsiveFont(12),
+    fontFamily: fonts.montserratMedium,
+    color: "#6b7280",
+    textAlign: "center",
+  },
+  applyButtonDisabled: {
+    opacity: 0.5,
   },
 });
 

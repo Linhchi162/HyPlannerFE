@@ -9,7 +9,9 @@ import {
   TextInput,
   ActivityIndicator,
   SafeAreaView,
+  Platform,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   Appbar,
   ProgressBar,
@@ -60,6 +62,8 @@ type ListFooterProps = {
   setGroupName: React.Dispatch<React.SetStateAction<string>>;
   handleAddGroupActivity: () => void;
   loading?: boolean;
+  groupActivities?: any[];
+  eventId?: string;
 };
 const ListFooter = memo(
   ({
@@ -69,24 +73,54 @@ const ListFooter = memo(
     setGroupName,
     handleAddGroupActivity,
     loading,
+    groupActivities,
+    eventId,
   }: ListFooterProps) => {
+    const navigation = useNavigation<NavigationProp<RootStackParamList>>();
     return (
       <>
-        <TouchableOpacity
-          onPress={() => setModalVisible(true)}
-          style={styles.addStageButton}
-        >
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              alignSelf: "center",
-            }}
-          >
-            <Entypo name="plus" size={24} />
-            <Text style={styles.addStageButtonLabel}>Thêm nhóm ngân sách</Text>
-          </View>
-        </TouchableOpacity>
+        {groupActivities && groupActivities.length > 0 && (
+          <>
+            <TouchableOpacity
+              onPress={() => setModalVisible(true)}
+              style={styles.addStageButton}
+            >
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  alignSelf: "center",
+                }}
+              >
+                <Entypo name="plus" size={24} />
+                <Text style={styles.addStageButtonLabel}>
+                  Thêm nhóm ngân sách
+                </Text>
+              </View>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() =>
+                navigation.navigate("EditBudgetGroupScreen", {
+                  eventId: eventId || "",
+                })
+              }
+              style={styles.addStageButton}
+            >
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  alignSelf: "center",
+                }}
+              >
+                <Feather name="edit" size={20} />
+                <Text style={styles.addStageButtonLabel}>
+                  Chỉnh sửa nhóm ngân sách
+                </Text>
+              </View>
+            </TouchableOpacity>
+          </>
+        )}
         <Modal
           visible={modalVisible}
           transparent
@@ -144,6 +178,7 @@ const ListFooter = memo(
 );
 
 export default function BudgetListScreen() {
+  const insets = useSafeAreaInsets();
   const [modalVisible, setModalVisible] = useState(false);
   const [groupName, setGroupName] = useState("");
   const [showStartPicker, setShowStartPicker] = useState(false);
@@ -195,18 +230,19 @@ export default function BudgetListScreen() {
     );
   }
   const userId = user.id || user._id;
-  // Phần này sẽ bỏ vào trang home để fetch data về wedding info trước khi vào trang tasklist
-  useEffect(() => {
-    const fetchWeddingInfo = async () => {
-      try {
-        await getWeddingEvent(userId, dispatch);
-      } catch (error) {
-        console.error("Error fetching wedding info:", error);
-      }
-    };
-    fetchWeddingInfo();
-  }, [dispatch]);
-  //////////////////////////////////////////////
+
+  // ✅ REMOVED: Duplicate API call - data now fetched centrally in App.tsx via useAppInitialization
+  // useEffect(() => {
+  //   const fetchWeddingInfo = async () => {
+  //     try {
+  //       await getWeddingEvent(userId, dispatch);
+  //     } catch (error) {
+  //       console.error("Error fetching wedding info:", error);
+  //     }
+  //   };
+  //   fetchWeddingInfo();
+  // }, [dispatch]);
+
   const eventId = useSelector(
     (state: RootState) => state.weddingEvent.getWeddingEvent.weddingEvent._id
   );
@@ -610,49 +646,25 @@ export default function BudgetListScreen() {
           resizeMode="cover"
         />
         <Text style={styles.phaseEmptyText}>
-          Không có nhóm ngân sách nào.{"\n"}Bạn hãy thêm nhóm ngân sách mới nhé
-          !
+          Không có nhóm ngân sách nào.{"\n"}Hãy bắt đầu bằng ngân sách mẫu của
+          chúng tôi nhé!
         </Text>
-        <View
-          style={{
-            borderWidth: 1,
-            borderColor: "#ddd",
-            padding: 16,
-            borderRadius: 8,
-            borderStyle: "dashed",
-          }}
+        <TouchableOpacity
+          style={styles.sampleChecklistButton}
+          onPress={handleInsertSampleBudgets}
+          disabled={isInsertingBudget}
         >
-          <Text>Hoặc bạn có thể sử dụng mẫu ngân sách của chúng tôi</Text>
-          <TouchableOpacity
-            style={{
-              borderRadius: 8,
-              borderWidth: 1,
-              marginTop: 10,
-              padding: 8,
-              backgroundColor: isInsertingBudget ? "#ddd" : "#FEF0F3",
-              borderColor: "#D95D74",
-            }}
-            onPress={handleInsertSampleBudgets}
-            disabled={isInsertingBudget}
-          >
-            <View
-              style={{
-                alignSelf: "center",
-                flexDirection: "row",
-                alignItems: "center",
-              }}
-            >
-              {isInsertingBudget ? (
-                <ActivityIndicator size={24} color="#D95D74" />
-              ) : (
-                <Entypo name="check" size={24} />
-              )}
-              <Text style={styles.addTaskButtonLabel}>
-                {isInsertingBudget ? "Đang tải..." : "Sử dụng ngân sách mẫu"}
-              </Text>
-            </View>
-          </TouchableOpacity>
-        </View>
+          <View style={styles.sampleChecklistButtonContent}>
+            {isInsertingBudget ? (
+              <ActivityIndicator size={24} color="#D95D74" />
+            ) : (
+              <Entypo name="check" size={24} color="#D95D74" />
+            )}
+            <Text style={styles.sampleChecklistButtonText}>
+              {isInsertingBudget ? "Đang tải..." : "Sử dụng ngân sách mẫu"}
+            </Text>
+          </View>
+        </TouchableOpacity>
       </View>
     );
   };
@@ -682,6 +694,11 @@ export default function BudgetListScreen() {
           data={stages}
           renderItem={renderStage}
           keyExtractor={(item) => item.id}
+          getItemLayout={(data, index) => ({
+            length: 200,
+            offset: 200 * index,
+            index,
+          })}
           ListHeaderComponent={ListHeader}
           ListFooterComponent={
             <ListFooter
@@ -691,9 +708,17 @@ export default function BudgetListScreen() {
               setGroupName={setGroupName}
               handleAddGroupActivity={handleAddGroupActivity}
               loading={actionLoading}
+              groupActivities={groupActivities}
+              eventId={eventId}
             />
           }
-          contentContainerStyle={styles.contentContainer}
+          contentContainerStyle={[
+            styles.contentContainer,
+            {
+              paddingBottom:
+                Platform.OS === "android" ? 16 + insets.bottom : 16,
+            },
+          ]}
           ListEmptyComponent={PhaseEmpty}
         />
       )}
@@ -790,12 +815,31 @@ const styles = StyleSheet.create({
     padding: responsiveHeight(18),
     borderRadius: 12,
     backgroundColor: "#FEF0F3",
-    elevation: 2,
   },
   addStageButtonLabel: {
     fontSize: responsiveFont(14),
     textAlign: "center",
     marginLeft: 4,
+  },
+  sampleChecklistButton: {
+    marginTop: responsiveHeight(24),
+    paddingVertical: responsiveHeight(16),
+    paddingHorizontal: responsiveWidth(32),
+    borderRadius: responsiveWidth(16),
+    backgroundColor: "#FEF0F3",
+    width: "85%",
+  },
+  sampleChecklistButtonContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  sampleChecklistButtonText: {
+    fontSize: responsiveFont(15),
+    fontFamily: "Montserrat-SemiBold",
+    color: "#D95D74",
+    marginLeft: responsiveWidth(8),
+    fontWeight: "600",
   },
   rowFront: {
     backgroundColor: "#FFFFFF",

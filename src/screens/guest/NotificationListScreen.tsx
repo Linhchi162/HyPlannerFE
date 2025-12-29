@@ -24,6 +24,7 @@ import {
   Trash2,
 } from "lucide-react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   responsiveWidth,
   responsiveHeight,
@@ -52,6 +53,7 @@ const NotificationListScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const { weddingEventId } = route.params as { weddingEventId: string };
+  const insets = useSafeAreaInsets();
 
   const [notifications, setNotifications] = useState<NotificationData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -222,8 +224,17 @@ const NotificationListScreen = () => {
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
-        <View style={styles.header}>
+        <StatusBar
+          barStyle="dark-content"
+          backgroundColor="transparent"
+          translucent={true}
+        />
+        <View
+          style={[
+            styles.header,
+            { paddingTop: insets.top + responsiveHeight(16) },
+          ]}
+        >
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <ChevronLeft size={24} color="#1f2937" />
           </TouchableOpacity>
@@ -239,10 +250,19 @@ const NotificationListScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor="transparent"
+        translucent={true}
+      />
 
       {/* Header */}
-      <View style={styles.header}>
+      <View
+        style={[
+          styles.header,
+          { paddingTop: insets.top + responsiveHeight(8) },
+        ]}
+      >
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <ChevronLeft size={24} color="#1f2937" />
         </TouchableOpacity>
@@ -298,9 +318,9 @@ const styles = StyleSheet.create({
     borderBottomColor: "#f3f4f6",
   },
   headerTitle: {
-    fontFamily: "Montserrat-Bold",
-    fontSize: responsiveFont(18),
-    color: "#1f2937",
+    fontSize: responsiveFont(20),
+    fontFamily: "Agbalumo",
+    color: "#ff6b9d",
   },
   markAllReadText: {
     fontFamily: "Montserrat-SemiBold",

@@ -17,6 +17,9 @@ import {
   Platform,
   ToastAndroid,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { getAccountLimits, getUpgradeMessage } from "../../utils/accountLimits";
+import { selectCurrentUser } from "../../store/authSlice";
 import * as FileSystem from "expo-file-system";
 import * as Sharing from "expo-sharing";
 import * as DocumentPicker from "expo-document-picker";
@@ -73,6 +76,7 @@ type GuestManagementScreenNavigationProp = StackNavigationProp<
 >;
 
 const GuestManagementScreen = () => {
+  const insets = useSafeAreaInsets();
   const navigation = useNavigation<GuestManagementScreenNavigationProp>();
   const dispatch = useDispatch<AppDispatch>();
 
@@ -103,12 +107,6 @@ const GuestManagementScreen = () => {
   const [importData, setImportData] = useState<any[]>([]);
   const [selectedGuest, setSelectedGuest] = useState<any>(null);
   const [showMenuModal, setShowMenuModal] = useState(false);
-
-  // Notifications states
-  const [showNotificationsModal, setShowNotificationsModal] = useState(false);
-  const [notifications, setNotifications] = useState<any[]>([]);
-  const [notificationStats, setNotificationStats] = useState<any>(null);
-  const [loadingNotifications, setLoadingNotifications] = useState(false);
 
   // Thank you email states
   const [sendingThankYou, setSendingThankYou] = useState(false);
@@ -160,7 +158,6 @@ const GuestManagementScreen = () => {
     if (weddingEvent?._id) {
       loadGuests();
       loadTableSuggestions();
-      loadNotifications();
     }
   }, [weddingEvent?._id]);
 
@@ -209,38 +206,11 @@ const GuestManagementScreen = () => {
     }
   }, [guestsPerTable]);
 
-  const loadNotifications = async () => {
-    if (!weddingEvent?._id) {
-      return;
-    }
-
-    try {
-      setLoadingNotifications(true);
-      const response = await guestService.getNotifications(weddingEvent._id);
-      setNotifications(response.notifications || []);
-      setNotificationStats(response.stats || null);
-    } catch (error: any) {
-      const errorMsg =
-        error?.response?.data?.message ||
-        error?.message ||
-        "Không thể tải thông báo";
-      if (Platform.OS === "android") {
-        ToastAndroid.show(errorMsg, ToastAndroid.SHORT);
-      }
-    } finally {
-      setLoadingNotifications(false);
-    }
-  };
-
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
       if (weddingEvent?._id) {
-        await Promise.all([
-          loadGuests(),
-          loadTableSuggestions(),
-          loadNotifications(),
-        ]);
+        await Promise.all([loadGuests(), loadTableSuggestions()]);
       }
     } finally {
       setRefreshing(false);
@@ -994,21 +964,18 @@ const GuestManagementScreen = () => {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Quản lý khách mời</Text>
         <View style={styles.headerButtons}>
-          <TouchableOpacity
-            onPress={() => setShowNotificationsModal(true)}
+          {/* <TouchableOpacity
+            onPress={() => {
+              if (weddingEvent?._id) {
+                navigation.navigate("NotificationListScreen", {
+                  weddingEventId: weddingEvent._id,
+                });
+              }
+            }}
             style={styles.exportButton}
           >
-            <View>
-              <Bell size={24} color="#ff6b9d" />
-              {notifications.length > 0 && (
-                <View style={styles.notificationBadge}>
-                  <Text style={styles.notificationBadgeText}>
-                    {notifications.length}
-                  </Text>
-                </View>
-              )}
-            </View>
-          </TouchableOpacity>
+            <Bell size={24} color="#ff6b9d" />
+          </TouchableOpacity> */}
           <TouchableOpacity
             onPress={handleImportFromContacts}
             disabled={isImporting}
@@ -1062,7 +1029,21 @@ const GuestManagementScreen = () => {
           data={filteredGuests}
           renderItem={renderGuestCard}
           keyExtractor={(item) => item._id}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={[
+            styles.listContent,
+            {
+              paddingBottom:
+                Platform.OS === "android"
+                  ? responsiveHeight(16) + insets.bottom
+                  : responsiveHeight(16),
+            },
+          ]}
+          // ✅ OPTIMIZED: Performance improvements for large lists
+          windowSize={10}
+          maxToRenderPerBatch={5}
+          updateCellsBatchingPeriod={50}
+          removeClippedSubviews={true}
+          initialNumToRender={15}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -1216,145 +1197,200 @@ const GuestManagementScreen = () => {
               )}
 
               {/* Enhanced Table Suggestions */}
-              {tableSuggestions && (
-                <View style={styles.tableSuggestionSection}>
-                  <View style={styles.tableSuggestionHeaderNew}>
-                    <View style={styles.tableSuggestionIconWrapper}>
-                      <Table size={24} color="#ff6b9d" />
-                    </View>
-                    <View style={styles.tableSuggestionTitleWrapper}>
-                      <Text style={styles.tableSuggestionTitleNew}>
-                        Gợi ý bố trí bàn
-                      </Text>
-                      <Text style={styles.tableSuggestionSubtitle}>
-                        Dựa trên {stats?.confirmed || 0} khách xác nhận
-                      </Text>
-                    </View>
-                  </View>
+              {tableSuggestions &&
+                (() => {
+                  const state = require("../../store").store.getState();
+                  const user = selectCurrentUser(state);
+                  const accountType = user?.accountType || "FREE";
+                  const limits = getAccountLimits(accountType);
 
-                  <View style={styles.tableSuggestionContent}>
-                    {/* Table Configuration */}
-                    <View style={styles.tableConfigSection}>
-                      <Text style={styles.tableConfigLabel}>
-                        Cấu hình bàn tiệc
-                      </Text>
-                      <View style={styles.tableConfigControl}>
-                        <TouchableOpacity
-                          style={styles.tableConfigButton}
-                          onPress={() =>
-                            handleGuestsPerTableChange(guestsPerTable - 1)
-                          }
-                          disabled={guestsPerTable <= 6}
-                        >
-                          <Text
-                            style={[
-                              styles.tableConfigButtonText,
-                              guestsPerTable <= 6 &&
-                                styles.tableConfigButtonDisabled,
-                            ]}
-                          >
-                            −
-                          </Text>
-                        </TouchableOpacity>
-                        <View style={styles.tableConfigValueContainer}>
-                          <Text style={styles.tableConfigValue}>
-                            {guestsPerTable}
-                          </Text>
-                          <Text style={styles.tableConfigUnit}>người/bàn</Text>
+                  if (!limits.canAccessTableArrangement) {
+                    return (
+                      <TouchableOpacity
+                        style={[
+                          styles.tableSuggestionSection,
+                          { opacity: 0.6 },
+                        ]}
+                        onPress={() => {
+                          Alert.alert(
+                            "Nâng cấp tài khoản",
+                            getUpgradeMessage("tableArrangement"),
+                            [
+                              { text: "Hủy", style: "cancel" },
+                              {
+                                text: "Nâng cấp",
+                                onPress: () =>
+                                  navigation.navigate("UpgradeAccountScreen"),
+                              },
+                            ]
+                          );
+                        }}
+                      >
+                        <View style={styles.tableSuggestionHeaderNew}>
+                          <View style={styles.tableSuggestionIconWrapper}>
+                            <Table size={24} color="#ff6b9d" />
+                          </View>
+                          <View style={styles.tableSuggestionTitleWrapper}>
+                            <Text style={styles.tableSuggestionTitleNew}>
+                              Gợi ý bố trí bàn 🔒
+                            </Text>
+                            <Text style={styles.tableSuggestionSubtitle}>
+                              Nâng cấp VIP để mở khóa
+                            </Text>
+                          </View>
                         </View>
-                        <TouchableOpacity
-                          style={styles.tableConfigButton}
-                          onPress={() =>
-                            handleGuestsPerTableChange(guestsPerTable + 1)
-                          }
-                          disabled={guestsPerTable >= 15}
-                        >
-                          <Text
-                            style={[
-                              styles.tableConfigButtonText,
-                              guestsPerTable >= 15 &&
-                                styles.tableConfigButtonDisabled,
-                            ]}
-                          >
-                            +
-                          </Text>
-                        </TouchableOpacity>
-                      </View>
-                      <Text style={styles.tableConfigHint}>
-                        Điều chỉnh từ 6 - 15 người/bàn
-                      </Text>
-                    </View>
+                      </TouchableOpacity>
+                    );
+                  }
 
-                    {/* Main Tables Info */}
-                    <View style={styles.tableSuggestionBreakdown}>
-                      <View style={styles.breakdownItem}>
-                        <Text style={styles.breakdownLabel}>
-                          Số bàn tối thiểu
-                        </Text>
-                        <Text style={styles.breakdownValue}>
-                          {tableSuggestions.confirmedTables}
-                        </Text>
-                        <Text style={styles.breakdownSubtext}>bàn</Text>
-                        <Text style={styles.breakdownNote}>
-                          ({tableSuggestions.breakdown?.confirmedGuests || 0}{" "}
-                          khách xác nhận)
-                        </Text>
-                      </View>
-                      <View style={styles.breakdownDivider} />
-                      <View style={styles.breakdownItem}>
-                        <Text style={styles.breakdownLabel}>
-                          Số bàn dự phòng
-                        </Text>
-                        <Text style={styles.breakdownValue}>
-                          {tableSuggestions.reserveTables}
-                        </Text>
-                        <Text style={styles.breakdownSubtext}>bàn</Text>
-                        <Text style={styles.breakdownNote}>(15% dự phòng)</Text>
-                      </View>
-                    </View>
-
-                    {/* Guest Breakdown */}
-                    <View style={styles.guestBreakdownSection}>
-                      <View style={styles.guestBreakdownRow}>
-                        <View style={styles.guestBreakdownItem}>
-                          <View
-                            style={[
-                              styles.guestBreakdownDot,
-                              { backgroundColor: "#10b981" },
-                            ]}
-                          />
-                          <Text style={styles.guestBreakdownText}>
-                            Đã xác nhận:{" "}
-                            {tableSuggestions.breakdown?.confirmedGuests || 0}
-                          </Text>
+                  return (
+                    <View style={styles.tableSuggestionSection}>
+                      <View style={styles.tableSuggestionHeaderNew}>
+                        <View style={styles.tableSuggestionIconWrapper}>
+                          <Table size={24} color="#ff6b9d" />
                         </View>
-                        <View style={styles.guestBreakdownItem}>
-                          <View
-                            style={[
-                              styles.guestBreakdownDot,
-                              { backgroundColor: "#f59e0b" },
-                            ]}
-                          />
-                          <Text style={styles.guestBreakdownText}>
-                            Chờ phản hồi:{" "}
-                            {tableSuggestions.breakdown?.pendingGuests || 0}
+                        <View style={styles.tableSuggestionTitleWrapper}>
+                          <Text style={styles.tableSuggestionTitleNew}>
+                            Gợi ý bố trí bàn
+                          </Text>
+                          <Text style={styles.tableSuggestionSubtitle}>
+                            Dựa trên {stats?.confirmed || 0} khách xác nhận
                           </Text>
                         </View>
                       </View>
-                    </View>
 
-                    <View style={styles.confirmationRateBadge}>
-                      <Text style={styles.confirmationRateText}>
-                        ✨ Tỷ lệ xác nhận:{" "}
-                        {stats && stats.total && stats.total > 0
-                          ? Math.round((stats.confirmed / stats.total) * 100)
-                          : 0}
-                        %
-                      </Text>
+                      <View style={styles.tableSuggestionContent}>
+                        {/* Table Configuration */}
+                        <View style={styles.tableConfigSection}>
+                          <Text style={styles.tableConfigLabel}>
+                            Cấu hình bàn tiệc
+                          </Text>
+                          <View style={styles.tableConfigControl}>
+                            <TouchableOpacity
+                              style={styles.tableConfigButton}
+                              onPress={() =>
+                                handleGuestsPerTableChange(guestsPerTable - 1)
+                              }
+                              disabled={guestsPerTable <= 6}
+                            >
+                              <Text
+                                style={[
+                                  styles.tableConfigButtonText,
+                                  guestsPerTable <= 6 &&
+                                    styles.tableConfigButtonDisabled,
+                                ]}
+                              >
+                                −
+                              </Text>
+                            </TouchableOpacity>
+                            <View style={styles.tableConfigValueContainer}>
+                              <Text style={styles.tableConfigValue}>
+                                {guestsPerTable}
+                              </Text>
+                              <Text style={styles.tableConfigUnit}>
+                                người/bàn
+                              </Text>
+                            </View>
+                            <TouchableOpacity
+                              style={styles.tableConfigButton}
+                              onPress={() =>
+                                handleGuestsPerTableChange(guestsPerTable + 1)
+                              }
+                              disabled={guestsPerTable >= 15}
+                            >
+                              <Text
+                                style={[
+                                  styles.tableConfigButtonText,
+                                  guestsPerTable >= 15 &&
+                                    styles.tableConfigButtonDisabled,
+                                ]}
+                              >
+                                +
+                              </Text>
+                            </TouchableOpacity>
+                          </View>
+                          <Text style={styles.tableConfigHint}>
+                            Điều chỉnh từ 6 - 15 người/bàn
+                          </Text>
+                        </View>
+
+                        {/* Main Tables Info */}
+                        <View style={styles.tableSuggestionBreakdown}>
+                          <View style={styles.breakdownItem}>
+                            <Text style={styles.breakdownLabel}>
+                              Số bàn tối thiểu
+                            </Text>
+                            <Text style={styles.breakdownValue}>
+                              {tableSuggestions.confirmedTables}
+                            </Text>
+                            <Text style={styles.breakdownSubtext}>bàn</Text>
+                            <Text style={styles.breakdownNote}>
+                              (
+                              {tableSuggestions.breakdown?.confirmedGuests || 0}{" "}
+                              khách xác nhận)
+                            </Text>
+                          </View>
+                          <View style={styles.breakdownDivider} />
+                          <View style={styles.breakdownItem}>
+                            <Text style={styles.breakdownLabel}>
+                              Số bàn dự phòng
+                            </Text>
+                            <Text style={styles.breakdownValue}>
+                              {tableSuggestions.reserveTables}
+                            </Text>
+                            <Text style={styles.breakdownSubtext}>bàn</Text>
+                            <Text style={styles.breakdownNote}>
+                              (15% dự phòng)
+                            </Text>
+                          </View>
+                        </View>
+
+                        {/* Guest Breakdown */}
+                        <View style={styles.guestBreakdownSection}>
+                          <View style={styles.guestBreakdownRow}>
+                            <View style={styles.guestBreakdownItem}>
+                              <View
+                                style={[
+                                  styles.guestBreakdownDot,
+                                  { backgroundColor: "#10b981" },
+                                ]}
+                              />
+                              <Text style={styles.guestBreakdownText}>
+                                Đã xác nhận:{" "}
+                                {tableSuggestions.breakdown?.confirmedGuests ||
+                                  0}
+                              </Text>
+                            </View>
+                            <View style={styles.guestBreakdownItem}>
+                              <View
+                                style={[
+                                  styles.guestBreakdownDot,
+                                  { backgroundColor: "#f59e0b" },
+                                ]}
+                              />
+                              <Text style={styles.guestBreakdownText}>
+                                Chờ phản hồi:{" "}
+                                {tableSuggestions.breakdown?.pendingGuests || 0}
+                              </Text>
+                            </View>
+                          </View>
+                        </View>
+
+                        <View style={styles.confirmationRateBadge}>
+                          <Text style={styles.confirmationRateText}>
+                            ✨ Tỷ lệ xác nhận:{" "}
+                            {stats && stats.total && stats.total > 0
+                              ? Math.round(
+                                  (stats.confirmed / stats.total) * 100
+                                )
+                              : 0}
+                            %
+                          </Text>
+                        </View>
+                      </View>
                     </View>
-                  </View>
-                </View>
-              )}
+                  );
+                })()}
 
               {/* Send Thank You Emails Section */}
               {stats && stats.confirmed > 0 && (
@@ -2564,113 +2600,6 @@ const GuestManagementScreen = () => {
         </TouchableOpacity>
       </Modal>
 
-      {/* Notifications Modal */}
-      <Modal
-        visible={showNotificationsModal}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowNotificationsModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.notificationsModal}>
-            <View style={styles.notificationsHeader}>
-              <Text style={styles.notificationsTitle}>
-                Thông báo & Nhắc nhở
-              </Text>
-              <TouchableOpacity
-                onPress={() => setShowNotificationsModal(false)}
-              >
-                <XCircle size={24} color="#6b7280" />
-              </TouchableOpacity>
-            </View>
-
-            {loadingNotifications ? (
-              <View style={styles.notificationsLoading}>
-                <ActivityIndicator size="large" color="#ff6b9d" />
-                <Text style={styles.notificationsLoadingText}>Đang tải...</Text>
-              </View>
-            ) : notifications.length === 0 ? (
-              <View style={styles.notificationsEmpty}>
-                <Bell size={48} color="#d1d5db" />
-                <Text style={styles.notificationsEmptyText}>
-                  Không có thông báo mới
-                </Text>
-              </View>
-            ) : (
-              <ScrollView
-                style={styles.notificationsList}
-                contentContainerStyle={{ paddingBottom: responsiveHeight(20) }}
-                showsVerticalScrollIndicator={true}
-              >
-                {notificationStats && (
-                  <View style={styles.notificationStatsCard}>
-                    <Text style={styles.notificationStatsTitle}>Tổng quan</Text>
-                    <Text style={styles.notificationStatsText}>
-                      • Tổng số khách: {notificationStats.total}
-                    </Text>
-                    <Text style={styles.notificationStatsText}>
-                      • Đã xác nhận: {notificationStats.confirmed}
-                    </Text>
-                    <Text style={styles.notificationStatsText}>
-                      • Chờ phản hồi: {notificationStats.pending}
-                    </Text>
-                    {notificationStats.daysUntilWedding >= 0 && (
-                      <Text style={styles.notificationStatsText}>
-                        • Còn {notificationStats.daysUntilWedding} ngày tới lễ
-                        cưới
-                      </Text>
-                    )}
-                  </View>
-                )}
-
-                {notifications.map((notification, index) => (
-                  <View
-                    key={index}
-                    style={[
-                      styles.notificationItem,
-                      notification.priority === "high" &&
-                        styles.notificationItemHigh,
-                    ]}
-                  >
-                    <View style={styles.notificationHeader}>
-                      <Text style={styles.notificationTitle}>
-                        {notification.title}
-                      </Text>
-                      <View
-                        style={[
-                          styles.notificationPriorityBadge,
-                          notification.priority === "high" &&
-                            styles.priorityHigh,
-                          notification.priority === "medium" &&
-                            styles.priorityMedium,
-                          notification.priority === "low" && styles.priorityLow,
-                        ]}
-                      >
-                        <Text style={styles.notificationPriorityText}>
-                          {notification.priority === "high"
-                            ? "Cao"
-                            : notification.priority === "medium"
-                            ? "Trung bình"
-                            : "Thấp"}
-                        </Text>
-                      </View>
-                    </View>
-                    <Text style={styles.notificationMessage}>
-                      {notification.message}
-                    </Text>
-                    {notification.actionText && (
-                      <Text style={styles.notificationAction}>
-                        💡 {notification.actionText}
-                      </Text>
-                    )}
-                  </View>
-                ))}
-              </ScrollView>
-            )}
-          </View>
-        </View>
-      </Modal>
-
       {/* Import Preview Modal */}
       <Modal
         visible={showImportPreview}
@@ -3620,27 +3549,6 @@ const styles = StyleSheet.create({
     fontSize: responsiveFont(15),
     color: "#ffffff",
   },
-  // Notification badge
-  notificationBadge: {
-    position: "absolute",
-    top: -8,
-    right: -4,
-    backgroundColor: "#ef4444",
-    borderRadius: 10,
-    minWidth: 20,
-    height: 20,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 4,
-    display: "flex",
-  },
-  notificationBadgeText: {
-    top: -1,
-    right: 0,
-    fontFamily: "Montserrat-Bold",
-    fontSize: responsiveFont(9),
-    color: "#ffffff",
-  },
   // Thank you section
   thankYouSection: {
     backgroundColor: "#ffffff",
@@ -3694,147 +3602,6 @@ const styles = StyleSheet.create({
     fontFamily: "Montserrat-SemiBold",
     fontSize: responsiveFont(15),
     color: "#ffffff",
-  },
-  // Notifications modal
-  notificationsModal: {
-    backgroundColor: "#ffffff",
-    borderTopLeftRadius: responsiveWidth(20),
-    borderTopRightRadius: responsiveWidth(20),
-    maxHeight: "85%",
-    minHeight: "60%",
-    marginTop: "auto",
-    flex: 1,
-  },
-  notificationsHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: responsiveWidth(20),
-    borderBottomWidth: 1,
-    borderBottomColor: "#f3f4f6",
-  },
-  notificationsTitle: {
-    fontFamily: "Montserrat-SemiBold",
-    fontSize: responsiveFont(18),
-    color: "#1f2937",
-  },
-  notificationsLoading: {
-    padding: responsiveWidth(40),
-    alignItems: "center",
-  },
-  notificationsLoadingText: {
-    fontFamily: "Montserrat-Medium",
-    fontSize: responsiveFont(14),
-    color: "#6b7280",
-    marginTop: responsiveHeight(12),
-  },
-  notificationsEmpty: {
-    padding: responsiveWidth(40),
-    alignItems: "center",
-  },
-  notificationsEmptyText: {
-    fontFamily: "Montserrat-Medium",
-    fontSize: responsiveFont(14),
-    color: "#9ca3af",
-    marginTop: responsiveHeight(12),
-  },
-  notificationsList: {
-    flex: 1,
-    padding: responsiveWidth(16),
-  },
-  notificationStatsCard: {
-    backgroundColor: "#f9fafb",
-    padding: responsiveWidth(16),
-    borderRadius: responsiveWidth(12),
-    marginBottom: responsiveHeight(16),
-  },
-  notificationStatsTitle: {
-    fontFamily: "Montserrat-SemiBold",
-    fontSize: responsiveFont(15),
-    color: "#1f2937",
-    marginBottom: responsiveHeight(8),
-  },
-  notificationStatsText: {
-    fontFamily: "Montserrat-Regular",
-    fontSize: responsiveFont(13),
-    color: "#6b7280",
-    marginBottom: responsiveHeight(6),
-    lineHeight: responsiveHeight(20),
-  },
-  notificationItem: {
-    backgroundColor: "#ffffff",
-    padding: responsiveWidth(16),
-    borderRadius: responsiveWidth(12),
-    marginBottom: responsiveHeight(12),
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-  },
-  notificationItemHigh: {
-    borderColor: "#fecaca",
-    backgroundColor: "#fef2f2",
-  },
-  notificationHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: responsiveHeight(8),
-  },
-  notificationTitle: {
-    fontFamily: "Montserrat-SemiBold",
-    fontSize: responsiveFont(15),
-    color: "#1f2937",
-    flex: 1,
-  },
-  notificationPriorityBadge: {
-    paddingHorizontal: responsiveWidth(8),
-    paddingVertical: responsiveHeight(4),
-    borderRadius: responsiveWidth(6),
-    marginLeft: responsiveWidth(8),
-  },
-  priorityHigh: {
-    backgroundColor: "#fee2e2",
-  },
-  priorityMedium: {
-    backgroundColor: "#fef3c7",
-  },
-  priorityLow: {
-    backgroundColor: "#dbeafe",
-  },
-  notificationPriorityText: {
-    fontFamily: "Montserrat-SemiBold",
-    fontSize: responsiveFont(11),
-    color: "#6b7280",
-  },
-  notificationMessage: {
-    fontFamily: "Montserrat-Regular",
-    fontSize: responsiveFont(13),
-    color: "#6b7280",
-    lineHeight: responsiveHeight(22),
-    marginTop: responsiveHeight(4),
-  },
-  notificationAction: {
-    fontFamily: "Montserrat-Medium",
-    fontSize: responsiveFont(12),
-    color: "#ff6b9d",
-    marginTop: responsiveHeight(8),
-  },
-  notificationsFooter: {
-    paddingHorizontal: responsiveWidth(20),
-    paddingVertical: responsiveHeight(12),
-    borderTopWidth: 1,
-    borderTopColor: "#f3f4f6",
-    alignItems: "center",
-  },
-  notificationsCloseButton: {
-    padding: responsiveWidth(20),
-    alignItems: "center",
-    borderTopWidth: 1,
-    borderTopColor: "#f3f4f6",
-  },
-  notificationsCloseButtonText: {
-    fontFamily: "Montserrat-SemiBold",
-    fontSize: responsiveFont(15),
-    color: "#ff6b9d",
   },
   // Invitation badge
   invitationBadge: {

@@ -31,7 +31,8 @@ interface AlbumCardProps {
   cardWidth?: number;
 }
 
-const AlbumCard: React.FC<AlbumCardProps> = ({
+// ✅ OPTIMIZED: Wrap with React.memo to prevent unnecessary re-renders
+const AlbumCardComponent: React.FC<AlbumCardProps> = ({
   title,
   imageUrl,
   authorName,
@@ -154,4 +155,5 @@ const styles = StyleSheet.create({
   },
 });
 
-export default AlbumCard;
+// ✅ OPTIMIZED: Export memoized component to prevent unnecessary re-renders
+export default React.memo(AlbumCardComponent);

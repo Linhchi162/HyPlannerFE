@@ -1,4 +1,4 @@
-import React, { memo, useEffect, useState } from "react";
+import React, { memo, useCallback, useEffect, useState } from "react";
 import {
   StyleSheet,
   View,
@@ -9,7 +9,9 @@ import {
   TextInput,
   ActivityIndicator,
   SafeAreaView,
+  Platform,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   Appbar,
   ProgressBar,
@@ -49,6 +51,7 @@ import { selectCurrentUser } from "../../store/authSlice";
 import SuccessDialog from "../../components/SuccessDialog";
 import ErrorDialog from "../../components/ErrorDialog";
 import { MixpanelService } from "../../service/mixpanelService";
+import logger from "../../utils/logger";
 
 type ListFooterProps = {
   modalVisible: boolean;
@@ -93,44 +96,46 @@ const ListFooter = memo(
     const navigation = useNavigation<NavigationProp<RootStackParamList>>();
     return (
       <>
-        <TouchableOpacity
-          onPress={() => setModalVisible(true)}
-          style={styles.addStageButton}
-        >
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              alignSelf: "center",
-            }}
-          >
-            <Entypo name="plus" size={24} />
-            <Text style={styles.addStageButtonLabel}>Thêm giai đoạn</Text>
-          </View>
-        </TouchableOpacity>
         {phases && phases.length > 0 && (
-          <TouchableOpacity
-            onPress={() =>
-              navigation.navigate("EditPhaseScreen", {
-                eventId: eventId || "",
-                createdAt: createdAt?.toISOString(),
-              })
-            }
-            style={styles.addStageButton}
-          >
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                alignSelf: "center",
-              }}
+          <>
+            <TouchableOpacity
+              onPress={() => setModalVisible(true)}
+              style={styles.addStageButton}
             >
-              <Feather name="edit" size={20} />
-              <Text style={styles.addStageButtonLabel}>
-                Chỉnh sửa giai đoạn
-              </Text>
-            </View>
-          </TouchableOpacity>
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  alignSelf: "center",
+                }}
+              >
+                <Entypo name="plus" size={24} />
+                <Text style={styles.addStageButtonLabel}>Thêm giai đoạn</Text>
+              </View>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() =>
+                navigation.navigate("EditPhaseScreen", {
+                  eventId: eventId || "",
+                  createdAt: createdAt?.toISOString(),
+                })
+              }
+              style={styles.addStageButton}
+            >
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  alignSelf: "center",
+                }}
+              >
+                <Feather name="edit" size={20} />
+                <Text style={styles.addStageButtonLabel}>
+                  Chỉnh sửa giai đoạn
+                </Text>
+              </View>
+            </TouchableOpacity>
+          </>
         )}
         <Modal
           visible={modalVisible}
@@ -229,6 +234,7 @@ const ListFooter = memo(
 );
 
 export default function TaskListScreen() {
+  const insets = useSafeAreaInsets();
   const [modalVisible, setModalVisible] = useState(false);
   const [showAddMemberModal, setShowAddMemberModal] = useState(false);
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
@@ -289,18 +295,21 @@ export default function TaskListScreen() {
     (state: RootState) =>
       state.weddingEvent.getWeddingEvent.weddingEvent.creatorId
   );
+
+  // ❌ REMOVED: Duplicate API call - data now fetched centrally in App.tsx via useAppInitialization
   // Phần này sẽ bỏ vào trang home để fetch data về wedding info trước khi vào trang tasklist
-  useEffect(() => {
-    const fetchWeddingInfo = async () => {
-      try {
-        await getWeddingEvent(userId, dispatch);
-      } catch (error) {
-        console.error("Error fetching wedding info:", error);
-      }
-    };
-    fetchWeddingInfo();
-  }, [dispatch]);
+  // useEffect(() => {
+  //   const fetchWeddingInfo = async () => {
+  //     try {
+  //       await getWeddingEvent(userId, dispatch);
+  //     } catch (error) {
+  //       console.error("Error fetching wedding info:", error);
+  //     }
+  //   };
+  //   fetchWeddingInfo();
+  // }, [dispatch]);
   //////////////////////////////////////////////
+
   const eventId = useSelector(
     (state: RootState) => state.weddingEvent.getWeddingEvent.weddingEvent._id
   );
@@ -312,7 +321,7 @@ export default function TaskListScreen() {
         await getPhases(eventId, dispatch);
         setLoading(false);
       } catch (error) {
-        console.error("Error fetching phases:", error);
+        logger.error("Error fetching phases:", error);
       } finally {
         // setLoading(false);
       }
@@ -377,29 +386,42 @@ export default function TaskListScreen() {
     );
   };
 
-  // Xử lý sự kiện chọn công việc
-  const handleTaskToggle = async (taskId: string) => {
-    let currentCompleted = false;
-    let taskName = "";
-    for (const stage of stages) {
-      const found = stage.tasks.find((task: any) => task.id === taskId);
-      if (found) {
-        currentCompleted = found.completed;
-        taskName = found.text;
-        break;
+  // ✅ FIXED: Wrap in useCallback to prevent re-creation on every render
+  const handleTaskToggle = useCallback(
+    async (taskId: string) => {
+      try {
+        let currentCompleted = false;
+        let taskName = "";
+        for (const stage of stages) {
+          const found = stage.tasks.find((task: any) => task.id === taskId);
+          if (found) {
+            currentCompleted = found.completed;
+            taskName = found.text;
+            break;
+          }
+        }
+        await markTaskCompleted(taskId, !currentCompleted, dispatch);
+        if (!currentCompleted) {
+          MixpanelService.track("Completed Task", {
+            "Task Name": taskName,
+            "Task ID": taskId,
+          });
+        }
+        await getPhases(eventId, dispatch);
+      } catch (error: any) {
+        logger.error("Error toggling task:", error);
+        setErrorMessage(
+          "Có lỗi xảy ra khi cập nhật công việc: " +
+            (error.message || "Vui lòng thử lại")
+        );
+        setErrorDialogVisible(true);
       }
-    }
-    await markTaskCompleted(taskId, !currentCompleted, dispatch);
-    if (!currentCompleted) {
-      MixpanelService.track("Completed Task", {
-        "Task Name": taskName,
-        "Task ID": taskId,
-      });
-    }
-    await getPhases(eventId, dispatch);
-  };
+    },
+    [stages, eventId, dispatch]
+  );
 
-  const handleAddStage = async () => {
+  // ✅ FIXED: Wrap in useCallback to prevent re-creation
+  const handleAddStage = useCallback(async () => {
     if (!startDate || !endDate) return;
     try {
       setActionLoading(true);
@@ -427,9 +449,9 @@ export default function TaskListScreen() {
       setActionLoading(false);
     } catch (error) {
       // Xử lý lỗi nếu cần
-      console.error("Error creating phase:", error);
+      logger.error("Error creating phase:", error);
     }
-  };
+  }, [startDate, endDate, eventId, phases.length, dispatch]);
   const eventCreatedDate = new Date(
     useSelector(
       (state: RootState) =>
@@ -474,7 +496,7 @@ export default function TaskListScreen() {
         setSuccessDialogVisible(true);
       }
     } catch (error: any) {
-      console.error("Error inserting sample tasks:", error);
+      logger.error("Error inserting sample tasks:", error);
       setErrorMessage("Có lỗi xảy ra khi thêm checklist mẫu: " + error.message);
       setErrorDialogVisible(true);
     } finally {
@@ -562,41 +584,44 @@ export default function TaskListScreen() {
       </View>
     );
   };
-  // Render từng công việc
-  const renderTaskItem = (data: any, rowMap: any, stageId: string) => {
-    const task = data.item;
-    const handleTaskDetail = (task: any) => {
-      MixpanelService.track("Viewed Task Details", {
-        "Task ID": task.id,
-        "Task Name": task.text,
-        Completed: task.completed,
-      });
-      setSelectedTask(task); // Lưu task được chọn
-      setTaskDetailModalVisible(true); // Hiển thị modal
-    };
-    return (
-      <View style={styles.rowFront}>
-        <List.Item
-          key={task.id}
-          title={task.text}
-          titleStyle={[
-            styles.taskText,
-            task.completed && styles.taskTextCompleted,
-          ]}
-          style={{ paddingLeft: responsiveWidth(8) }}
-          onPress={() => handleTaskDetail(task)} // tạm thời để vậy dự kiến sẽ thêm modal để xem chi tiết công việc
-          left={() => (
-            <RadioButton.Android
-              value={task.id}
-              status={task.completed ? "checked" : "unchecked"}
-              onPress={() => handleTaskToggle(task.id)}
-              color="#E9D0CB"
-            />
-          )}
-        />
-      </View>
-    );
-  };
+  // ✅ OPTIMIZED: Render từng công việc với memo để tránh re-render
+  const renderTaskItem = useCallback(
+    (data: any, rowMap: any, stageId: string) => {
+      const task = data.item;
+      const handleTaskDetail = (task: any) => {
+        MixpanelService.track("Viewed Task Details", {
+          "Task ID": task.id,
+          "Task Name": task.text,
+          Completed: task.completed,
+        });
+        setSelectedTask(task); // Lưu task được chọn
+        setTaskDetailModalVisible(true); // Hiển thị modal
+      };
+      return (
+        <View style={styles.rowFront}>
+          <List.Item
+            key={task.id}
+            title={task.text}
+            titleStyle={[
+              styles.taskText,
+              task.completed && styles.taskTextCompleted,
+            ]}
+            style={{ paddingLeft: responsiveWidth(8) }}
+            onPress={() => handleTaskDetail(task)} // tạm thời để vậy dự kiến sẽ thêm modal để xem chi tiết công việc
+            left={() => (
+              <RadioButton.Android
+                value={task.id}
+                status={task.completed ? "checked" : "unchecked"}
+                onPress={() => handleTaskToggle(task.id)}
+                color="#E9D0CB"
+              />
+            )}
+          />
+        </View>
+      );
+    },
+    [handleTaskToggle] // ✅ FIXED: Removed stable setState functions from deps
+  );
   // Modal hiển thị chi tiết công việc
   const RenderTaskDetailModal = () => {
     return (
@@ -784,50 +809,27 @@ export default function TaskListScreen() {
           resizeMode="cover"
         />
         <Text style={styles.phaseEmptyText}>
-          Không có giai đoạn nào.{"\n"}Bạn hãy thêm giai đoạn mới nhé !
+          Không có giai đoạn nào.{"\n"}Hãy bắt đầu bằng checklist của chúng tôi
+          nhé!
         </Text>
         {/* just for creator */}
         {userId === creatorId && (
-          <View
-            style={{
-              borderWidth: 1,
-              borderColor: "#ddd",
-              padding: 16,
-              borderRadius: 8,
-              borderStyle: "dashed",
-            }}
+          <TouchableOpacity
+            style={styles.sampleChecklistButton}
+            onPress={handleInsertSampleTasks}
+            disabled={isInsertingTasks}
           >
-            <Text>Hoặc bạn có thể sử dụng checklist của chúng tôi</Text>
-            <TouchableOpacity
-              style={{
-                borderRadius: 8,
-                borderWidth: 1,
-                marginTop: 10,
-                padding: 8,
-                backgroundColor: isInsertingTasks ? "#ddd" : "#FEF0F3",
-                borderColor: "#D95D74",
-              }}
-              onPress={handleInsertSampleTasks}
-              disabled={isInsertingTasks}
-            >
-              <View
-                style={{
-                  alignSelf: "center",
-                  flexDirection: "row",
-                  alignItems: "center",
-                }}
-              >
-                {isInsertingTasks ? (
-                  <ActivityIndicator size={24} color="#D95D74" />
-                ) : (
-                  <Entypo name="check" size={24} />
-                )}
-                <Text style={styles.addTaskButtonLabel}>
-                  {isInsertingTasks ? "Đang tải..." : "Sử dụng checklist mẫu"}
-                </Text>
-              </View>
-            </TouchableOpacity>
-          </View>
+            <View style={styles.sampleChecklistButtonContent}>
+              {isInsertingTasks ? (
+                <ActivityIndicator size={24} color="#D95D74" />
+              ) : (
+                <Entypo name="check" size={24} color="#D95D74" />
+              )}
+              <Text style={styles.sampleChecklistButtonText}>
+                {isInsertingTasks ? "Đang tải..." : "Sử dụng checklist mẫu"}
+              </Text>
+            </View>
+          </TouchableOpacity>
         )}
       </View>
     );
@@ -997,6 +999,11 @@ export default function TaskListScreen() {
           data={stages}
           renderItem={renderStage}
           keyExtractor={(item) => item.id}
+          getItemLayout={(data, index) => ({
+            length: 200,
+            offset: 200 * index,
+            index,
+          })}
           ListHeaderComponent={ListHeader}
           ListFooterComponent={
             <ListFooter
@@ -1019,7 +1026,13 @@ export default function TaskListScreen() {
               createdAt={eventCreatedDate}
             />
           }
-          contentContainerStyle={styles.contentContainer}
+          contentContainerStyle={[
+            styles.contentContainer,
+            {
+              paddingBottom:
+                Platform.OS === "android" ? 16 + insets.bottom : 16,
+            },
+          ]}
           ListEmptyComponent={PhaseEmpty(
             isInsertingTasks,
             handleInsertSampleTasks
@@ -1118,12 +1131,31 @@ const styles = StyleSheet.create({
     padding: responsiveHeight(18),
     borderRadius: 12,
     backgroundColor: "#FEF0F3",
-    elevation: 2,
   },
   addStageButtonLabel: {
     fontSize: responsiveFont(14),
     textAlign: "center",
     marginLeft: 4,
+  },
+  sampleChecklistButton: {
+    marginTop: responsiveHeight(24),
+    paddingVertical: responsiveHeight(16),
+    paddingHorizontal: responsiveWidth(32),
+    borderRadius: responsiveWidth(16),
+    backgroundColor: "#FEF0F3",
+    width: "85%",
+  },
+  sampleChecklistButtonContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  sampleChecklistButtonText: {
+    fontSize: responsiveFont(15),
+    fontFamily: "Montserrat-SemiBold",
+    color: "#D95D74",
+    marginLeft: responsiveWidth(8),
+    fontWeight: "600",
   },
   rowFront: {
     backgroundColor: "#FFFFFF",

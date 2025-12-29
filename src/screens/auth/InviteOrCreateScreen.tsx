@@ -17,6 +17,7 @@ import type { RootStackParamList } from "../../navigation/types";
 import { setWeddingEventFromCheck } from "../../store/weddingEventSlice";
 import { useDispatch } from "react-redux";
 import apiClient from "../../api/client"; // <-- Import apiClient
+import logger from "../../utils/logger";
 
 export default function InviteOrCreateScreen() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
@@ -46,7 +47,7 @@ export default function InviteOrCreateScreen() {
           setIsLoading(false);
         }
       } catch (error) {
-        console.error("Failed to check user event status:", error);
+        logger.error("Failed to check user event status:", error);
         Alert.alert("Lỗi", "Không thể kiểm tra dữ liệu, vui lòng thử lại.");
         setIsLoading(false); // Ẩn loading dù có lỗi
       }

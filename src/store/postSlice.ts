@@ -13,6 +13,10 @@ interface PostState {
   currentPost: Post | null;
   isLoading: boolean;
   error: string | null;
+  // ✅ Add pagination state
+  currentPage: number;
+  hasMore: boolean;
+  isLoadingMore: boolean;
 }
 
 const initialState: PostState = {
@@ -21,15 +25,23 @@ const initialState: PostState = {
   currentPost: null,
   isLoading: false,
   error: null,
+  // ✅ Initialize pagination
+  currentPage: 1,
+  hasMore: true,
+  isLoadingMore: false,
 };
 
 // Async thunks
+// ✅ Update fetchAllPosts to support pagination
 export const fetchAllPosts = createAsyncThunk(
   "posts/fetchAll",
-  async (_, { rejectWithValue }) => {
+  async (
+    { page = 1, limit = 20 }: { page?: number; limit?: number } = {},
+    { rejectWithValue }
+  ) => {
     try {
-      const data = await postService.getAllPosts();
-      return data;
+      const data = await postService.getAllPosts(page, limit);
+      return { ...data, requestedPage: page };
     } catch (error: any) {
       return rejectWithValue(error.message || "Failed to fetch posts");
     }
@@ -155,17 +167,37 @@ const postSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // Fetch all posts
-      .addCase(fetchAllPosts.pending, (state) => {
-        state.isLoading = true;
+      // Fetch all posts with pagination
+      .addCase(fetchAllPosts.pending, (state, action) => {
+        const isFirstPage =
+          action.meta.arg?.page === 1 || !action.meta.arg?.page;
+        if (isFirstPage) {
+          state.isLoading = true;
+        } else {
+          state.isLoadingMore = true;
+        }
         state.error = null;
       })
       .addCase(fetchAllPosts.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.posts = action.payload;
+        state.isLoadingMore = false;
+
+        const { posts, pagination, requestedPage } = action.payload;
+
+        if (requestedPage === 1) {
+          // ✅ First page - replace all posts
+          state.posts = posts;
+        } else {
+          // ✅ Load more - append new posts
+          state.posts = [...state.posts, ...posts];
+        }
+
+        state.currentPage = pagination.page;
+        state.hasMore = pagination.hasMore;
       })
       .addCase(fetchAllPosts.rejected, (state, action) => {
         state.isLoading = false;
+        state.isLoadingMore = false;
         state.error = action.payload as string;
       })
       // Fetch post by ID

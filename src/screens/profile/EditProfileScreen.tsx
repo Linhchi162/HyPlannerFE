@@ -18,6 +18,7 @@ import { useSelector, useDispatch } from "react-redux";
 import {
   setCredentials,
   selectCurrentToken,
+  selectCurrentUser,
   logout,
 } from "../../store/authSlice";
 import type { RootStackParamList } from "../../navigation/types";
@@ -26,6 +27,9 @@ import apiClient from "../../api/client";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { persistor } from "../../store/store";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import logger from "../../utils/logger";
+import { getWeddingEvent } from "../../service/weddingEventService";
+import type { AppDispatch } from "../../store";
 
 const COLORS = {
   background: "#F9F9F9",
@@ -40,8 +44,9 @@ const COLORS = {
 const EditProfileScreen = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const route = useRoute();
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const token = useSelector(selectCurrentToken);
+  const user = useSelector(selectCurrentUser);
   const [isLoading, setIsLoading] = useState(false);
 
   // Lấy params từ route
@@ -100,10 +105,16 @@ const EditProfileScreen = () => {
         // Dispatch để cập nhật toàn bộ thông tin user trong Redux
         dispatch(setCredentials({ user: response.data, token }));
 
+        // Reload wedding event để lấy timeToMarried mới
+        const userId = user?.id || user?._id;
+        if (userId) {
+          await getWeddingEvent(userId, dispatch);
+        }
+
         Alert.alert("Thành công", "Đã cập nhật ngày cưới của bạn.");
         navigation.goBack();
       } catch (error) {
-        console.error("Update Wedding Date Error:", error);
+        logger.error("Update Wedding Date Error:", error);
         const errorMessage =
           typeof error === "object" && error !== null && "message" in error
             ? (error as { message?: string }).message
@@ -132,7 +143,7 @@ const EditProfileScreen = () => {
       Alert.alert("Thành công", `Đã cập nhật "${label}" của bạn.`);
       navigation.goBack();
     } catch (error) {
-      console.error("Update Info Error:", error);
+      logger.error("Update Info Error:", error);
       const errorMessage =
         typeof error === "object" && error !== null && "message" in error
           ? (error as { message?: string }).message
@@ -192,7 +203,7 @@ const EditProfileScreen = () => {
         { cancelable: false } // (Android) Không cho phép tắt pop-up bằng cách nhấn ra ngoài
       );
     } catch (error) {
-      console.error("Change Password Error:", error);
+      logger.error("Change Password Error:", error);
       const errorMessage =
         typeof error === "object" && error !== null && "message" in error
           ? (error as { message?: string }).message
@@ -363,7 +374,6 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   header: {
-    marginTop: StatusBar.currentHeight || 0,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",

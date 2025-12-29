@@ -17,6 +17,7 @@ import {
 import axios from "axios";
 import apiClient from "../api/client";
 import { taskListData } from "../sampleData/SampleData";
+import logger from "../utils/logger";
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_BASE_URL;
 // const API_BASE_URL = "http://192.168.2.77:8082"
@@ -109,12 +110,12 @@ export const insertSampleTasks = async (
 
     return response.data;
   } catch (error: any) {
-    console.error("Insert Sample Tasks Error:", error);
+    logger.error("Insert Sample Tasks Error:", error);
     const message =
       error.response && error.response.data && error.response.data.message
         ? error.response.data.message
         : "Error inserting sample tasks";
-    console.error("Insert Sample Tasks Error:", message);
+    logger.error("Insert Sample Tasks Error:", message);
     throw new Error(message);
   }
 };

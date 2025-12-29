@@ -1,11 +1,12 @@
 // src/services/mixpanelService.ts
 import { Mixpanel } from "mixpanel-react-native";
+import logger from "../utils/logger";
 
 // 1. Lấy token và kiểm tra (đảm bảo file .env có EXPO_PUBLIC_MIXPANEL_TOKEN)
 const token = process.env.EXPO_PUBLIC_MIXPANEL_TOKEN;
 
 if (!token) {
-  console.error(
+  logger.error(
     "LỖI MIXPANEL: Không tìm thấy EXPO_PUBLIC_MIXPANEL_TOKEN. Mixpanel sẽ không hoạt động."
   );
 }

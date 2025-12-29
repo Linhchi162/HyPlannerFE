@@ -162,7 +162,6 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: "#FEF7F8",
-    marginTop: StatusBar.currentHeight || 0,
   },
   header: {
     backgroundColor: "#f4d7ddff",

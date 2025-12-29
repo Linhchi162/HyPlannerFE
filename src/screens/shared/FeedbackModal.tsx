@@ -20,6 +20,7 @@ import { createFeedback, editFeedback } from "../../service/feedbackService";
 import { selectCurrentUser } from "../../store/authSlice";
 import { Feedback } from "../../store/feedbackSlice";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
+import logger from "../../utils/logger";
 
 type FeedbackDialogProps = {
   visible: boolean;
@@ -77,7 +78,7 @@ const FeedbackModal: React.FC<FeedbackDialogProps> = ({
   const handleSubmit = () => {
     if (star === 0 || !content) return;
     if (!userId) {
-      console.error("User ID is missing in FeedbackModal");
+      logger.error("User ID is missing in FeedbackModal");
       return;
     }
 

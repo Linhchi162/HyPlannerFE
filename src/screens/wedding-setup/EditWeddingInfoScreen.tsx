@@ -25,6 +25,8 @@ import {
   responsiveHeight,
   responsiveFont,
 } from "../../../assets/styles/utils/responsive";
+import logger from "../../utils/logger";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const COLORS = {
   background: "#F9F9F9",
@@ -41,6 +43,7 @@ const EditWeddingInfoScreen = () => {
   const route = useRoute();
   const dispatch = useAppDispatch();
   const [isLoading, setIsLoading] = useState(false);
+  const insets = useSafeAreaInsets();
 
   const { eventId } = route.params as RootStackParamList["EditWeddingInfo"];
   const user = useAppSelector((state) => state.auth.user);
@@ -121,7 +124,7 @@ const EditWeddingInfoScreen = () => {
       Alert.alert("Thành công", "Đã cập nhật thông tin kế hoạch cưới.");
       navigation.goBack();
     } catch (error) {
-      console.error("Update Wedding Event Error:", error);
+      logger.error("Update Wedding Event Error:", error);
       const errorMessage =
         typeof error === "object" && error !== null && "message" in error
           ? (error as { message?: string }).message
@@ -183,7 +186,7 @@ const EditWeddingInfoScreen = () => {
                 style={styles.input}
                 value={brideFather}
                 onChangeText={setBrideFather}
-                placeholder="Nhập tên ba cô dâu"
+                placeholder="Nhập tên ba"
                 placeholderTextColor={COLORS.textSecondary}
               />
             </View>
@@ -194,7 +197,7 @@ const EditWeddingInfoScreen = () => {
                 style={styles.input}
                 value={brideMother}
                 onChangeText={setBrideMother}
-                placeholder="Nhập tên mẹ cô dâu"
+                placeholder="Nhập tên mẹ"
                 placeholderTextColor={COLORS.textSecondary}
               />
             </View>
@@ -208,7 +211,7 @@ const EditWeddingInfoScreen = () => {
                 style={styles.input}
                 value={groomFather}
                 onChangeText={setGroomFather}
-                placeholder="Nhập tên ba chú rể"
+                placeholder="Nhập tên ba"
                 placeholderTextColor={COLORS.textSecondary}
               />
             </View>
@@ -219,7 +222,7 @@ const EditWeddingInfoScreen = () => {
                 style={styles.input}
                 value={groomMother}
                 onChangeText={setGroomMother}
-                placeholder="Nhập tên mẹ chú rể"
+                placeholder="Nhập tên mẹ"
                 placeholderTextColor={COLORS.textSecondary}
               />
             </View>
@@ -249,7 +252,17 @@ const EditWeddingInfoScreen = () => {
         </ScrollView>
 
         {/* Fixed Save Button at Bottom */}
-        <View style={styles.fixedButtonContainer}>
+        <View
+          style={[
+            styles.fixedButtonContainer,
+            {
+              paddingBottom:
+                Platform.OS === "android"
+                  ? Math.max(insets.bottom, responsiveHeight(16))
+                  : responsiveHeight(16),
+            },
+          ]}
+        >
           <TouchableOpacity
             style={[styles.saveButton, isLoading && styles.saveButtonDisabled]}
             onPress={handleSave}
@@ -274,7 +287,6 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    marginTop: StatusBar.currentHeight || 0,
   },
   header: {
     flexDirection: "row",

@@ -26,10 +26,13 @@ import { useAppDispatch } from "../../store/hooks";
 import { fetchUserInvitation } from "../../store/invitationSlice";
 import { RootStackParamList } from "../../navigation/types";
 import { MixpanelService } from "../../service/mixpanelService";
+import logger from "../../utils/logger";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function UpgradeAccountScreen() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const dispatch = useAppDispatch();
+  const insets = useSafeAreaInsets();
 
   // State để lưu accountType lấy từ API
   const [currentUserAccountType, setCurrentUserAccountType] = useState<
@@ -52,7 +55,7 @@ export default function UpgradeAccountScreen() {
           "Current Account Type": response.data.accountType,
         });
       } catch (error) {
-        console.error("Không thể lấy trạng thái tài khoản:", error);
+        logger.error("Không thể lấy trạng thái tài khoản:", error);
         Alert.alert("Lỗi", "Không thể tải thông tin tài khoản của bạn.");
       } finally {
         setIsLoadingStatus(false);
@@ -101,18 +104,18 @@ export default function UpgradeAccountScreen() {
     let orderDetails = {};
     let price = 0;
     if (packageType === "VIP") {
-      price = 39000;
+      price = 59000;
       orderDetails = {
         description: "Nang cap VIP HyPlanner",
         price: price,
         packageType: "VIP",
       };
-    } else if (packageType === "SUPER") {
+    } else if (packageType === "PRO") {
       price = 110000;
       orderDetails = {
-        description: "Nang cap SUPER HyPlanner",
+        description: "Nang cap PRO HyPlanner",
         price: price,
-        packageType: "SUPER",
+        packageType: "PRO",
       };
     }
     MixpanelService.track("Initiated Payment", {
@@ -129,7 +132,7 @@ export default function UpgradeAccountScreen() {
         await Linking.openURL(checkoutUrl);
       }
     } catch (error: any) {
-      console.error("Lỗi khi nâng cấp:", error);
+      logger.error("Lỗi khi nâng cấp:", error);
       Alert.alert(
         "Lỗi",
         error.message || "Không thể tạo yêu cầu thanh toán vào lúc này."
@@ -143,61 +146,96 @@ export default function UpgradeAccountScreen() {
     {
       label: "Giá",
       free: "Miễn phí",
-      vip: "39.000 đ",
-      super: "110.000 đ",
+      vip: "59.000 đ/tháng",
+      pro: "110.000 đ/3 tháng",
       isPrice: true,
-      oldVipPrice: "49.000 đ",
-      oldSuperPrice: "139.000 đ",
+      oldVipPrice: "79.000 đ", // Giữ nguyên hoặc xóa tùy logic hiển thị của bạn
+      oldProPrice: "139.000 đ", // Giữ nguyên hoặc xóa tùy logic hiển thị của bạn
     },
     {
-      label: "Giới hạn checklist",
-      free: <Infinity color="#666" size={18} />,
-      vip: <Infinity color="#666" size={18} />,
-      super: <Infinity color="#666" size={18} />,
+      label: "Đổi giao diện đếm ngược thời gian",
+      free: "Mặc định",
+      vip: "Đổi tối đa 7 lần",
+      pro: "Không giới hạn số lần đổi",
     },
     {
-      label: "Giới hạn ngân sách",
-      free: <Infinity color="#666" size={18} />,
-      vip: <Infinity color="#666" size={18} />,
-      super: <Infinity color="#666" size={18} />,
+      label: "Thời hạn Website được công khai",
+      free: "3 tháng",
+      vip: "12 tháng",
+      pro: "Trọn đời",
     },
     {
-      label: "Giới hạn nhà cung cấp",
-      free: <Infinity color="#666" size={18} />,
-      vip: <Infinity color="#666" size={18} />,
-      super: <Infinity color="#666" size={18} />,
-    },
-    {
-      label: "Giới hạn danh sách khách",
-      free: <Infinity color="#666" size={18} />,
-      vip: <Infinity color="#666" size={18} />,
-      super: <Infinity color="#666" size={18} />,
-    },
-    {
-      label: "Thời hạn website được công khai",
-      free: "3 Tháng",
-      vip: "1 Năm",
-      super: "Trọn đời",
-    },
-    { label: "Số lượng ảnh album", free: "6", vip: "20", super: "50" },
-    {
-      label: "Tính năng cơ bản",
-      free: <Check color="#2ecc71" size={20} />,
-      vip: <Check color="#2ecc71" size={20} />,
-      super: <Check color="#2ecc71" size={20} />,
+      label: "Số lượng Album được tạo",
+      free: "5",
+      vip: "12",
+      pro: <Infinity color="#666" size={18} />,
     },
     {
       label: "Loại bỏ quảng cáo",
       free: <X color="#e74c3c" size={20} />,
       vip: <Check color="#2ecc71" size={20} />,
-      super: <Check color="#2ecc71" size={20} />,
+      pro: <Check color="#2ecc71" size={20} />,
     },
     {
-      label: "Hộp mừng cưới",
+      label: "Số lượng thiệp cưới online có thể truy cập",
+      free: "3",
+      vip: "15",
+      pro: "Toàn bộ",
+    },
+    {
+      label: "Tính năng chia sẻ với người hỗ trợ",
+      free: "1",
+      vip: "5",
+      pro: "10",
+    },
+    {
+      label: "Bài đăng kèm ảnh của cộng đồng",
+      free: "Giới hạn 2 ảnh và nội dung một bài post",
+      vip: "Không giới hạn số lượng ảnh và nội dung trong bài post",
+      pro: "Không giới hạn số lượng ảnh, đẩy bài 24h",
+    },
+    {
+      label: "Số lượng ảnh tự up lên trong mỗi album",
+      free: "6",
+      vip: <Infinity color="#666" size={18} />,
+      pro: <Infinity color="#666" size={18} />,
+    },
+    {
+      label: "Ai sẽ là người tiếp theo?",
       free: <X color="#e74c3c" size={20} />,
       vip: <Check color="#2ecc71" size={20} />,
-      super: <Check color="#2ecc71" size={20} />,
+      pro: <Check color="#2ecc71" size={20} />,
     },
+    {
+      label: "Gợi ý bố trí bàn tiệc",
+      free: <X color="#e74c3c" size={20} />,
+      vip: <Check color="#2ecc71" size={20} />,
+      pro: <Check color="#2ecc71" size={20} />,
+    },
+    // {
+    //   label: "Import/Export file sheet quản lý khách mời",
+    //   free: <X color="#e74c3c" size={20} />,
+    //   vip: <Check color="#2ecc71" size={20} />,
+    //   pro: <Check color="#2ecc71" size={20} />,
+    // },
+    // {
+    //   label: "Notification",
+    //   free: <X color="#e74c3c" size={20} />,
+    //   vip: <Check color="#2ecc71" size={20} />,
+    //   pro: <Check color="#2ecc71" size={20} />,
+    // },
+    // {
+    //   label: "Chia sẻ kế hoạch cho gia đình (quyền xem/chỉnh sửa)",
+    //   free: <X color="#e74c3c" size={20} />,
+    //   vip: <X color="#e74c3c" size={20} />,
+    //   pro: <Check color="#2ecc71" size={20} />,
+    // },
+    // {
+    //   label: "Hộp mừng cưới",
+    //   free: <X color="#e74c3c" size={20} />,
+    //   vip: <X color="#e74c3c" size={20} />, // Trong ảnh cột VIP là dấu X
+    //   pro: <Check color="#2ecc71" size={20} />,
+    // },
   ];
 
   const renderFeatureCell = (content: React.ReactNode) => {
@@ -208,18 +246,18 @@ export default function UpgradeAccountScreen() {
   };
 
   const selectedPackagePrice =
-    activeUpgradeTab === "VIP" ? features[0].vip : features[0].super;
+    activeUpgradeTab === "VIP" ? features[0].vip : features[0].pro;
 
   const isVipTabDisabled =
-    currentUserAccountType === "VIP" || currentUserAccountType === "SUPER";
-  const isSuperTabDisabled = currentUserAccountType === "SUPER";
+    currentUserAccountType === "VIP" || currentUserAccountType === "PRO";
+  const isProTabDisabled = currentUserAccountType === "PRO";
 
   let isUpgradeButtonDisabled = false;
   let upgradeButtonText = `Nâng cấp ${activeUpgradeTab}: ${selectedPackagePrice}`;
 
-  if (currentUserAccountType === "SUPER") {
+  if (currentUserAccountType === "PRO") {
     isUpgradeButtonDisabled = true;
-    upgradeButtonText = "Bạn đã là tài khoản SUPER";
+    upgradeButtonText = "Bạn đã là tài khoản PRO";
   } else if (currentUserAccountType === "VIP" && activeUpgradeTab === "VIP") {
     isUpgradeButtonDisabled = true;
     upgradeButtonText = "Bạn đã là tài khoản VIP";
@@ -281,37 +319,44 @@ export default function UpgradeAccountScreen() {
             Nâng cấp VIP
           </Text>
         </TouchableOpacity>
+        {/* TEMPORARY: PRO package disabled by client request
         <TouchableOpacity
           style={[
             styles.upgradeTabButton,
-            activeUpgradeTab === "SUPER" && styles.activeUpgradeTabButton,
-            isSuperTabDisabled && styles.buttonDisabled,
+            activeUpgradeTab === "PRO" && styles.activeUpgradeTabButton,
+            isProTabDisabled && styles.buttonDisabled,
           ]}
           onPress={() => {
-            setActiveUpgradeTab("SUPER");
+            setActiveUpgradeTab("PRO");
             MixpanelService.track("Switched Upgrade Tab", {
-              "Tab Selected": "SUPER",
+              "Tab Selected": "PRO",
             });
           }}
-          disabled={isSuperTabDisabled}
+          disabled={isProTabDisabled}
         >
           <Sparkles
             size={16}
-            color={activeUpgradeTab === "SUPER" ? "#fff" : "#3498db"}
+            color={activeUpgradeTab === "PRO" ? "#fff" : "#3498db"}
             style={{ marginRight: 5 }}
           />
           <Text
             style={[
               styles.upgradeTabButtonText,
-              activeUpgradeTab === "SUPER" && styles.activeUpgradeTabButtonText,
+              activeUpgradeTab === "PRO" && styles.activeUpgradeTabButtonText,
             ]}
           >
             Nâng cấp PRO
           </Text>
         </TouchableOpacity>
+        */}
       </View>
 
-      <ScrollView contentContainerStyle={styles.container}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.container,
+          { paddingBottom: 100 + insets.bottom },
+        ]}
+      >
         <View style={styles.tableContainer}>
           <View style={styles.tableHeader}>
             <Text style={styles.tableHeaderCellLabel}></Text>
@@ -319,8 +364,10 @@ export default function UpgradeAccountScreen() {
             <Text style={styles.tableHeaderCell}>FREE</Text>
             <View style={styles.verticalSeparator} />
             <Text style={styles.tableHeaderCell}>VIP</Text>
+            {/* TEMPORARY: PRO column hidden
             <View style={styles.verticalSeparator} />
             <Text style={styles.tableHeaderCell}>PRO</Text>
+            */}
           </View>
 
           {features.map((feature, index) => (
@@ -347,23 +394,30 @@ export default function UpgradeAccountScreen() {
                   renderFeatureCell(feature.vip)
                 )}
               </View>
+              {/* TEMPORARY: PRO column hidden
               <View style={styles.verticalSeparator} />
               <View style={styles.featureCell}>
                 {feature.isPrice ? (
                   <>
-                    <Text style={styles.oldPrice}>{feature.oldSuperPrice}</Text>
-                    <Text style={styles.price}>{feature.super}</Text>
+                    <Text style={styles.oldPrice}>{feature.oldProPrice}</Text>
+                    <Text style={styles.price}>{feature.pro}</Text>
                   </>
                 ) : (
-                  renderFeatureCell(feature.super)
+                  renderFeatureCell(feature.pro)
                 )}
               </View>
+              */}
             </View>
           ))}
         </View>
       </ScrollView>
 
-      <View style={styles.bottomButtonContainer}>
+      <View
+        style={[
+          styles.bottomButtonContainer,
+          { paddingBottom: Math.max(insets.bottom, 16) },
+        ]}
+      >
         <TouchableOpacity
           style={[
             styles.upgradeButton,
@@ -399,7 +453,6 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: "#f7f7f7",
-    paddingTop: StatusBar.currentHeight || 0,
   },
   header: {
     backgroundColor: "#e07181",

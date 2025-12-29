@@ -48,11 +48,19 @@ import {
 import apiClient from "../../api/client";
 import QRCode from "react-native-qrcode-svg"; // --- THÊM
 import Clipboard from "@react-native-clipboard/clipboard"; // --- THÊM
+import {
+  responsiveWidth,
+  responsiveHeight,
+  responsiveFont,
+} from "../../../assets/styles/utils/responsive";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function WebsiteManagementScreen() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const dispatch = useAppDispatch();
   const [isModalVisible, setModalVisible] = useState(false); // --- THÊM STATE CHO MODAL
+  const [isMessagesModalVisible, setMessagesModalVisible] = useState(false); // Modal cho lời chúc
+  const insets = useSafeAreaInsets();
 
   useFocusEffect(
     useCallback(() => {
@@ -218,13 +226,23 @@ export default function WebsiteManagementScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.container}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.container,
+          {
+            paddingBottom:
+              Platform.OS === "android"
+                ? responsiveHeight(100) + insets.bottom
+                : responsiveHeight(16),
+          },
+        ]}
+      >
         <View style={styles.gridContainer}>
           <TouchableOpacity
             style={[styles.gridButton, { backgroundColor: "#2ecc71" }]}
             onPress={() => setModalVisible(true)} // --- SỬA DÒNG NÀY ---
           >
-            <QrCode color="#fff" size={24} />
+            <QrCode color="#fff" size={responsiveWidth(24)} />
             <Text style={styles.gridButtonText}>TẠO MÃ QR</Text>
             <Text style={styles.gridButtonSubText}>Mã QR cho website</Text>
           </TouchableOpacity>
@@ -236,14 +254,14 @@ export default function WebsiteManagementScreen() {
               )
             }
           >
-            <Globe color="#fff" size={24} />
+            <Globe color="#fff" size={responsiveWidth(24)} />
             <Text style={styles.gridButtonText}>MỞ WEBSITE</Text>
             <Text style={styles.gridButtonSubText}>Xem website của bạn</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.gridButton, { backgroundColor: "#e74c3c" }]}
           >
-            <Users color="#fff" size={24} />
+            <Users color="#fff" size={responsiveWidth(24)} />
             <Text style={styles.gridButtonText}>KHÁCH MỜI</Text>
             <Text style={styles.gridButtonSubText}>
               Tất cả khách mời: {invitation.guestRsvpCount || 0}
@@ -251,8 +269,9 @@ export default function WebsiteManagementScreen() {
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.gridButton, { backgroundColor: "#95a5a6" }]}
+            onPress={() => setMessagesModalVisible(true)}
           >
-            <MessageSquareText color="#fff" size={24} />
+            <MessageSquareText color="#fff" size={responsiveWidth(24)} />
             <Text style={styles.gridButtonText}>LỜI CHÚC</Text>
             <Text style={styles.gridButtonSubText}>
               Tất cả lời chúc: {invitation.guestbookMessages?.length || 0}
@@ -269,7 +288,10 @@ export default function WebsiteManagementScreen() {
               disabled={!item.action}
             >
               <View style={{ flexDirection: "row", alignItems: "center" }}>
-                <item.icon size={22} color={!item.action ? "#ccc" : "#555"} />
+                <item.icon
+                  size={responsiveWidth(22)}
+                  color={!item.action ? "#ccc" : "#555"}
+                />
                 <Text
                   style={[
                     styles.menuItemText,
@@ -279,7 +301,9 @@ export default function WebsiteManagementScreen() {
                   {item.label}
                 </Text>
               </View>
-              {item.isPremium && <Crown size={20} color="#f1c40f" />}
+              {item.isPremium && (
+                <Crown size={responsiveWidth(20)} color="#f1c40f" />
+              )}
             </TouchableOpacity>
           ))}
           <TouchableOpacity
@@ -308,27 +332,27 @@ export default function WebsiteManagementScreen() {
               style={styles.closeButton}
               onPress={() => setModalVisible(false)}
             >
-              <X size={24} color="#666" />
+              <X size={responsiveWidth(24)} color="#666" />
             </TouchableOpacity>
 
             <Text style={styles.modalTitle}>Mã QR Website</Text>
 
             <View
               style={{
-                padding: 10,
+                padding: responsiveWidth(10),
                 backgroundColor: "white",
-                borderRadius: 8,
-                marginBottom: 20,
+                borderRadius: responsiveWidth(8),
+                marginBottom: responsiveHeight(20),
               }}
             >
-              <QRCode value={websiteUrl} size={220} />
+              <QRCode value={websiteUrl} size={responsiveWidth(220)} />
             </View>
 
             <Text
               style={{
-                fontSize: 14,
+                fontSize: responsiveFont(14),
                 color: "#555",
-                marginBottom: 10,
+                marginBottom: responsiveHeight(10),
                 fontFamily: "Montserrat-Medium",
               }}
             >
@@ -339,9 +363,67 @@ export default function WebsiteManagementScreen() {
                 {websiteUrl}
               </Text>
               <TouchableOpacity onPress={() => copyToClipboard(websiteUrl)}>
-                <Copy size={22} color="#e07181" />
+                <Copy size={responsiveWidth(22)} color="#e07181" />
               </TouchableOpacity>
             </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal Lời Chúc */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={isMessagesModalVisible}
+        onRequestClose={() => setMessagesModalVisible(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={[styles.modalView, { maxHeight: "80%" }]}>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => setMessagesModalVisible(false)}
+            >
+              <X size={responsiveWidth(24)} color="#666" />
+            </TouchableOpacity>
+
+            <Text style={styles.modalTitle}>Lời Chúc Từ Khách Mời</Text>
+
+            {!invitation.guestbookMessages ||
+            invitation.guestbookMessages.length === 0 ? (
+              <Text
+                style={{
+                  fontSize: responsiveFont(14),
+                  color: "#999",
+                  textAlign: "center",
+                  marginTop: responsiveHeight(20),
+                  fontFamily: "Montserrat-Medium",
+                }}
+              >
+                Chưa có lời chúc nào
+              </Text>
+            ) : (
+              <ScrollView style={{ width: "100%", maxHeight: "100%" }}>
+                {invitation.guestbookMessages.map(
+                  (message: any, index: number) => (
+                    <View key={index} style={styles.messageCard}>
+                      <View style={styles.messageHeader}>
+                        <Text style={styles.messageName}>
+                          {message.name || "Khách mời"}
+                        </Text>
+                        <Text style={styles.messageDate}>
+                          {new Date(message.createdAt).toLocaleDateString(
+                            "vi-VN"
+                          )}
+                        </Text>
+                      </View>
+                      <Text style={styles.messageContent}>
+                        {message.message}
+                      </Text>
+                    </View>
+                  )
+                )}
+              </ScrollView>
+            )}
           </View>
         </View>
       </Modal>
@@ -352,13 +434,12 @@ export default function WebsiteManagementScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    marginTop: StatusBar.currentHeight || 0,
     backgroundColor: "#f7f7f7",
   },
   header: {
     backgroundColor: "#fbe2e7",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: responsiveWidth(16),
+    paddingVertical: responsiveHeight(12),
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -367,11 +448,13 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontFamily: "Agbalumo",
-    fontSize: 18,
+    fontSize: responsiveFont(18),
     fontWeight: "600",
     color: "#e07181",
   },
-  container: { padding: 16 }, // Thêm paddingBottom
+  container: {
+    padding: responsiveWidth(16),
+  },
   gridContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -379,40 +462,40 @@ const styles = StyleSheet.create({
   },
   gridButton: {
     width: "48%",
-    height: 100,
-    borderRadius: 12,
-    padding: 12,
+    height: responsiveHeight(100),
+    borderRadius: responsiveWidth(12),
+    padding: responsiveWidth(12),
     justifyContent: "space-between",
-    marginBottom: 16,
+    marginBottom: responsiveHeight(16),
   },
   gridButtonText: {
     fontFamily: "Montserrat-SemiBold",
     color: "#fff",
-    fontSize: 14,
+    fontSize: responsiveFont(14),
     fontWeight: "bold",
   },
   gridButtonSubText: {
     fontFamily: "Montserrat-SemiBold",
     color: "#fff",
-    fontSize: 12,
+    fontSize: responsiveFont(12),
   },
   menuList: {
     backgroundColor: "#fff",
-    borderRadius: 12,
+    borderRadius: responsiveWidth(12),
     overflow: "hidden",
   },
   menuItem: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    padding: 16,
+    padding: responsiveWidth(16),
     borderBottomWidth: 1,
     borderBottomColor: "#f0f0f0",
   },
   menuItemText: {
     fontFamily: "Montserrat-Medium",
-    fontSize: 16,
-    marginLeft: 16,
+    fontSize: responsiveFont(16),
+    marginLeft: responsiveWidth(16),
     color: "#333",
   },
   deleteText: {
@@ -430,11 +513,11 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0, 0, 0, 0.6)",
   },
   modalView: {
-    margin: 20,
+    margin: responsiveWidth(20),
     backgroundColor: "white",
-    borderRadius: 20,
-    padding: 25,
-    paddingTop: 40, // Chừa chỗ cho nút close
+    borderRadius: responsiveWidth(20),
+    padding: responsiveWidth(25),
+    paddingTop: responsiveHeight(40),
     alignItems: "center",
     shadowColor: "#000",
     shadowOffset: {
@@ -448,13 +531,13 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     position: "absolute",
-    top: 15,
-    right: 15,
+    top: responsiveHeight(15),
+    right: responsiveWidth(15),
   },
   modalTitle: {
-    marginBottom: 20,
+    marginBottom: responsiveHeight(20),
     textAlign: "center",
-    fontSize: 20,
+    fontSize: responsiveFont(20),
     fontFamily: "Montserrat-SemiBold",
     color: "#e07181",
   },
@@ -462,16 +545,46 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#f7f7f7",
-    borderRadius: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 15,
+    borderRadius: responsiveWidth(8),
+    paddingVertical: responsiveHeight(10),
+    paddingHorizontal: responsiveWidth(15),
     width: "100%",
   },
   modalLinkText: {
     flex: 1,
-    fontSize: 14,
+    fontSize: responsiveFont(14),
     fontFamily: "Montserrat-Medium",
     color: "#333",
-    marginRight: 10,
+    marginRight: responsiveWidth(10),
+  },
+  messageCard: {
+    backgroundColor: "#f9f9f9",
+    borderRadius: responsiveWidth(12),
+    padding: responsiveWidth(16),
+    marginBottom: responsiveHeight(12),
+    borderLeftWidth: 4,
+    borderLeftColor: "#e07181",
+  },
+  messageHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: responsiveHeight(8),
+  },
+  messageName: {
+    fontSize: responsiveFont(16),
+    fontFamily: "Montserrat-SemiBold",
+    color: "#e07181",
+  },
+  messageDate: {
+    fontSize: responsiveFont(12),
+    fontFamily: "Montserrat-Medium",
+    color: "#999",
+  },
+  messageContent: {
+    fontSize: responsiveFont(14),
+    fontFamily: "Montserrat-Medium",
+    color: "#333",
+    lineHeight: responsiveFont(20),
   },
 });

@@ -2,6 +2,7 @@ import * as Notifications from "expo-notifications";
 import * as Device from "expo-device";
 import { Platform } from "react-native";
 import Constants from "expo-constants";
+import logger from "./logger";
 
 // Check if running in Expo Go
 const isExpoGo = Constants.appOwnership === "expo";
@@ -27,7 +28,7 @@ export async function registerForPushNotificationsAsync(): Promise<
 > {
   // Skip in Expo Go
   if (isExpoGo) {
-    console.warn(
+    logger.warn(
       "Push notifications not available in Expo Go. Build a development build to test."
     );
     return undefined;
@@ -55,7 +56,7 @@ export async function registerForPushNotificationsAsync(): Promise<
     }
 
     if (finalStatus !== "granted") {
-      console.log("Failed to get push token for push notification!");
+      logger.log("Failed to get push token for push notification!");
       return;
     }
 
@@ -67,12 +68,11 @@ export async function registerForPushNotificationsAsync(): Promise<
           projectId,
         })
       ).data;
-      console.log("✅ Expo Push Token:", token);
     } catch (error) {
-      console.error("Error getting push token:", error);
+      logger.error("Error getting push token:", error);
     }
   } else {
-    console.log("Must use physical device for Push Notifications");
+    logger.log("Must use physical device for Push Notifications");
   }
 
   return token;
@@ -88,7 +88,7 @@ export async function scheduleLocalNotification(
   triggerSeconds: number = 0
 ) {
   if (isExpoGo) {
-    console.warn("Local notifications not available in Expo Go");
+    logger.warn("Local notifications not available in Expo Go");
     return;
   }
 

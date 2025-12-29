@@ -30,6 +30,9 @@ import {
   responsiveFont,
 } from "../../assets/styles/utils/responsive";
 
+// Services
+import * as notificationService from "../service/notificationService";
+
 // Types và configs đã tách ra
 import { RootStackParamList } from "./types";
 import { linking } from "./linking";
@@ -39,6 +42,7 @@ import { MainTabNavigator } from "./MainTabNavigator";
 import { selectCurrentUser, selectRememberMe } from "../store/authSlice";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { fetchUserInvitation } from "../store/invitationSlice";
+import { RootState } from "../store";
 
 // Import tất cả các màn hình
 import BeginScreen from "../screens/auth/BeginScreen";
@@ -69,6 +73,7 @@ import JoinWeddingEvent from "../screens/wedding-setup/JoinWeddingEvent";
 import BudgetListScreen from "../screens/budget/BudgetListScreen";
 import CreateNewBudgetScreen from "../screens/budget/CreateNewBudgetScreen";
 import EditBudgetScreen from "../screens/budget/EditBudgetScreen";
+import EditBudgetGroupScreen from "../screens/budget/EditBudgetGroup/EditBudgetGroupScreen";
 import RoleSelectionScreen from "../screens/auth/RoleSelectionScreen";
 import ChooseStyleScreen from "../screens/wedding-setup/ChooseStyleScreen";
 import WeddingDressScreen from "../screens/bride/WeddingDressScreen";
@@ -135,6 +140,11 @@ const RootStackNavigator = () => {
   const dispatch = useAppDispatch();
   const navigationRef = useNavigationContainerRef<RootStackParamList>();
 
+  // Get wedding event for notifications
+  const weddingEvent = useAppSelector(
+    (state: RootState) => state.weddingEvent?.getWeddingEvent?.weddingEvent
+  );
+
   // Notifications modal state
   const [showNotificationsModal, setShowNotificationsModal] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
@@ -171,9 +181,36 @@ const RootStackNavigator = () => {
     }
   }, [user, dispatch]);
 
+  // Fetch notifications when modal opens
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      if (!showNotificationsModal || !weddingEvent?._id) return;
+
+      setLoadingNotifications(true);
+      try {
+        const response = await notificationService.getNotifications(
+          weddingEvent._id,
+          { limit: 10 } // Only show 10 most recent in modal
+        );
+        setNotifications(response.notifications);
+      } catch (error: any) {
+        console.error("Error fetching notifications:", error);
+        setNotifications([]);
+      } finally {
+        setLoadingNotifications(false);
+      }
+    };
+
+    fetchNotifications();
+  }, [showNotificationsModal, weddingEvent?._id]);
+
   return (
     <>
-      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor="transparent"
+        translucent={true}
+      />
       <NavigationContainer
         linking={linking}
         ref={navigationRef}
@@ -243,15 +280,8 @@ const RootStackNavigator = () => {
               headerTitleAlign: "left",
               headerStyle: {
                 backgroundColor: "#fff",
-                elevation: 1,
-                shadowOpacity: 0.1,
-                height: 100,
-                borderBottomWidth: 1,
-                borderBottomColor: "#e5e7eb",
-              },
-              headerTitleContainerStyle: {
-                paddingTop: 8,
-                paddingBottom: 8,
+                elevation: 0,
+                shadowOpacity: 0,
               },
             })}
           />
@@ -337,6 +367,11 @@ const RootStackNavigator = () => {
           <Stack.Screen
             name="EditBudget"
             component={EditBudgetScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="EditBudgetGroupScreen"
+            component={EditBudgetGroupScreen}
             options={{ headerShown: false }}
           />
           <Stack.Screen
@@ -596,12 +631,43 @@ const RootStackNavigator = () => {
           <View style={modalStyles.overlay}>
             <View style={modalStyles.container}>
               <View style={modalStyles.header}>
-                <Text style={modalStyles.title}>Thông báo & Nhắc nhở</Text>
-                <TouchableOpacity
-                  onPress={() => setShowNotificationsModal(false)}
-                >
-                  <XCircle size={24} color="#6b7280" />
-                </TouchableOpacity>
+                <View style={{ flex: 1 }}>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      marginBottom: responsiveHeight(8),
+                    }}
+                  >
+                    <Text style={modalStyles.title}>Thông báo</Text>
+                    <TouchableOpacity
+                      onPress={() => setShowNotificationsModal(false)}
+                    >
+                      <XCircle size={24} color="#6b7280" />
+                    </TouchableOpacity>
+                  </View>
+                  {weddingEvent?._id && (
+                    <TouchableOpacity
+                      onPress={() => {
+                        setShowNotificationsModal(false);
+                        navigationRef.navigate("NotificationListScreen", {
+                          weddingEventId: weddingEvent._id,
+                        });
+                      }}
+                    >
+                      <Text
+                        style={{
+                          color: "#ff6b9d",
+                          fontSize: responsiveFont(14),
+                          fontFamily: "Montserrat-SemiBold",
+                        }}
+                      >
+                        Xem tất cả
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
               </View>
 
               {loadingNotifications ? (

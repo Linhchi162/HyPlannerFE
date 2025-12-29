@@ -12,6 +12,7 @@ import {
   ActivityIndicator,
   Platform,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Eye, EyeOff } from "lucide-react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
@@ -20,6 +21,7 @@ import apiClient from "../../api/client";
 import { useDispatch } from "react-redux";
 import { setCredentials } from "../../store/authSlice";
 import type { RootStackParamList } from "../../navigation/types";
+import logger from "../../utils/logger";
 
 const isValidEmail = (email: string) => {
   const emailRegex = /\S+@\S+\.\S+/;
@@ -27,6 +29,7 @@ const isValidEmail = (email: string) => {
 };
 
 export default function RegistrationScreen() {
+  const insets = useSafeAreaInsets();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [username, setUsername] = useState("");
@@ -79,7 +82,7 @@ export default function RegistrationScreen() {
       Alert.alert("Thành công", `Mã xác thực đã được gửi đến ${email}.`);
       navigation.navigate("OTP", { email, from: "register" }); // Thêm 'from' để OTPScreen biết đây là luồng đăng ký
     } catch (error) {
-      console.error("Registration error:", error);
+      logger.error("Registration error:", error);
       const errorMessage =
         typeof error === "object" && error !== null && "message" in error
           ? (error as { message?: string }).message
@@ -97,7 +100,14 @@ export default function RegistrationScreen() {
         backgroundColor="#f8f9fa"
         translucent={false}
       />
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.scrollContainer,
+          {
+            paddingBottom: Platform.OS === "android" ? 16 + insets.bottom : 16,
+          },
+        ]}
+      >
         <View style={styles.formContainer}>
           {/* Header */}
           <View style={styles.header}>
@@ -155,9 +165,9 @@ export default function RegistrationScreen() {
                   onPress={() => setShowPassword(!showPassword)}
                 >
                   {showPassword ? (
-                    <EyeOff size={40} color="#9ca3af" />
+                    <EyeOff size={24} color="#9ca3af" />
                   ) : (
-                    <Eye size={40} color="#9ca3af" />
+                    <Eye size={24} color="#9ca3af" />
                   )}
                 </TouchableOpacity>
               </View>
@@ -181,9 +191,9 @@ export default function RegistrationScreen() {
                   onPress={() => setShowConfirmPassword(!showConfirmPassword)}
                 >
                   {showConfirmPassword ? (
-                    <EyeOff size={40} color="#9ca3af" />
+                    <EyeOff size={24} color="#9ca3af" />
                   ) : (
-                    <Eye size={40} color="#9ca3af" />
+                    <Eye size={24} color="#9ca3af" />
                   )}
                 </TouchableOpacity>
               </View>
@@ -249,16 +259,16 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: "Agbalumo",
-    fontSize: 56,
+    fontSize: 48,
     color: "#e56e8a",
     marginBottom: 16,
   },
   subtitle: {
     fontFamily: "Montserrat-Medium",
-    fontSize: 28,
+    fontSize: 16,
     color: "#6b7280",
     textAlign: "center",
-    lineHeight: 40,
+    lineHeight: 24,
   },
   form: {
     gap: 12,
@@ -268,18 +278,18 @@ const styles = StyleSheet.create({
   },
   label: {
     fontFamily: "Montserrat-Medium",
-    fontSize: 32,
+    fontSize: 16,
     fontWeight: "500",
     color: "#1f2937",
   },
   input: {
     fontFamily: "Montserrat-Medium",
-    height: 80,
+    height: 50,
     borderWidth: 1,
     borderColor: "#e5e7eb",
     borderRadius: 8,
     paddingHorizontal: 16,
-    fontSize: 32,
+    fontSize: 16,
     color: "#6b7280",
     backgroundColor: "#ffffff",
   },
@@ -288,24 +298,24 @@ const styles = StyleSheet.create({
   },
   passwordInput: {
     fontFamily: "Montserrat-Medium",
-    height: 80,
+    height: 50,
     borderWidth: 1,
     borderColor: "#e5e7eb",
     borderRadius: 8,
     paddingHorizontal: 16,
-    paddingRight: 80,
-    fontSize: 32,
+    paddingRight: 60,
+    fontSize: 16,
     color: "#6b7280",
     backgroundColor: "#ffffff",
   },
   eyeButton: {
     position: "absolute",
     right: 16,
-    top: 20,
+    top: 13,
     padding: 4,
   },
   registerButton: {
-    height: 80,
+    height: 50,
     backgroundColor: "#f9cbd6",
     borderRadius: 8,
     justifyContent: "center",
@@ -314,7 +324,7 @@ const styles = StyleSheet.create({
   },
   registerButtonText: {
     fontFamily: "Montserrat-Medium",
-    fontSize: 32,
+    fontSize: 18,
     fontWeight: "500",
     color: "#1f2937",
   },
@@ -331,12 +341,12 @@ const styles = StyleSheet.create({
   },
   dividerText: {
     fontFamily: "Montserrat-Medium",
-    fontSize: 28,
+    fontSize: 14,
     color: "#9ca3af",
     marginHorizontal: 16, // Thêm khoảng cách hai bên chữ
   },
   guestButton: {
-    height: 80,
+    height: 50,
     borderWidth: 1,
     borderColor: "#e5e7eb",
     borderRadius: 8,
@@ -346,7 +356,7 @@ const styles = StyleSheet.create({
   },
   guestButtonText: {
     fontFamily: "Montserrat-Medium",
-    fontSize: 32,
+    fontSize: 16,
     fontWeight: "500",
     color: "#1f2937",
   },
@@ -358,12 +368,12 @@ const styles = StyleSheet.create({
   },
   loginText: {
     fontFamily: "Montserrat-Medium",
-    fontSize: 28,
+    fontSize: 14,
     color: "#6b7280",
   },
   loginLink: {
     fontFamily: "Montserrat-Medium",
-    fontSize: 28,
+    fontSize: 14,
     color: "#e56e8a",
     fontWeight: "500",
   },

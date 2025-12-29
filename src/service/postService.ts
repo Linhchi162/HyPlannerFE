@@ -35,11 +35,32 @@ export interface ReactToPostData {
   type: "like" | "love";
 }
 
-// Lấy tất cả posts
-export const getAllPosts = async (): Promise<Post[]> => {
-  const response = await apiClient.get("/posts");
-  // SỬA: Lấy mảng posts từ response.data.posts
-  return response.data.posts;
+// ✅ Lấy tất cả posts với pagination
+export const getAllPosts = async (
+  page: number = 1,
+  limit: number = 20
+): Promise<{
+  posts: Post[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+    hasMore: boolean;
+  };
+}> => {
+  const response = await apiClient.get(`/posts?page=${page}&limit=${limit}`);
+  // Backend trả về { posts: [...], pagination: {...} }
+  return {
+    posts: response.data.posts,
+    pagination: {
+      page: response.data.pagination?.page || page,
+      limit: response.data.pagination?.limit || limit,
+      total: response.data.pagination?.total || response.data.posts.length,
+      totalPages: response.data.pagination?.totalPages || 1,
+      hasMore: response.data.posts.length === limit, // Nếu trả về đủ limit thì còn more
+    },
+  };
 };
 
 // Lấy post theo ID

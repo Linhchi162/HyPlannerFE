@@ -33,6 +33,9 @@ interface EditPhaseModalProps {
   onCancel: () => void;
   isFirstPhase?: boolean;
   projectStartDate?: string;
+  weddingDate?: string;
+  allPhases?: Phase[];
+  onPhasesAdjusted?: (adjustedPhases: Phase[]) => void;
   loading?: boolean;
 }
 
@@ -47,6 +50,9 @@ const EditPhaseModal = ({
   onCancel,
   isFirstPhase = false,
   projectStartDate,
+  weddingDate,
+  allPhases = [],
+  onPhasesAdjusted,
   loading = false,
 }: EditPhaseModalProps) => {
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
@@ -67,6 +73,74 @@ const EditPhaseModal = ({
       month: "2-digit",
       year: "2-digit",
     });
+  };
+
+  // Tính số ngày giữa 2 dates
+  const getDaysBetween = (start: Date, end: Date) => {
+    const diffTime = end.getTime() - start.getTime();
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  };
+
+  // Điều chỉnh các phases sau khi edit current phase
+  const adjustSubsequentPhases = (newEndDate: Date) => {
+    if (!phase || !allPhases.length || !onPhasesAdjusted) return;
+
+    // Tìm index của phase hiện tại
+    const currentIndex = allPhases.findIndex((p) => p._id === phase._id);
+    if (currentIndex === -1 || currentIndex === allPhases.length - 1) return;
+
+    // Lấy wedding date nếu có
+    const weddingDateObj = weddingDate ? parseDate(weddingDate) : null;
+
+    const adjustedPhases = [...allPhases];
+    let previousEndDate = newEndDate;
+
+    // Duyệt qua các phases sau current phase
+    for (let i = currentIndex + 1; i < adjustedPhases.length; i++) {
+      const currentPhase = adjustedPhases[i];
+      const oldStart = parseDate(
+        formatDate(new Date(currentPhase.phaseTimeStart))
+      );
+      const oldEnd = parseDate(formatDate(new Date(currentPhase.phaseTimeEnd)));
+      const phaseDuration = getDaysBetween(oldStart, oldEnd);
+
+      // Ngày bắt đầu mới = ngày kết thúc phase trước + 1
+      const newStart = new Date(previousEndDate);
+      newStart.setDate(newStart.getDate() + 1);
+
+      // Ngày kết thúc mới = ngày bắt đầu mới + duration
+      const newEnd = new Date(newStart);
+      newEnd.setDate(newEnd.getDate() + phaseDuration);
+
+      // Kiểm tra nếu là phase cuối (phase 10) và vượt quá wedding date
+      if (i === adjustedPhases.length - 1 && weddingDateObj) {
+        if (newEnd > weddingDateObj) {
+          // Điều chỉnh phase cuối để kết thúc đúng ngày cưới
+          adjustedPhases[i] = {
+            ...currentPhase,
+            phaseTimeStart: newStart.toISOString(),
+            phaseTimeEnd: weddingDateObj.toISOString(),
+          };
+        } else {
+          adjustedPhases[i] = {
+            ...currentPhase,
+            phaseTimeStart: newStart.toISOString(),
+            phaseTimeEnd: newEnd.toISOString(),
+          };
+        }
+      } else {
+        adjustedPhases[i] = {
+          ...currentPhase,
+          phaseTimeStart: newStart.toISOString(),
+          phaseTimeEnd: newEnd.toISOString(),
+        };
+      }
+
+      previousEndDate = new Date(adjustedPhases[i].phaseTimeEnd);
+    }
+
+    // Gọi callback để update phases
+    onPhasesAdjusted(adjustedPhases);
   };
 
   // Lấy ngày tối thiểu cho ngày bắt đầu (chỉ cho giai đoạn đầu)
@@ -132,6 +206,9 @@ const EditPhaseModal = ({
 
     setSelectedEndDate(currentDate);
     onEndDateChange(formatDate(currentDate));
+
+    // Điều chỉnh các phases sau nếu cần
+    adjustSubsequentPhases(currentDate);
   };
 
   const showStartPicker = () => {

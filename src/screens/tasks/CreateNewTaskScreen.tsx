@@ -39,6 +39,7 @@ import { getPhases } from "../../service/phaseService";
 import { EmptyMemberComponent } from "./EditTaskScreen";
 import { Member } from "../../store/weddingEventSlice";
 import { MixpanelService } from "../../service/mixpanelService";
+import logger from "../../utils/logger";
 type CreateTaskAppbarProps = {
   onBack: () => void;
   onCheck: () => void;
@@ -123,7 +124,7 @@ export default function CreateNewTaskScreen() {
       // Navigate back to TaskList after creation
       navigation.goBack();
     } catch (error) {
-      console.error("Error creating task:", error);
+      logger.error("Error creating task:", error);
     }
   };
   const handleSelectMembers = useCallback((selectedMembers: Member[]) => {

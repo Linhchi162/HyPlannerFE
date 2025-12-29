@@ -1,4 +1,5 @@
 import apiClient from "../api/client";
+import logger from "../utils/logger";
 
 export interface UserSelection {
   _id: string;
@@ -89,7 +90,7 @@ export const createSelection = async (
     );
     return response.data;
   } catch (error: any) {
-    console.error("Error in createSelection:", error);
+    logger.error("Error in createSelection:", error);
     throw error;
   }
 };
@@ -117,7 +118,7 @@ export const deleteSelection = async (
     const isNotFound =
       message.includes("No pinned") || error?.response?.status === 404;
     if (!isNotFound) {
-      console.error("Error in deleteSelection:", error);
+      logger.error("Error in deleteSelection:", error);
       throw error;
     }
     return { success: false, data: { message } } as unknown as ApiResponse<any>;
@@ -142,7 +143,7 @@ export const getUserSelections = async (
     );
     return response.data;
   } catch (error: any) {
-    console.error("Error in getUserSelections:", error);
+    logger.error("Error in getUserSelections:", error);
     // Return empty array as fallback for auth errors or other issues
     return {
       success: false,
@@ -169,7 +170,7 @@ export const createAlbum = async (
     );
     return response.data;
   } catch (error: any) {
-    console.error("Error in createAlbum:", error);
+    logger.error("Error in createAlbum:", error);
     throw error;
   }
 };
@@ -182,7 +183,7 @@ export const getUserAlbums = async (): Promise<ApiResponse<Album[]>> => {
     );
     return response.data;
   } catch (error: any) {
-    console.error("Error in getUserAlbums:", error);
+    logger.error("Error in getUserAlbums:", error);
     // Return empty array as fallback
     return {
       success: true,
@@ -207,7 +208,7 @@ export const updateAlbum = async (
     );
     return response.data;
   } catch (error: any) {
-    console.error("Error in updateAlbum:", error);
+    logger.error("Error in updateAlbum:", error);
     throw error;
   }
 };
@@ -222,7 +223,7 @@ export const deleteAlbum = async (
     );
     return response.data;
   } catch (error: any) {
-    console.error("Error in deleteAlbum:", error);
+    logger.error("Error in deleteAlbum:", error);
     throw error;
   }
 };
@@ -253,7 +254,7 @@ export const uploadAlbumImages = async (
     );
     return response.data;
   } catch (error: any) {
-    console.error("Error in uploadAlbumImages:", error);
+    logger.error("Error in uploadAlbumImages:", error);
     throw error;
   }
 };

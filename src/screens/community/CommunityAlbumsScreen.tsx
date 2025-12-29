@@ -378,18 +378,13 @@ const styles = StyleSheet.create({
   fab: {
     position: "absolute",
     right: responsiveWidth(20),
-    bottom: responsiveHeight(24),
+    bottom: responsiveHeight(64),
     width: responsiveWidth(56),
     height: responsiveWidth(56),
     borderRadius: responsiveWidth(28),
     backgroundColor: "#9333ea",
     justifyContent: "center",
     alignItems: "center",
-    elevation: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
   },
 });
 

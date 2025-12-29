@@ -84,6 +84,7 @@ export default function EditBudgetScreen() {
   const [activityName, setActivityName] = useState("");
   const [activityNote, setActivityNote] = useState("");
   const [activityNameError, setActivityNameError] = useState("");
+  const [payerError, setPayerError] = useState("");
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const route = useRoute<RouteProp<RootStackParamList, "EditBudget">>();
   const { activityId } = route.params;
@@ -135,7 +136,12 @@ export default function EditBudgetScreen() {
         setActivityNameError("Tên ngân sách không được để trống");
         return;
       }
+      if (!payer || payer.trim() === "") {
+        setPayerError("Vui lòng chọn người chi trả");
+        return;
+      }
       setActivityNameError("");
+      setPayerError("");
       setActionLoading(true);
 
       const budgetData = {
@@ -158,8 +164,12 @@ export default function EditBudgetScreen() {
       await getGroupActivities(eventId, dispatch);
       setActionLoading(false);
       navigation.goBack();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error saving budget:", error);
+      setActionLoading(false);
+      const errorMessage =
+        error.response?.data?.message || "Có lỗi xảy ra khi lưu ngân sách";
+      alert(errorMessage);
     }
   };
   const formatNumber = (value: number): string => {
@@ -310,8 +320,16 @@ export default function EditBudgetScreen() {
                   <FontAwesome5 name="user" color="#F9CBD6" size={24} />
                   <Text style={styles.sectionTitle}>Người chi trả</Text>
                 </View>
+                {payerError ? (
+                  <Text style={{ color: "red", fontSize: 12, marginBottom: 8 }}>
+                    {payerError}
+                  </Text>
+                ) : null}
                 <RadioButton.Group
-                  onValueChange={(value) => setPayer(value)}
+                  onValueChange={(value) => {
+                    setPayer(value);
+                    setPayerError("");
+                  }}
                   value={payer}
                 >
                   <View

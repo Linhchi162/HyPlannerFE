@@ -9,7 +9,9 @@ import {
   FlatList,
   Dimensions,
   Keyboard,
+  Platform,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   ActivityIndicator,
   Appbar,
@@ -57,6 +59,7 @@ const AppBar = ({ onBack }: AppBarWINMProps) => (
 );
 
 export default function WhoIsNextMarriedScreen() {
+  const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const route = useRoute<RouteProp<RootStackParamList, "WhoIsNextMarried">>();
   const { creatorId } = route.params;
@@ -67,22 +70,24 @@ export default function WhoIsNextMarriedScreen() {
     (state: RootState) => state.weddingEvent.getWeddingEvent
   );
 
-  useEffect(() => {
-    const fetchWeddingInfo = async () => {
-      const userId = user?.id || user?._id;
-      if (userId) {
-        try {
-          await getWeddingEvent(userId, dispatch);
-        } catch (err) {
-          console.error("Error fetching wedding info:", err);
-        }
-      }
-    };
-    fetchWeddingInfo();
-  }, [dispatch, user]);
+  // ❌ REMOVED: Duplicate API call - data now fetched centrally in App.tsx via useAppInitialization
+  // useEffect(() => {
+  //   const fetchWeddingInfo = async () => {
+  //     const userId = user?.id || user?._id;
+  //     if (userId) {
+  //       try {
+  //         await getWeddingEvent(userId, dispatch);
+  //       } catch (err) {
+  //         console.error("Error fetching wedding info:", err);
+  //       }
+  //     }
+  //   };
+  //   fetchWeddingInfo();
+  // }, [dispatch, user]);
+
   const member = weddingEvent?.member || [];
 
-  const [members, setMembers] = useState(
+  const [members, setMembers] = useState<any[]>(
     member.filter((m: any) => m._id !== creatorId)
   );
   const [winner, setWinner] = useState<any>(null);
@@ -91,6 +96,13 @@ export default function WhoIsNextMarriedScreen() {
 
   // ✅ MỚI: State cho tên thành viên mới
   const [newName, setNewName] = useState("");
+
+  // Sync members when weddingEvent changes
+  useEffect(() => {
+    if (weddingEvent?.member) {
+      setMembers(weddingEvent.member.filter((m: any) => m._id !== creatorId));
+    }
+  }, [weddingEvent, creatorId]);
 
   const rotation = useRef(new Animated.Value(0)).current;
   const pointerAnim = useRef(new Animated.Value(0)).current;
@@ -109,7 +121,7 @@ export default function WhoIsNextMarriedScreen() {
 
   // (spinWheel, shuffleMembers, resetWheel, removeMember, getSlicePath không đổi)
   const spinWheel = () => {
-    if (spinning || members.length === 0) return;
+    if (spinning || !members || members.length === 0) return;
     setSpinning(true);
     const randomIndex = Math.floor(Math.random() * members.length);
     const sliceAngle = 360 / members.length;
@@ -176,6 +188,7 @@ export default function WhoIsNextMarriedScreen() {
   };
 
   const getSlicePath = (index: number) => {
+    if (!members || members.length === 0) return "";
     if (members.length === 1) {
       return `M 0 0 M ${radius} 0 A ${radius} ${radius} 0 1 1 ${-radius} 0 A ${radius} ${radius} 0 1 1 ${radius} 0 Z`;
     }
@@ -200,9 +213,17 @@ export default function WhoIsNextMarriedScreen() {
           </Text>
         </View>
       ) : (
-        <View style={styles.container}>
+        <View
+          style={[
+            styles.container,
+            {
+              paddingBottom:
+                Platform.OS === "android" ? 40 + insets.bottom : 40,
+            },
+          ]}
+        >
           {/* Vòng quay hoặc Thông báo Chúc mừng */}
-          {members.length > 0 ? (
+          {members && members.length > 0 ? (
             <View style={styles.wheelContainer}>
               {/* Bánh xe */}
               <Animated.View
@@ -225,7 +246,7 @@ export default function WhoIsNextMarriedScreen() {
                   <G>
                     {members.map((m, i) => (
                       <Path
-                        key={m._id}
+                        key={`path-${i}-${m._id}`}
                         d={getSlicePath(i)}
                         fill={colors[i % colors.length]}
                         stroke="#fff"
@@ -236,12 +257,17 @@ export default function WhoIsNextMarriedScreen() {
                       const sliceAngleDeg = 360 / members.length;
                       const angleRad =
                         ((i + 0.5) * 2 * Math.PI) / members.length;
-                      const angleDeg = (i + 0.5) * sliceAngleDeg;
+                      const angleDeg = (angleRad * 180) / Math.PI;
                       const textX = radius * 0.6 * Math.cos(angleRad);
                       const textY = radius * 0.6 * Math.sin(angleRad);
+                      const displayName = m.fullName || m.name || "Unknown";
+
+                      // Xoay text để luôn đọc được từ ngoài vào trong
+                      const rotation = angleDeg + 90;
+
                       return (
                         <SvgText
-                          key={m._id + "_text"}
+                          key={`text-${i}-${m._id}`}
                           x={textX}
                           y={textY}
                           fontSize={responsiveFont(12)}
@@ -249,11 +275,12 @@ export default function WhoIsNextMarriedScreen() {
                           fill="#333"
                           textAnchor="middle"
                           alignmentBaseline="middle"
+                          rotation={rotation}
                           origin={`${textX}, ${textY}`}
                         >
-                          {m.fullName.length > 10
-                            ? m.fullName.slice(0, 10) + "…"
-                            : m.fullName}
+                          {displayName.length > 10
+                            ? displayName.slice(0, 10) + "…"
+                            : displayName}
                         </SvgText>
                       );
                     })}
@@ -317,7 +344,7 @@ export default function WhoIsNextMarriedScreen() {
           </View>
 
           {/* Danh sách thành viên có thể xóa */}
-          {members.length > 0 && (
+          {members && members.length > 0 && (
             <View style={styles.memberListContainer}>
               <Text style={styles.listTitle}>Thành viên đang tham gia:</Text>
               <FlatList
@@ -331,7 +358,9 @@ export default function WhoIsNextMarriedScreen() {
                         { backgroundColor: colors[index % colors.length] },
                       ]}
                     />
-                    <Text style={styles.memberName}>{item.fullName}</Text>
+                    <Text style={styles.memberName}>
+                      {item.fullName || item.name || "Unknown"}
+                    </Text>
                     <TouchableOpacity
                       onPress={() => removeMember(item._id)}
                       style={styles.deleteButton}
@@ -355,7 +384,7 @@ export default function WhoIsNextMarriedScreen() {
             <Button
               mode="contained"
               onPress={spinWheel}
-              disabled={spinning || members.length === 0}
+              disabled={spinning || !members || members.length === 0}
               style={styles.spinButton}
             >
               {spinning ? "Đang quay..." : "Quay"}
@@ -364,7 +393,7 @@ export default function WhoIsNextMarriedScreen() {
               mode="outlined"
               onPress={shuffleMembers}
               style={styles.shuffleButton}
-              disabled={spinning || members.length === 0}
+              disabled={spinning || !members || members.length === 0}
             >
               Xáo trộn
             </Button>
@@ -438,18 +467,19 @@ const styles = StyleSheet.create({
     elevation: 0,
     shadowOpacity: 0,
     justifyContent: "center",
+    minHeight: responsiveHeight(30),
   },
   appbarBack: {
     position: "absolute",
     left: 0,
-    padding: 8,
+    padding: responsiveWidth(8),
     zIndex: 1,
   },
   appbarTitle: {
     color: "#333",
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Agbalumo",
     fontSize: responsiveFont(16),
-    fontWeight: "700",
+    lineHeight: responsiveFont(24),
     textAlign: "center",
     alignSelf: "center",
   },
@@ -457,8 +487,8 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "flex-start",
-    paddingTop: 20,
-    paddingBottom: 40,
+    paddingTop: responsiveHeight(20),
+    paddingBottom: responsiveHeight(40),
   },
   wheelContainer: {
     position: "relative",
@@ -467,8 +497,8 @@ const styles = StyleSheet.create({
   },
   pointer: {
     position: "absolute",
-    top: "50%",
-    marginTop: responsiveHeight(-150 - 16),
+    top: responsiveHeight(-16),
+    alignSelf: "center",
     zIndex: 10,
   },
 
@@ -476,8 +506,8 @@ const styles = StyleSheet.create({
   addMemberContainer: {
     flexDirection: "row",
     width: "90%",
-    marginTop: 20,
-    gap: 10,
+    marginTop: responsiveHeight(20),
+    gap: responsiveWidth(10),
     alignItems: "center",
   },
   textInput: {
@@ -492,7 +522,7 @@ const styles = StyleSheet.create({
   buttons: {
     flexDirection: "row",
     justifyContent: "space-between",
-    gap: 10,
+    gap: responsiveWidth(10),
     alignItems: "center",
     width: "90%",
     marginTop: responsiveHeight(30),
@@ -515,13 +545,13 @@ const styles = StyleSheet.create({
     padding: responsiveWidth(15),
     marginHorizontal: responsiveWidth(20),
     backgroundColor: "#FEF0F3",
-    borderRadius: 20,
+    borderRadius: responsiveWidth(20),
     borderWidth: 2,
     borderColor: "#F06292",
   },
   congratsEmoji: {
     fontSize: responsiveFont(48),
-    marginBottom: 10,
+    marginBottom: responsiveHeight(10),
   },
   congratsText: {
     fontSize: responsiveFont(14),
@@ -549,7 +579,7 @@ const styles = StyleSheet.create({
   list: {
     borderWidth: 1,
     borderColor: "#EEE",
-    borderRadius: 8,
+    borderRadius: responsiveWidth(8),
   },
   memberItem: {
     flexDirection: "row",
@@ -561,9 +591,9 @@ const styles = StyleSheet.create({
     borderBottomColor: "#F5F5F5",
   },
   memberColorChip: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
+    width: responsiveWidth(16),
+    height: responsiveWidth(16),
+    borderRadius: responsiveWidth(8),
     marginRight: responsiveWidth(12),
     borderWidth: 1,
     borderColor: "#DDD",
@@ -579,7 +609,7 @@ const styles = StyleSheet.create({
 
   // ... (dialog styles)
   dialogStyle: {
-    borderRadius: 20,
+    borderRadius: responsiveWidth(20),
   },
   dialogTitle: {
     textAlign: "center",
@@ -607,7 +637,7 @@ const styles = StyleSheet.create({
     fontSize: responsiveFont(16),
     color: "#555",
     textAlign: "center",
-    marginTop: 4,
+    marginTop: responsiveHeight(4),
   },
   dialogActions: {
     justifyContent: "center",

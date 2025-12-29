@@ -1,5 +1,7 @@
 import apiClient from "../api/client";
 import { Style, Material, ApiResponse } from "../store/weddingCostume";
+import logger from "../utils/logger";
+
 const BASE_PATH = "/wedding-costume";
 
 // Bride Ao Dai Styles
@@ -10,7 +12,7 @@ export async function getAllBrideEngageStyles(): Promise<ApiResponse<Style[]>> {
     );
     return response.data;
   } catch (error) {
-    console.error("Error fetching bride engage styles:", error);
+    logger.error("Error fetching bride engage styles:", error);
     throw error;
   }
 }
@@ -25,7 +27,7 @@ export async function getAllBrideEngageMaterials(): Promise<
     );
     return response.data;
   } catch (error) {
-    console.error("Error fetching bride engage materials:", error);
+    logger.error("Error fetching bride engage materials:", error);
     throw error;
   }
 }
@@ -40,7 +42,7 @@ export async function getAllBrideEngagePatterns(): Promise<
     );
     return response.data;
   } catch (error) {
-    console.error("Error fetching bride engage patterns:", error);
+    logger.error("Error fetching bride engage patterns:", error);
     throw error;
   }
 }
@@ -55,7 +57,7 @@ export async function getAllBrideEngageHeadwears(): Promise<
     );
     return response.data;
   } catch (error) {
-    console.error("Error fetching bride engage headwears:", error);
+    logger.error("Error fetching bride engage headwears:", error);
     throw error;
   }
 }

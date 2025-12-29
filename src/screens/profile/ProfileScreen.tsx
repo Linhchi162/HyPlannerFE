@@ -44,12 +44,17 @@ import apiClient from "../../api/client";
 import { resetFeedback } from "../../store/feedbackSlice";
 import { MixpanelService } from "../../service/mixpanelService";
 import { clearWeddingEvent } from "../../store/weddingEventSlice";
-import { leaveWeddingEvent } from "../../service/weddingEventService";
+import {
+  leaveWeddingEvent,
+  deleteWeddingEvent,
+} from "../../service/weddingEventService";
 import {
   responsiveWidth,
   responsiveHeight,
   responsiveFont,
 } from "../../../assets/styles/utils/responsive";
+import logger from "../../utils/logger";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 // ------------------------------------
 
 const COLORS = {
@@ -102,6 +107,7 @@ const ProfileScreen = () => {
   const [isFeedbackModalVisible, setIsFeedbackModalVisible] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [showLeaveEventDialog, setShowLeaveEventDialog] = useState(false);
+  const insets = useSafeAreaInsets();
   // ----- BƯỚC 2: SỬ DỤNG HOOK ĐÃ TYPE -----
   const dispatch = useAppDispatch();
   const user = useAppSelector(selectCurrentUser);
@@ -176,7 +182,7 @@ const ProfileScreen = () => {
         setUploadingAvatar(false);
       }
     } catch (error: any) {
-      console.error("Error updating avatar:", error);
+      logger.error("Error updating avatar:", error);
       const errorMessage =
         error?.message || "Không thể cập nhật avatar. Vui lòng thử lại.";
       Alert.alert("Lỗi", errorMessage);
@@ -220,13 +226,57 @@ const ProfileScreen = () => {
 
       // Kiểm tra nếu user là creator
       if (weddingEvent.creatorId === userId) {
+        // Creator -> Xóa toàn bộ sự kiện
         Alert.alert(
-          "Không thể rời khỏi",
-          "Bạn là người tạo sự kiện, không thể rời khỏi kế hoạch cưới này. Vui lòng chuyển quyền quản lý cho thành viên khác trước khi rời đi."
+          "Xác nhận xóa kế hoạch cưới",
+          "Bạn là người tạo sự kiện. Nếu rời khỏi, toàn bộ kế hoạch cưới sẽ bị xóa và tất cả thành viên sẽ bị loại khỏi kế hoạch này. Bạn có chắc chắn muốn tiếp tục?",
+          [
+            {
+              text: "Hủy",
+              style: "cancel",
+            },
+            {
+              text: "Xóa kế hoạch cưới",
+              style: "destructive",
+              onPress: async () => {
+                try {
+                  // Track sự kiện trong Mixpanel
+                  MixpanelService.track("Deleted Wedding Event");
+
+                  // Gọi API để xóa wedding event và tất cả dữ liệu liên quan
+                  await deleteWeddingEvent(eventId, dispatch);
+
+                  // Xóa thông tin wedding event trong Redux
+                  dispatch(clearWeddingEvent());
+
+                  // Xóa toàn bộ cache redux-persist và lưu lại state mới
+                  await persistor.purge();
+                  await persistor.flush();
+
+                  Alert.alert(
+                    "Thành công",
+                    "Đã xóa kế hoạch cưới và tất cả dữ liệu liên quan."
+                  );
+
+                  // Điều hướng về màn hình InviteOrCreateScreen
+                  navigation.reset({
+                    index: 0,
+                    routes: [{ name: "InviteOrCreate" }],
+                  });
+                } catch (error: any) {
+                  logger.error("Error deleting wedding event:", error);
+                  const errorMessage =
+                    error || "Không thể xóa kế hoạch cưới. Vui lòng thử lại.";
+                  Alert.alert("Lỗi", errorMessage);
+                }
+              },
+            },
+          ]
         );
         return;
       }
 
+      // Member -> Chỉ rời khỏi sự kiện
       // Track sự kiện trong Mixpanel
       MixpanelService.track("Left Wedding Event");
 
@@ -246,7 +296,7 @@ const ProfileScreen = () => {
         routes: [{ name: "InviteOrCreate" }],
       });
     } catch (error: any) {
-      console.error("Error leaving wedding event:", error);
+      logger.error("Error leaving wedding event:", error);
       const errorMessage =
         error || "Không thể rời khỏi kế hoạch cưới. Vui lòng thử lại.";
       Alert.alert("Lỗi", errorMessage);
@@ -293,7 +343,12 @@ const ProfileScreen = () => {
       <ScrollView
         contentContainerStyle={[
           styles.scrollContainer,
-          { paddingBottom: Platform.OS === "ios" ? 20 : 32 },
+          {
+            paddingBottom:
+              Platform.OS === "android"
+                ? responsiveHeight(100) + insets.bottom
+                : responsiveHeight(32),
+          },
         ]}
       >
         <View style={styles.avatarSection}>
@@ -400,7 +455,7 @@ const ProfileScreen = () => {
             icon={Globe}
             label="Ngôn ngữ"
             value="Việt Nam"
-            onPress={() => console.log("Chỉnh sửa ngôn ngữ")}
+            onPress={() => logger.log("Chỉnh sửa ngôn ngữ")}
           />
           <View style={styles.separator} />
           <ProfileItem
@@ -480,10 +535,10 @@ const ProfileScreen = () => {
           <View style={styles.dialogContainer}>
             <Text style={styles.dialogTitle}>Cảnh báo</Text>
             <Text style={styles.dialogMessage}>
-              Bạn có chắc chắn muốn rời khỏi kế hoạch cưới hiện tại?
-              {"\n\n"}
-              Bạn sẽ mất quyền truy cập vào tất cả thông tin và công việc trong
-              kế hoạch này.
+              {weddingEvent &&
+              (user?.id || user?._id) === weddingEvent.creatorId
+                ? "Bạn là người tạo sự kiện. Nếu rời khỏi, toàn bộ kế hoạch cưới sẽ bị xóa vĩnh viễn và tất cả thành viên sẽ bị loại khỏi kế hoạch này.\n\nĐể tránh làm mất kế hoạch cưới đã tạo trước đó, bạn nên sử dụng một tài khoản mới khi dùng tính năng này.\n\nHành động này không thể hoàn tác!"
+                : "Bạn có chắc chắn muốn rời khỏi kế hoạch cưới hiện tại?\n\nBạn sẽ mất quyền truy cập vào tất cả thông tin và công việc trong kế hoạch này."}
             </Text>
             <View style={styles.dialogActions}>
               <TouchableOpacity
@@ -496,7 +551,12 @@ const ProfileScreen = () => {
                 style={[styles.dialogButton, styles.dialogButtonConfirm]}
                 onPress={handleLeaveWeddingEvent}
               >
-                <Text style={styles.dialogButtonTextConfirm}>Đồng ý</Text>
+                <Text style={styles.dialogButtonTextConfirm}>
+                  {weddingEvent &&
+                  (user?.id || user?._id) === weddingEvent.creatorId
+                    ? "Xóa kế hoạch"
+                    : "Đồng ý"}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
