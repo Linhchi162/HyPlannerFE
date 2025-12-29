@@ -145,6 +145,13 @@ const weddingEventSlice = createSlice({
       state.getWeddingEvent.error = false;
       state.getWeddingEvent.errorMsg = "";
     },
+    // Clear wedding event - reset về initialState
+    clearWeddingEvent: (state) => {
+      state.getWeddingEvent = initialState.getWeddingEvent;
+      state.createWeddingEvent = initialState.createWeddingEvent;
+      state.joinWeddingEvent = initialState.joinWeddingEvent;
+      state.leaveWeddingEvent = initialState.leaveWeddingEvent;
+    },
   },
 });
 export const {
@@ -161,5 +168,6 @@ export const {
   leaveWeddingEventStart,
   leaveWeddingEventSuccess,
   leaveWeddingEventFailure,
+  clearWeddingEvent,
 } = weddingEventSlice.actions;
 export default weddingEventSlice.reducer;

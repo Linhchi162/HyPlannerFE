@@ -1,21 +1,23 @@
 {
   "expo": {
-    "name": "HyPlannerFE",
+    "name": "Hỷ Planner",
     "slug": "HyPlannerFE",
     "scheme": "hyplanner",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/icons/ios-light.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/icons/splash-icon-dark.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "Cho phép ứng dụng truy cập thư viện ảnh để chọn ảnh đại diện.",
+        "NSCameraUsageDescription": "Cho phép ứng dụng truy cập camera để chụp ảnh đại diện.",
         "NSUserTrackingUsageDescription": "This identifier will be used to deliver personalized ads to you.",
         "SKAdNetworkItems": [
           {
@@ -36,15 +38,23 @@
       "bundleIdentifier": "com.yourcompany.hyplanner"
     },
     "android": {
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/icons/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true,
+      "edgeToEdgeEnabled": false,
       "permissions": [
-        "android.permission.INTERNET"
+        "android.permission.INTERNET",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.CAMERA",
+        "android.permission.POST_NOTIFICATIONS"
       ],
-      "package": "com.yourcompany.hyplanner"
+      "package": "com.yourcompany.hyplanner",
+      "statusBar": {
+        "barStyle": "dark-content",
+        "backgroundColor": "#ffffff"
+      }
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -63,7 +73,15 @@
           "iosUserTrackingPermission": "This identifier will be used to deliver personalized ads to you."
         }
       ],
-      "expo-font"    ],
+      [
+        "expo-notifications",
+        {
+          "color": "#FF6B9D"
+        }
+      ],
+      "expo-font",
+      "expo-asset"
+    ],
     "extra": {
       "eas": {
         "projectId": "8a14e1f2-0834-484c-984b-850febe4a8ff"

@@ -1,5 +1,6 @@
 import { Dispatch } from "@reduxjs/toolkit";
 import axios from "axios";
+import logger from "../utils/logger";
 import {
   createTaskFailure,
   createTaskStart,
@@ -13,7 +14,6 @@ import {
   getTaskInfoFailure,
   getTaskInfoStart,
   getTaskInfoSuccess,
-
 } from "../store/taskSlice";
 import apiClient from "../api/client";
 
@@ -29,14 +29,14 @@ export const getTasks = async (taskId: string, dispatch: Dispatch) => {
       error.response && error.response.data && error.response.data.message
         ? error.response.data.message
         : "Error fetching tasks";
-    console.error("Get Tasks Error:", message);
+    logger.error("Get Tasks Error:", message);
     dispatch(getTaskInfoFailure(message));
   }
 };
 
 export const createTask = async (
   phaseId: string,
-  taskData: { taskName: string; taskNote: string; member?: string[]; },
+  taskData: { taskName: string; taskNote: string; member?: string[] },
   dispatch: Dispatch
 ) => {
   dispatch(createTaskStart());
@@ -51,7 +51,7 @@ export const createTask = async (
       error.response && error.response.data && error.response.data.message
         ? error.response.data.message
         : "Error creating task";
-    console.error("Create Task Error:", message);
+    logger.error("Create Task Error:", message);
     dispatch(createTaskFailure(message));
   }
 };
@@ -66,14 +66,14 @@ export const deleteTask = async (taskId: string, dispatch: Dispatch) => {
       error.response && error.response.data && error.response.data.message
         ? error.response.data.message
         : "Error deleting task";
-    console.error("Delete Task Error:", message);
+    logger.error("Delete Task Error:", message);
     dispatch(deleteTaskFailure(message));
   }
 };
 
 export const editTask = async (
   taskId: string,
-  taskData: { taskName: string; taskNote: string; member?: string[]; },
+  taskData: { taskName: string; taskNote: string; member?: string[] },
   dispatch: Dispatch
 ) => {
   dispatch(editTaskStart());
@@ -85,7 +85,7 @@ export const editTask = async (
       error.response && error.response.data && error.response.data.message
         ? error.response.data.message
         : "Error editing task";
-    console.error("Edit Task Error:", message);
+    logger.error("Edit Task Error:", message);
     dispatch(editTaskFailure(message));
   }
 };
@@ -102,11 +102,59 @@ export const markTaskCompleted = async (
     });
     dispatch(editTaskSuccess());
   } catch (error: any) {
-    const message =
-      error.response && error.response.data && error.response.data.message
-        ? error.response.data.message
-        : "Error marking task";
-    console.error("Mark Task Error:", message);
+    let message = "Error marking task";
+    let errorDetails: any = {
+      taskId,
+      completed,
+    };
+
+    // Check if error has response data (from interceptor)
+    if (
+      error.message &&
+      typeof error === "object" &&
+      !error.response &&
+      !error.request
+    ) {
+      // This is transformed error from apiClient interceptor
+      message = error.message || message;
+      errorDetails = {
+        ...errorDetails,
+        type: "API Error (from interceptor)",
+        errorData: error,
+      };
+    } else if (error.response) {
+      // Server responded with error status (shouldn't happen due to interceptor)
+      message = error.response.data?.message || message;
+      errorDetails = {
+        ...errorDetails,
+        status: error.response.status,
+        statusText: error.response.statusText,
+        data: error.response.data,
+      };
+    } else if (error.request) {
+      // Request made but no response (network error)
+      message = "Không thể kết nối đến server. Vui lòng kiểm tra kết nối mạng.";
+      errorDetails = {
+        ...errorDetails,
+        type: "Network Error",
+        request: error.request?._url || "Unknown URL",
+      };
+    } else {
+      // Something else happened
+      message = error.message || message;
+      errorDetails = {
+        ...errorDetails,
+        type: "Unknown Error",
+        errorMessage: error.message,
+        errorName: error.name,
+        errorStack: error.stack,
+        fullError: JSON.stringify(error, Object.getOwnPropertyNames(error)),
+      };
+    }
+
+    logger.error("Mark Task Error:", errorDetails);
+
     dispatch(editTaskFailure(message));
+    throw new Error(message);
   }
 };

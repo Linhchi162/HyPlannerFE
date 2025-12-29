@@ -11,7 +11,9 @@
   "dependencies": {
     "@expo/vector-icons": "^14.1.0",
     "@react-native-async-storage/async-storage": "2.1.2",
+    "@react-native-clipboard/clipboard": "^1.16.3",
     "@react-native-community/datetimepicker": "8.4.1",
+    "@react-native-picker/picker": "2.11.1",
     "@react-navigation/bottom-tabs": "^7.4.5",
     "@react-navigation/native": "^7.1.17",
     "@react-navigation/native-stack": "^7.3.26",
@@ -20,25 +22,38 @@
     "@types/react-native-vector-icons": "^6.4.18",
     "axios": "^1.12.2",
     "expo": "~53.0.23",
+    "expo-asset": "~11.1.7",
     "expo-auth-session": "6.2.1",
     "expo-checkbox": "^4.1.4",
     "expo-clipboard": "~7.1.5",
+    "expo-constants": "~17.1.7",
+    "expo-contacts": "~14.2.5",
     "expo-crypto": "14.1.5",
     "expo-dev-client": "~5.2.4",
+    "expo-device": "~7.1.4",
+    "expo-document-picker": "~13.1.6",
+    "expo-file-system": "~18.1.11",
     "expo-font": "~13.3.2",
     "expo-image": "~2.4.1",
+    "expo-image-picker": "~16.1.4",
     "expo-linear-gradient": "~14.1.5",
     "expo-linking": "~7.1.7",
+    "expo-notifications": "~0.31.4",
+    "expo-sharing": "~13.1.5",
     "expo-status-bar": "~2.2.3",
     "expo-web-browser": "~14.2.0",
     "hashids": "^2.3.0",
     "jwt-decode": "^4.0.0",
     "lucide-react-native": "^0.537.0",
+    "mixpanel-react-native": "^3.1.2",
     "react": "19.0.0",
-    "react-native": "0.79.5",
+    "react-native": "0.79.6",
+    "react-native-confetti-cannon": "^1.5.2",
     "react-native-fbsdk-next": "^13.4.1",
     "react-native-gesture-handler": "~2.24.0",
+    "react-native-mime-types": "^2.5.0",
     "react-native-paper": "^5.14.5",
+    "react-native-qrcode-svg": "^6.3.15",
     "react-native-reanimated": "~3.17.4",
     "react-native-safe-area-context": "5.4.0",
     "react-native-screens": "~4.11.1",
@@ -53,7 +68,10 @@
     "doctor": {
       "reactNativeDirectoryCheck": {
         "exclude": [
-          "jwt-decode"
+          "jwt-decode",
+          "hashids",
+          "slugify",
+          "redux-persist"
         ]
       }
     }

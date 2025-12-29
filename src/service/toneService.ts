@@ -1,4 +1,4 @@
-import apiClient from '../api/client';
+import apiClient from "../api/client";
 
 export interface ToneColorItem {
   _id: string;
@@ -13,7 +13,7 @@ export interface ApiResponse<T> {
 }
 
 // Correct base path per BE routes (singular)
-const BASE_PATH = '/wedding-costume';
+const BASE_PATH = "/wedding-costume";
 
 export const getWeddingToneColors = async () => {
   const url = `${BASE_PATH}/wedding-tone-colors`;
@@ -26,5 +26,3 @@ export const getEngageToneColors = async () => {
   const res = await apiClient.get<ApiResponse<ToneColorItem[]>>(url);
   return res.data;
 };
-
-

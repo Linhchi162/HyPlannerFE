@@ -3,10 +3,10 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const apiClient = axios.create({
   baseURL: process.env.EXPO_PUBLIC_BASE_URL,
-  timeout: 10000,
+  timeout: 30000, // 30 seconds - increased for slow backend responses
   headers: {
-    'Content-Type': 'application/json',
-  }
+    "Content-Type": "application/json",
+  },
 });
 
 // Request interceptor - Add token to header
@@ -37,12 +37,12 @@ apiClient.interceptors.response.use(
     } else if (error.request) {
       return Promise.reject({
         success: false,
-        message: 'Network error - No response from server'
+        message: "Network error - No response from server",
       });
     } else {
       return Promise.reject({
         success: false,
-        message: 'Request configuration error'
+        message: "Request configuration error",
       });
     }
   }

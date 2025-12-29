@@ -1,13 +1,13 @@
-import React from 'react';
-import { fonts } from '../theme/fonts';
+import React from "react";
+import { fonts } from "../theme/fonts";
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
   Dimensions,
-} from 'react-native';
-import { useNavigation, NavigationProp } from '@react-navigation/native';
+} from "react-native";
+import { useNavigation, NavigationProp } from "@react-navigation/native";
 
 type RootStackParamList = {
   WeddingMaterial: undefined;
@@ -17,8 +17,7 @@ type RootStackParamList = {
 
 type NavigationProps = NavigationProp<RootStackParamList>;
 
-
-const { width } = Dimensions.get('window');
+const { width } = Dimensions.get("window");
 
 interface WeddingDressMenuProps {
   visible: boolean;
@@ -27,16 +26,20 @@ interface WeddingDressMenuProps {
 }
 
 const menuItems = [
-  { id: 'style', title: 'Kiểu dáng', screen: 'WeddingDress' },
-  { id: 'material', title: 'Chất liệu', screen: 'WeddingMaterial' },
-  { id: 'neckline', title: 'Cổ áo', screen: 'WeddingNeckline' },
-  { id: 'details', title: 'Chi tiết', screen: 'WeddingDetail' },
+  { id: "style", title: "Kiểu dáng", screen: "WeddingDress" },
+  { id: "material", title: "Chất liệu", screen: "WeddingMaterial" },
+  { id: "neckline", title: "Cổ áo", screen: "WeddingNeckline" },
+  { id: "details", title: "Chi tiết", screen: "WeddingDetail" },
 ];
 
-const WeddingDressMenu = ({ visible, currentScreen, onClose }: WeddingDressMenuProps) => {
+const WeddingDressMenu = ({
+  visible,
+  currentScreen,
+  onClose,
+}: WeddingDressMenuProps) => {
   const navigation = useNavigation<NavigationProps>();
 
-  const handleMenuItemPress = (item: typeof menuItems[0]) => {
+  const handleMenuItemPress = (item: (typeof menuItems)[0]) => {
     if (item.screen) {
       navigation.navigate(item.screen);
     }
@@ -51,14 +54,18 @@ const WeddingDressMenu = ({ visible, currentScreen, onClose }: WeddingDressMenuP
             key={item.id}
             style={[
               styles.menuItemOuter,
-              currentScreen === item.screen && styles.menuItemActive
+              currentScreen === item.screen && styles.menuItemActive,
             ]}
             onPress={() => handleMenuItemPress(item)}
           >
-            <Text style={[
-              styles.menuItemText,
-              currentScreen === item.screen && styles.menuItemTextActive
-            ]}>{item.title}</Text>
+            <Text
+              style={[
+                styles.menuItemText,
+                currentScreen === item.screen && styles.menuItemTextActive,
+              ]}
+            >
+              {item.title}
+            </Text>
           </TouchableOpacity>
         ))}
       </View>
@@ -68,13 +75,13 @@ const WeddingDressMenu = ({ visible, currentScreen, onClose }: WeddingDressMenuP
 
 const styles = StyleSheet.create({
   menuWrapper: {
-    position: 'absolute',
+    position: "absolute",
     top: 96, // further offset below header
     right: 8,
     zIndex: 1000,
   },
   menuContainer: {
-    backgroundColor: '#FEF0F3',
+    backgroundColor: "#FEF0F3",
     paddingHorizontal: 12,
     paddingVertical: 8,
     gap: 8,
@@ -82,12 +89,12 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
   menuItemOuter: {
-    backgroundColor: '#FEE5EE',
+    backgroundColor: "#FEE5EE",
     borderRadius: 16,
     marginVertical: 4,
     paddingVertical: 12,
     paddingHorizontal: 16,
-    shadowColor: '#DDB2B1',
+    shadowColor: "#DDB2B1",
     shadowOffset: {
       width: 0,
       height: 1,
@@ -98,12 +105,12 @@ const styles = StyleSheet.create({
   },
   menuItemText: {
     fontSize: 14,
-    color: '#1F2937',
-    textAlign: 'center',
+    color: "#1F2937",
+    textAlign: "center",
     fontFamily: fonts.montserratMedium,
   },
   menuItemActive: {
-    backgroundColor: '#FFD4E3',
+    backgroundColor: "#FFD4E3",
   },
   menuItemTextActive: {
     fontFamily: fonts.montserratSemiBold,

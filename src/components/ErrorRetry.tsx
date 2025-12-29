@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React from "react";
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 
 interface ErrorRetryProps {
   message: string;
@@ -20,26 +20,26 @@ const ErrorRetry = ({ message, onRetry }: ErrorRetryProps) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     padding: 20,
   },
   errorText: {
-    color: '#dc2626',
+    color: "#dc2626",
     fontSize: 16,
-    textAlign: 'center',
+    textAlign: "center",
     marginBottom: 20,
   },
   retryButton: {
-    backgroundColor: '#ff6b9d',
+    backgroundColor: "#ff6b9d",
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 8,
   },
   retryText: {
-    color: '#ffffff',
+    color: "#ffffff",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 });
 

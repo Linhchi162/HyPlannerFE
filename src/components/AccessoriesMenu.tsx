@@ -1,7 +1,7 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { fonts } from '../theme/fonts';
+import React from "react";
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { useNavigation } from "@react-navigation/native";
+import { fonts } from "../theme/fonts";
 
 type AccessoriesMenuProps = {
   visible: boolean;
@@ -11,28 +11,32 @@ type AccessoriesMenuProps = {
 
 const menuItems = [
   {
-    id: '1',
-    title: 'Voan',
-    screen: 'Accessories'
+    id: "1",
+    title: "Voan",
+    screen: "Accessories",
   },
   {
-    id: '2',
-    title: 'Trang sức',
-    screen: 'AccessoriesJewelry'
+    id: "2",
+    title: "Trang sức",
+    screen: "AccessoriesJewelry",
   },
   {
-    id: '3',
-    title: 'Kẹp tóc',
-    screen: 'AccessoriesHairClip'
+    id: "3",
+    title: "Kẹp tóc",
+    screen: "AccessoriesHairClip",
   },
   {
-    id: '4',
-    title: 'Vương miện',
-    screen: 'AccessoriesCrown'
+    id: "4",
+    title: "Vương miện",
+    screen: "AccessoriesCrown",
   },
 ];
 
-const AccessoriesMenu = ({ visible, currentScreen, onClose }: AccessoriesMenuProps) => {
+const AccessoriesMenu = ({
+  visible,
+  currentScreen,
+  onClose,
+}: AccessoriesMenuProps) => {
   const navigation = useNavigation();
 
   if (!visible) return null;
@@ -45,7 +49,7 @@ const AccessoriesMenu = ({ visible, currentScreen, onClose }: AccessoriesMenuPro
             key={item.id}
             style={[
               styles.menuItemOuter,
-              currentScreen === item.screen && styles.menuItemActive
+              currentScreen === item.screen && styles.menuItemActive,
             ]}
             onPress={() => {
               if (item.screen) {
@@ -54,10 +58,12 @@ const AccessoriesMenu = ({ visible, currentScreen, onClose }: AccessoriesMenuPro
               onClose();
             }}
           >
-            <Text style={[
-              styles.menuItemText,
-              currentScreen === item.screen && styles.menuItemTextActive
-            ]}>
+            <Text
+              style={[
+                styles.menuItemText,
+                currentScreen === item.screen && styles.menuItemTextActive,
+              ]}
+            >
               {item.title}
             </Text>
           </TouchableOpacity>
@@ -69,25 +75,25 @@ const AccessoriesMenu = ({ visible, currentScreen, onClose }: AccessoriesMenuPro
 
 const styles = StyleSheet.create({
   menuWrapper: {
-    position: 'absolute',
+    position: "absolute",
     top: 96,
     right: 8,
     zIndex: 1000,
   },
   menuContainer: {
-    backgroundColor: '#FEF0F3',
+    backgroundColor: "#FEF0F3",
     padding: 8,
     gap: 4,
     width: 160,
     borderRadius: 16,
   },
   menuItemOuter: {
-    backgroundColor: '#FEE5EE',
+    backgroundColor: "#FEE5EE",
     borderRadius: 16,
     marginVertical: 4,
     paddingVertical: 12,
     paddingHorizontal: 16,
-    shadowColor: '#DDB2B1',
+    shadowColor: "#DDB2B1",
     shadowOffset: {
       width: 0,
       height: 1,
@@ -97,12 +103,12 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   menuItemActive: {
-    backgroundColor: '#FFD4E3',
+    backgroundColor: "#FFD4E3",
   },
   menuItemText: {
     fontSize: 14,
-    color: '#1F2937',
-    textAlign: 'center',
+    color: "#1F2937",
+    textAlign: "center",
     fontFamily: fonts.montserratMedium,
   },
   menuItemTextActive: {

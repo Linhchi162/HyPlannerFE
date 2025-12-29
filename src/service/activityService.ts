@@ -1,4 +1,5 @@
 import { Dispatch } from "@reduxjs/toolkit";
+import logger from "../utils/logger";
 import axios from "axios";
 import {
   createActivityFailure,
@@ -31,7 +32,7 @@ export const getActivity = async (activityId: string, dispatch: Dispatch) => {
       error.response && error.response.data && error.response.data.message
         ? error.response.data.message
         : "Error fetching activities";
-    console.error("Get Activities Error:", error);
+    logger.error("Get Activities Error:", error);
     dispatch(getActivityInfoFailure(message));
   }
 };
@@ -59,7 +60,7 @@ export const createActivity = async (
       error.response && error.response.data && error.response.data.message
         ? error.response.data.message
         : "Error creating activity";
-    console.error("Create Activity Error:", message);
+    logger.error("Create Activity Error:", message);
     dispatch(createActivityFailure(message));
   }
 };
@@ -70,9 +71,7 @@ export const deleteActivity = async (
 ) => {
   dispatch(deleteActivityStart());
   try {
-    await apiClient.delete(
-      `/activities/deleteActivity/${activityId}`
-    );
+    await apiClient.delete(`/activities/deleteActivity/${activityId}`);
     dispatch(deleteActivitySuccess());
   } catch (error: any) {
     const message =
@@ -106,7 +105,8 @@ export const editActivity = async (
       error.response && error.response.data && error.response.data.message
         ? error.response.data.message
         : "Error editing activity";
-    console.error("Edit Activity Error:", message);
+    logger.error("Edit Activity Error:", message, error.response?.data);
     dispatch(editActivityFailure(message));
+    throw error; // Re-throw to allow handling in the component
   }
 };

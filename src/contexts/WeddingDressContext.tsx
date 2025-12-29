@@ -1,6 +1,12 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Style, Material, Neckline, Detail } from '../store/weddingCostume';
-import * as weddingCostumeService from '../service/weddingCostumeService';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+} from "react";
+import { Style, Material, Neckline, Detail } from "../store/weddingCostume";
+import * as weddingCostumeService from "../service/weddingCostumeService";
 
 interface WeddingDressContextType {
   styles: Style[];
@@ -13,12 +19,16 @@ interface WeddingDressContextType {
   retryFetch: () => Promise<void>;
 }
 
-const WeddingDressContext = createContext<WeddingDressContextType | undefined>(undefined);
+const WeddingDressContext = createContext<WeddingDressContextType | undefined>(
+  undefined
+);
 
 export const useWeddingDress = () => {
   const context = useContext(WeddingDressContext);
   if (!context) {
-    throw new Error('useWeddingDress must be used within a WeddingDressProvider');
+    throw new Error(
+      "useWeddingDress must be used within a WeddingDressProvider"
+    );
   }
   return context;
 };
@@ -27,7 +37,9 @@ interface WeddingDressProviderProps {
   children: ReactNode;
 }
 
-export const WeddingDressProvider = ({ children }: WeddingDressProviderProps) => {
+export const WeddingDressProvider = ({
+  children,
+}: WeddingDressProviderProps) => {
   const [styles, setStyles] = useState<Style[]>([]);
   const [materials, setMaterials] = useState<Material[]>([]);
   const [necklines, setNecklines] = useState<Neckline[]>([]);
@@ -40,24 +52,28 @@ export const WeddingDressProvider = ({ children }: WeddingDressProviderProps) =>
       setLoading(true);
       setError(null);
 
-      const [stylesRes, materialsRes, necklinesRes, detailsRes] = await Promise.all([
-        weddingCostumeService.getAllStyles(),
-        weddingCostumeService.getAllMaterials(),
-        weddingCostumeService.getAllNecklines(),
-        weddingCostumeService.getAllDetails()
-      ]);
+      const [stylesRes, materialsRes, necklinesRes, detailsRes] =
+        await Promise.all([
+          weddingCostumeService.getAllStyles(),
+          weddingCostumeService.getAllMaterials(),
+          weddingCostumeService.getAllNecklines(),
+          weddingCostumeService.getAllDetails(),
+        ]);
 
       if (stylesRes.success) setStyles(stylesRes.data);
       if (materialsRes.success) setMaterials(materialsRes.data);
       if (necklinesRes.success) setNecklines(necklinesRes.data);
       if (detailsRes.success) setDetails(detailsRes.data);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 
-        typeof err === 'object' && err !== null && 'message' in err ? String(err.message) :
-        'Failed to fetch wedding dress data';
-      
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : typeof err === "object" && err !== null && "message" in err
+          ? String(err.message)
+          : "Failed to fetch wedding dress data";
+
       setError(errorMessage);
-      console.error('Error fetching wedding dress data:', err);
+      console.error("Error fetching wedding dress data:", err);
     } finally {
       setLoading(false);
     }
@@ -79,7 +95,7 @@ export const WeddingDressProvider = ({ children }: WeddingDressProviderProps) =>
     loading,
     error,
     refreshData: fetchData,
-    retryFetch
+    retryFetch,
   };
 
   return (

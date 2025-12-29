@@ -1,6 +1,6 @@
-import React from 'react';
-import { Text } from 'react-native';
-import { Portal, Dialog, Button } from 'react-native-paper';
+import React from "react";
+import { Text } from "react-native";
+import { Portal, Dialog, Button } from "react-native-paper";
 import { responsiveFont } from "../../assets/styles/utils/responsive";
 
 interface ErrorDialogProps {
@@ -18,14 +18,11 @@ export const ErrorDialog: React.FC<ErrorDialogProps> = ({
   onDismiss,
   title = "Thông báo lỗi",
   buttonText = "Đóng",
-  buttonColor = "#F44336"
+  buttonColor = "#F44336",
 }) => {
   return (
     <Portal>
-      <Dialog
-        visible={visible}
-        onDismiss={onDismiss}
-      >
+      <Dialog visible={visible} onDismiss={onDismiss}>
         <Dialog.Icon icon="alert-circle" size={48} />
         <Dialog.Title style={{ textAlign: "center", color: buttonColor }}>
           {title}
@@ -36,7 +33,7 @@ export const ErrorDialog: React.FC<ErrorDialogProps> = ({
           </Text>
         </Dialog.Content>
         <Dialog.Actions style={{ justifyContent: "center" }}>
-          <Button 
+          <Button
             onPress={onDismiss}
             mode="contained"
             buttonColor={buttonColor}

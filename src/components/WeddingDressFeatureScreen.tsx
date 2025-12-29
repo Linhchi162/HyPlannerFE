@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -8,12 +8,12 @@ import {
   Image,
   FlatList,
   ActivityIndicator,
-} from 'react-native';
-import { ChevronLeft, Menu } from 'lucide-react-native';
-import { useNavigation } from '@react-navigation/native';
-import { fonts } from '../theme/fonts';
-import WeddingDressMenu from './WeddingDressMenu';
-import { useWeddingDress } from '../contexts/WeddingDressContext';
+} from "react-native";
+import { ChevronLeft, Menu } from "lucide-react-native";
+import { useNavigation } from "@react-navigation/native";
+import { fonts } from "../theme/fonts";
+import WeddingDressMenu from "./WeddingDressMenu";
+import { useWeddingDress } from "../contexts/WeddingDressContext";
 
 interface WeddingDressFeatureScreenProps {
   title: string;
@@ -100,33 +100,33 @@ const WeddingDressFeatureScreen = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 16,
     height: 64,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: "#F3F4F6",
   },
   headerTitle: {
     fontSize: 18,
     fontFamily: fonts.montserratSemiBold,
-    color: '#1f2937',
+    color: "#1f2937",
   },
   centerContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   errorText: {
     fontSize: 16,
     fontFamily: fonts.montserratMedium,
-    color: '#EF4444',
-    textAlign: 'center',
+    color: "#EF4444",
+    textAlign: "center",
     paddingHorizontal: 24,
   },
   listContent: {
@@ -134,10 +134,10 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   itemContainer: {
-    backgroundColor: '#FEF0F3',
+    backgroundColor: "#FEF0F3",
     borderRadius: 16,
-    overflow: 'hidden',
-    shadowColor: '#000',
+    overflow: "hidden",
+    shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: 2,
@@ -147,7 +147,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   itemImage: {
-    width: '100%',
+    width: "100%",
     height: 200,
   },
   itemContent: {
@@ -156,13 +156,13 @@ const styles = StyleSheet.create({
   itemTitle: {
     fontSize: 16,
     fontFamily: fonts.montserratSemiBold,
-    color: '#1f2937',
+    color: "#1f2937",
     marginBottom: 8,
   },
   itemDescription: {
     fontSize: 14,
     fontFamily: fonts.montserratRegular,
-    color: '#4B5563',
+    color: "#4B5563",
   },
 });
 

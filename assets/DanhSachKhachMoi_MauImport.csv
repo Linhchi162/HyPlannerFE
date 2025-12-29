@@ -1,0 +1,5 @@
+STT,Tên khách mời,Số điện thoại,Email,Địa chỉ,Mối quan hệ,Nhóm,Số người đi cùng,Trạng thái,Loại quà,Giá trị quà,Ghi chú quà,Hạn chế ăn uống,Ghi chú
+1,"Nguyễn Văn A","0901234567","vana@example.com","123 Đường ABC, TP.HCM","friend","Nhà trai",2,"Xác nhận","Tiền mặt",1000000,"Mừng cưới","Không ăn hải sản","Khách VIP"
+2,"Trần Thị B","0912345678","tranb@example.com","456 Đường XYZ, Hà Nội","relative","Nhà gái",3,"Chờ","Chưa có",0,"","Ăn chay","Bạn thân của cô dâu"
+3,"Lê Văn C","0923456789","","","friend","Nhà trai",1,"Xác nhận","Quà tặng",0,"Bộ ấm chén","","Đồng nghiệp"
+4,"Phạm Thị D","0934567890","phamd@example.com","789 Đường DEF","relative","Nhà gái",0,"Từ chối","","","","",""
