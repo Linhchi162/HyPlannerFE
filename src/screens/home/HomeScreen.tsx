@@ -17,8 +17,9 @@ import {
   Alert,
 } from "react-native";
 import { useSelector, useDispatch } from "react-redux";
-import { selectCurrentUser } from "../../store/authSlice";
+import { selectCurrentUser, updateUserField } from "../../store/authSlice";
 import { getAccountLimits, getUpgradeMessage } from "../../utils/accountLimits";
+import apiClient from "../../api/client";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { useNavigation } from "@react-navigation/native";
 import { RootStackParamList } from "../../navigation/types"; // Đảm bảo đường dẫn này đúng
@@ -147,7 +148,26 @@ const HomeScreen = () => {
     // Random chọn 7 ảnh từ weddingImages
     const shuffled = [...weddingImages].sort(() => Math.random() - 0.5);
     setRandomImages(shuffled.slice(0, 7));
-  }, []);
+
+    // ✅ Force refresh accountType từ backend khi vào HomeScreen
+    const refreshAccountType = async () => {
+      try {
+        const response = await apiClient.get("/auth/status");
+        const currentAccountType = response.data.accountType;
+
+        // Cập nhật Redux store nếu khác
+        if (user?.accountType !== currentAccountType) {
+          dispatch(
+            updateUserField({ field: "accountType", value: currentAccountType })
+          );
+        }
+      } catch (error) {
+        // Silently fail
+      }
+    };
+
+    refreshAccountType();
+  }, [dispatch]);
 
   // ❌ REMOVED: Duplicate API call - data now fetched centrally in App.tsx via useAppInitialization
   // useEffect(() => {

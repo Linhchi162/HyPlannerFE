@@ -24,6 +24,7 @@ import * as Linking from "expo-linking";
 import apiClient from "../../api/client";
 import { useAppDispatch } from "../../store/hooks";
 import { fetchUserInvitation } from "../../store/invitationSlice";
+import { updateUserField } from "../../store/authSlice";
 import { RootStackParamList } from "../../navigation/types";
 import { MixpanelService } from "../../service/mixpanelService";
 import logger from "../../utils/logger";
@@ -68,6 +69,48 @@ export default function UpgradeAccountScreen() {
   const url = Linking.useURL();
   const processedUrlRef = useRef<string | null>(null);
 
+  // ✅ Function để fetch lại account status từ backend và cập nhật Redux
+  const fetchAccountStatusAfterPayment = async () => {
+    try {
+      // ⏰ Đợi 2 giây để webhook có thời gian xử lý
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      // 🔄 Retry mechanism: Thử tối đa 5 lần với delay 2s giữa mỗi lần
+      let retryCount = 0;
+      const maxRetries = 5;
+      let newAccountType = currentUserAccountType;
+
+      while (retryCount < maxRetries) {
+        const response = await apiClient.get("/auth/status");
+        newAccountType = response.data.accountType;
+
+        // Nếu accountType đã được cập nhật (không còn là FREE), thoát vòng lặp
+        if (
+          newAccountType !== "FREE" &&
+          newAccountType !== currentUserAccountType
+        ) {
+          break;
+        }
+
+        // Nếu chưa update, đợi 2s rồi thử lại
+        if (retryCount < maxRetries - 1) {
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+        }
+        retryCount++;
+      }
+
+      // Cập nhật state local
+      setCurrentUserAccountType(newAccountType);
+
+      // ✅ Cập nhật Redux store
+      dispatch(
+        updateUserField({ field: "accountType", value: newAccountType })
+      );
+    } catch (error) {
+      // Silently fail
+    }
+  };
+
   useEffect(() => {
     if (url && url !== processedUrlRef.current) {
       processedUrlRef.current = url;
@@ -76,14 +119,15 @@ export default function UpgradeAccountScreen() {
         const status = (queryParams.status as string).toLowerCase();
         const orderCode = queryParams.orderCode as string;
         if (status === "paid" || status === "success") {
+          // ✅ Fetch lại account status từ backend và cập nhật Redux
+          fetchAccountStatusAfterPayment();
+
           dispatch(fetchUserInvitation());
           setShowSuccessOverlay(true);
           MixpanelService.track("Viewed Payment Success Screen", {
             "Order Code": orderCode,
             Status: status,
           });
-          // Cập nhật lại trạng thái tài khoản ngay trên UI sau khi thanh toán thành công
-          setCurrentUserAccountType(activeUpgradeTab);
           setTimeout(() => setShowSuccessOverlay(false), 3000);
         } else if (status === "cancelled") {
           Alert.alert("Thông báo", "Giao dịch đã bị hủy.");
