@@ -125,13 +125,21 @@ const HomeScreen = () => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [randomImages, setRandomImages] = useState<typeof weddingImages>([]);
   const scrollViewRef = React.useRef<ScrollView>(null);
-  const scrollAnimation = React.useRef(new Animated.Value(0)).current;
+  const scrollX = React.useRef(new Animated.Value(0)).current; // Dùng để điều khiển vị trí lướt
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const dispatch = useDispatch<AppDispatch>();
 
   // Animation cho trái tim
-  const [heartScale] = useState(new Animated.Value(1));
-  const [heartOpacity] = useState(new Animated.Value(1));
+  const heartScale = React.useRef(new Animated.Value(1)).current;
+  const heartOpacity = React.useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    // Đồng bộ giá trị Animated với ScrollView
+    const listenerId = scrollX.addListener(({ value }) => {
+      scrollViewRef.current?.scrollTo({ x: value, animated: false });
+    });
+    return () => scrollX.removeListener(listenerId);
+  }, []);
 
   // Countdown state (theo giây)
   const [timeLeft, setTimeLeft] = useState({
@@ -265,7 +273,7 @@ const HomeScreen = () => {
     return () => pulseAnimation.stop();
   }, []); // ✅ FIXED: Empty deps array - animation chỉ start 1 lần
 
-  // Auto-scroll carousel với transition mượt mà
+  // Auto-scroll carousel với transition mượt mà chuẩn Native
   useEffect(() => {
     if (randomImages.length === 0) return;
 
@@ -274,39 +282,19 @@ const HomeScreen = () => {
         const nextIndex = (prevIndex + 1) % randomImages.length;
         const targetX = nextIndex * width;
 
-        // Sử dụng Animated.timing để có transition mượt mà hơn
-        Animated.timing(scrollAnimation, {
+        // Sử dụng Animated.timing để kiểm soát tốc độ lướt (1000ms = 1 giây)
+        Animated.timing(scrollX, {
           toValue: targetX,
-          duration: 2000, // ← Transition mượt mà trong 2 giây
+          duration: 500, // --- GIẢM TỐC ĐỘ LƯỚT (1.5 giây) ---
           useNativeDriver: false,
-        }).start(() => {
-          // Callback sau khi animation hoàn thành
-          scrollViewRef.current?.scrollTo({
-            x: targetX,
-            animated: false,
-          });
-        });
+        }).start();
 
         return nextIndex;
       });
-    }, 5000); // Hiển thị mỗi ảnh 8 giây
+    }, 5000); // 5 giây đổi ảnh 1 lần
 
     return () => clearInterval(autoScrollInterval);
-  }, [randomImages.length, scrollAnimation]);
-
-  // ✅ Listener để sync scrollAnimation với ScrollView
-  useEffect(() => {
-    const listenerId = scrollAnimation.addListener(({ value }) => {
-      scrollViewRef.current?.scrollTo({
-        x: value,
-        animated: false, // Không dùng animation của ScrollView
-      });
-    });
-
-    return () => {
-      scrollAnimation.removeListener(listenerId);
-    };
-  }, [scrollAnimation]);
+  }, [randomImages.length, width]);
 
   // --- TÍNH TOÁN SỐ NGÀY ĐẾM NGƯỢC ĐỘNG (giữ lại cho các phần khác nếu cần) ---
   const daysLeft = useMemo(() => {
@@ -384,24 +372,94 @@ const HomeScreen = () => {
 
   // --- GIAO DIỆN CHÍNH KHI CÓ DỮ LIỆU ---
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <StatusBar
         barStyle="dark-content"
         backgroundColor="transparent"
         translucent={true}
       />
+
+      {/* Top Panel Section - Đã chuyển sang nền trong suốt và nổi lên trên */}
+      <View style={styles.topPanelContainer} pointerEvents="box-none">
+        <Image
+          source={require("../../../assets/images/top.png")}
+          style={styles.topPanelBg}
+          resizeMode="stretch"
+        />
+        <SafeAreaView style={styles.headerContent} pointerEvents="box-none">
+          <View style={styles.headerRow} pointerEvents="box-none">
+            <Image
+              source={require("../../../assets/images/hyLogo.png")}
+              style={styles.logo}
+              resizeMode="contain"
+            />
+            <View style={styles.headerButtons}>
+              <TouchableOpacity
+                style={styles.headerButton}
+                onPress={() => Alert.alert("Thông báo", "Tính năng Chatbot AI đang được phát triển!")}
+              >
+                <Image
+                  source={require("../../../assets/images/ai.png")}
+                  style={styles.headerIcon}
+                  resizeMode="contain"
+                />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.headerButton}
+                onPress={() => navigation.navigate("Notifications")}
+              >
+                <Image
+                  source={require("../../../assets/images/notification.png")}
+                  style={styles.headerIcon}
+                  resizeMode="contain"
+                />
+              </TouchableOpacity>
+            </View>
+          </View>
+        </SafeAreaView>
+      </View>
+
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
+          paddingTop: responsiveHeight(200), // Tăng lên để tránh cắt phần đáy top.png
           paddingBottom:
             Platform.OS === "android"
               ? responsiveHeight(80)
               : insets.bottom > 0
-              ? insets.bottom
-              : responsiveHeight(20),
+                ? insets.bottom
+                : responsiveHeight(20),
         }}
       >
+        {/* Wedding Image Carousel - Đã chuyển lên đầu và tràn màn hình */}
+        <View style={styles.imageSection}>
+          <ScrollView
+            ref={scrollViewRef}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onScroll={handleScroll}
+            onMomentumScrollEnd={handleMomentumScrollEnd}
+            scrollEventThrottle={16}
+            style={styles.carouselContainer}
+            scrollEnabled={false}
+          >
+            {randomImages.map((image, index) => (
+              <View key={index} style={styles.imageContainer}>
+                <Image
+                  source={{ uri: image.uri }}
+                  style={styles.weddingImage}
+                  resizeMode="cover"
+                />
+              </View>
+            ))}
+          </ScrollView>
+          <Text style={styles.imageCaption}>
+            {randomImages[currentImageIndex]?.caption || ""}
+          </Text>
+        </View>
+
         {/* Heart Countdown Widget */}
         <View style={styles.heartCountdownContainer}>
           <Animated.View
@@ -429,63 +487,30 @@ const HomeScreen = () => {
                   : weddingEvent.brideName || weddingEvent.groomName}
               </Text>
             )}
-            <Text style={styles.countdownTitle}>Đếm ngược đến ngày cưới</Text>
             <View style={styles.timeUnitsContainer}>
               <View style={styles.timeUnit}>
                 <Text style={styles.timeNumber}>{timeLeft.days}</Text>
-                <Text style={styles.timeLabel}>ngày</Text>
               </View>
               <Text style={styles.timeSeparator}>:</Text>
               <View style={styles.timeUnit}>
                 <Text style={styles.timeNumber}>
                   {String(timeLeft.hours).padStart(2, "0")}
                 </Text>
-                <Text style={styles.timeLabel}>giờ</Text>
               </View>
               <Text style={styles.timeSeparator}>:</Text>
               <View style={styles.timeUnit}>
                 <Text style={styles.timeNumber}>
                   {String(timeLeft.minutes).padStart(2, "0")}
                 </Text>
-                <Text style={styles.timeLabel}>phút</Text>
               </View>
               <Text style={styles.timeSeparator}>:</Text>
               <View style={styles.timeUnit}>
                 <Text style={styles.timeNumber}>
                   {String(timeLeft.seconds).padStart(2, "0")}
                 </Text>
-                <Text style={styles.timeLabel}>giây</Text>
               </View>
             </View>
           </View>
-        </View>
-
-        {/* Wedding Image Carousel */}
-        <View style={styles.imageSection}>
-          <ScrollView
-            ref={scrollViewRef}
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            onScroll={handleScroll}
-            onMomentumScrollEnd={handleMomentumScrollEnd}
-            scrollEventThrottle={16}
-            style={styles.carouselContainer}
-            scrollEnabled={false}
-          >
-            {randomImages.map((image, index) => (
-              <View key={index} style={styles.imageContainer}>
-                <Image
-                  source={{ uri: image.uri }}
-                  style={styles.weddingImage}
-                  resizeMode="cover"
-                />
-              </View>
-            ))}
-          </ScrollView>
-          <Text style={styles.imageCaption}>
-            {randomImages[currentImageIndex]?.caption || ""}
-          </Text>
         </View>
 
         {/* Menu Items */}
@@ -644,7 +669,7 @@ const HomeScreen = () => {
 
         <View style={styles.bottomPadding} />
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -652,10 +677,57 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#ffffff",
-    paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
+  },
+  topPanelContainer: {
+    width: "100%",
+    height: responsiveHeight(145), // Tăng để không bị cắt phần đáy
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 100,
+    backgroundColor: "transparent",
+  },
+  topPanelBg: {
+    position: "absolute",
+    width: "100%",
+    height: "100%",
+    backgroundColor: "transparent",
+  },
+  headerContent: {
+    flex: 1,
+    backgroundColor: "transparent",
+  },
+  headerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: responsiveWidth(20),
+    paddingTop: Platform.OS === "android" ? responsiveHeight(45) : responsiveHeight(25), // Đẩy xuống một chút để cân đối
+    backgroundColor: "transparent",
+  },
+  logo: {
+    width: responsiveWidth(60), // Tăng size logo
+    height: responsiveHeight(50),
+  },
+  headerButtons: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: responsiveWidth(15),
+  },
+  headerButton: {
+    width: responsiveWidth(47), // Tăng size icon
+    height: responsiveWidth(52),
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  headerIcon: {
+    width: "100%",
+    height: "100%",
   },
   scrollView: {
     flex: 1,
+    backgroundColor: "#ffffff",
   },
   greetingCard: {
     marginHorizontal: responsiveWidth(16),
@@ -684,8 +756,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     height: responsiveHeight(300),
-    marginVertical: responsiveHeight(16),
-    marginTop: responsiveHeight(32),
+    marginTop: -responsiveHeight(15), // Đẩy nhẹ lên để lồng vào mép rách giấy
+    marginBottom: responsiveHeight(16),
   },
   heartBackground: {
     position: "absolute",
@@ -763,20 +835,20 @@ const styles = StyleSheet.create({
   },
   imageSection: {
     marginBottom: responsiveHeight(16),
+    marginTop: -responsiveHeight(140), // Đẩy lên để bắt đầu ngay từ đầu ScrollView
   },
   carouselContainer: {
     // Để trống vì nó đã tự động theo chiều rộng màn hình
   },
   imageContainer: {
-    width: width - responsiveWidth(32), // Chiều rộng màn hình trừ đi lề 2 bên
-    marginHorizontal: responsiveWidth(16),
-    borderRadius: responsiveWidth(16),
+    width: width, // Tràn màn hình
+    marginHorizontal: 0,
+    borderRadius: 0, // Bỏ bo góc
     overflow: "hidden",
-    marginBottom: responsiveHeight(12),
   },
   weddingImage: {
     width: "100%",
-    height: (width - responsiveWidth(32)) * 0.8, // Giữ tỷ lệ ảnh responsive
+    height: width * 1.2, // Tăng chiều cao để ảnh trông sang trọng hơn
   },
   imageCaption: {
     fontFamily: "Montserrat-Medium",

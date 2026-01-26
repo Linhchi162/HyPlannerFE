@@ -268,22 +268,7 @@ const RootStackNavigator = () => {
           <Stack.Screen
             name="Main"
             component={MainTabNavigator}
-            options={({ navigation }) => ({
-              headerTitle: "Hỷ Planner",
-              headerTitleStyle: headerStyles.title,
-              headerRight: () => (
-                <HeaderNotification
-                  onPress={() => setShowNotificationsModal(true)}
-                />
-              ),
-              headerLeft: () => <View style={{ width: 15 }} />,
-              headerTitleAlign: "left",
-              headerStyle: {
-                backgroundColor: "#fff",
-                elevation: 0,
-                shadowOpacity: 0,
-              },
-            })}
+            options={{ headerShown: false }}
           />
 
           {/* Các màn hình khác */}

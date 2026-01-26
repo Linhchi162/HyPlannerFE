@@ -4,23 +4,24 @@ import logger from "../utils/logger";
 
 // 1. Lấy token và kiểm tra (đảm bảo file .env có EXPO_PUBLIC_MIXPANEL_TOKEN)
 const token = process.env.EXPO_PUBLIC_MIXPANEL_TOKEN;
+const hasValidToken = typeof token === "string" && token.trim().length > 0;
 
-if (!token) {
+if (!hasValidToken) {
   logger.error(
     "LỖI MIXPANEL: Không tìm thấy EXPO_PUBLIC_MIXPANEL_TOKEN. Mixpanel sẽ không hoạt động."
   );
 }
 
-// ---- 🚀 SỬA LỖI TS(2554) TẠI ĐÂY ----
-const mixpanel = new Mixpanel(token || "", true);
-// ------------------------------------
-
-// 3. Khởi tạo
-mixpanel.init();
+// 2. Khởi tạo Mixpanel (chỉ khởi tạo nếu có token hợp lệ để tránh crash)
+let mixpanel: Mixpanel | null = null;
+if (hasValidToken) {
+  mixpanel = new Mixpanel(token!, true);
+  mixpanel.init();
+}
 
 export const MixpanelService = {
   identify: (userId: string) => {
-    mixpanel.identify(userId);
+    if (mixpanel) mixpanel.identify(userId);
   },
 
   setUser: (user: {
@@ -28,22 +29,24 @@ export const MixpanelService = {
     email?: string;
     [key: string]: any;
   }) => {
-    mixpanel.getPeople().set({
-      $name: user.fullName,
-      $email: user.email,
-      "Plan Type": "Free",
-    });
+    if (mixpanel) {
+      mixpanel.getPeople().set({
+        $name: user.fullName,
+        $email: user.email,
+        "Plan Type": "Free",
+      });
+    }
   },
 
   track: (eventName: string, properties: Record<string, any> = {}) => {
-    mixpanel.track(eventName, properties);
+    if (mixpanel) mixpanel.track(eventName, properties);
   },
 
   reset: () => {
-    mixpanel.reset();
+    if (mixpanel) mixpanel.reset();
   },
 
   setPersonProperties: (props: Record<string, any>) => {
-    mixpanel.getPeople().set(props);
+    if (mixpanel) mixpanel.getPeople().set(props);
   },
 };
