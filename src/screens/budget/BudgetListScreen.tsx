@@ -92,7 +92,7 @@ const ListFooter = memo(
                   alignSelf: "center",
                 }}
               >
-                <Entypo name="plus" size={24} />
+                <Entypo name="plus" size={24} color="#ffffff" />
                 <Text style={styles.addStageButtonLabel}>
                   Thêm nhóm ngân sách
                 </Text>
@@ -113,7 +113,7 @@ const ListFooter = memo(
                   alignSelf: "center",
                 }}
               >
-                <Feather name="edit" size={20} />
+                <Feather name="edit" size={20} color="#ffffff" />
                 <Text style={styles.addStageButtonLabel}>
                   Chỉnh sửa nhóm ngân sách
                 </Text>
@@ -509,35 +509,31 @@ export default function BudgetListScreen() {
             {selectedTask && (
               <>
                 <Text style={styles.modalText}>
-                  <Text style={{ fontWeight: "bold" }}>Tên ngân sách: </Text>
+                  <Text style={styles.modalLabel}>Tên ngân sách: </Text>
                   {selectedTask.text}
                 </Text>
                 {/* Ghi chú */}
                 <Text style={styles.modalText}>
-                  <Text style={{ fontWeight: "bold" }}>Ghi chú: </Text>
+                  <Text style={styles.modalLabel}>Ghi chú: </Text>
                   {selectedTask.note || "Không có ghi chú"}
                 </Text>
                 {/* Ngân sách dự kiến */}
                 <Text style={styles.modalText}>
-                  <Text style={{ fontWeight: "bold" }}>
-                    Ngân sách dự kiến:{" "}
-                  </Text>
+                  <Text style={styles.modalLabel}>Ngân sách dự kiến: </Text>
                   {selectedTask.expectedBudget
                     ? selectedTask.expectedBudget.toLocaleString() + " VNĐ"
                     : "0" + " VNĐ"}
                 </Text>
                 {/* Ngân sách thực tế */}
                 <Text style={styles.modalText}>
-                  <Text style={{ fontWeight: "bold" }}>
-                    Ngân sách thực tế:{" "}
-                  </Text>
+                  <Text style={styles.modalLabel}>Ngân sách thực tế: </Text>
                   {selectedTask.actualBudget
                     ? selectedTask.actualBudget.toLocaleString() + " VNĐ"
                     : "0" + " VNĐ"}
                 </Text>
                 {/* Người chi trả */}
                 <Text style={styles.modalText}>
-                  <Text style={{ fontWeight: "bold" }}>Người chi trả: </Text>
+                  <Text style={styles.modalLabel}>Người chi trả: </Text>
                   {selectedTask.payer === "bride"
                     ? "Cô dâu"
                     : selectedTask.payer === "groom"
@@ -569,12 +565,13 @@ export default function BudgetListScreen() {
           onPress={onBack}
           style={{ padding: 8, marginRight: 8 }}
         >
-          <Entypo name="chevron-left" size={24} color="#000000" />
+          <Entypo name="chevron-left" size={24} color="#ffffff" />
         </TouchableOpacity>
         <Appbar.Content
           title="Danh sách ngân sách"
           titleStyle={styles.appbarTitle}
         />
+        <View style={{ width: 40 }} />
       </Appbar.Header>
     );
   };
@@ -593,12 +590,10 @@ export default function BudgetListScreen() {
         key={stage.id}
         title={stage.title}
         description={
-          <>
-            <Text>
-              {`Dự kiến: ${stage.totalExpectedBudget.toLocaleString()}đ`} /{" "}
-              {`Thực tế: ${stage.totalActualBudget.toLocaleString()}đ`}
-            </Text>
-          </>
+          <Text style={styles.accordionDescription}>
+            {`Dự kiến: ${stage.totalExpectedBudget.toLocaleString()}đ`} /{" "}
+            {`Thực tế: ${stage.totalActualBudget.toLocaleString()}đ`}
+          </Text>
         }
         expanded={expandedAccordions.includes(stage.id)}
         onPress={() => handleAccordionPress(stage.id)}
@@ -743,17 +738,16 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
   },
   appbarHeader: {
-    backgroundColor: "#FEF0F3",
+    backgroundColor: "#ff5a7a",
     elevation: 0,
     shadowOpacity: 0,
   },
   appbarTitle: {
-    color: "#333",
-    fontFamily: "Montserrat-SemiBold",
+    color: "#ffffff",
+    fontFamily: "MavenPro",
     fontSize: responsiveFont(16),
     fontWeight: "700",
     textAlign: "center",
-    marginRight: responsiveWidth(40),
   },
   contentContainer: {
     padding: 16,
@@ -766,35 +760,35 @@ const styles = StyleSheet.create({
     marginVertical: responsiveHeight(13),
   },
   progressText: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "MavenPro",
     color: "#333333",
     fontSize: responsiveFont(12),
   },
   progressBar: {
     height: responsiveHeight(10),
     borderRadius: 5,
-    backgroundColor: "#F9E2E7",
+    backgroundColor: "#fef3f2",
   },
   listSection: {
     marginTop: 0,
   },
   accordion: {
-    backgroundColor: "#FCFAF2",
+    backgroundColor: "#fef3f2",
   },
   accordionTitle: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "MavenPro",
     fontSize: responsiveFont(14),
     fontWeight: "700",
-    color: "#333333",
+    color: "#ff5a7a",
   },
   accordionDescription: {
-    fontFamily: "Montserrat-Regular",
+    fontFamily: "MavenPro",
     fontSize: responsiveFont(10),
-    color: "#6B7280",
+    color: "#000000",
   },
   taskText: {
-    fontFamily: "Montserrat-Regular",
-    color: "#333333",
+    fontFamily: "MavenPro",
+    color: "#000000",
   },
   taskTextCompleted: {
     textDecorationLine: "line-through",
@@ -809,24 +803,29 @@ const styles = StyleSheet.create({
   addTaskButtonLabel: {
     fontSize: responsiveFont(14),
     marginLeft: responsiveWidth(4),
+    fontFamily: "MavenPro",
+    color: "#000000",
   },
   addStageButton: {
     marginTop: responsiveHeight(14),
     padding: responsiveHeight(18),
     borderRadius: 12,
-    backgroundColor: "#FEF0F3",
+    backgroundColor: "#ff5a7a",
   },
   addStageButtonLabel: {
     fontSize: responsiveFont(14),
     textAlign: "center",
     marginLeft: 4,
+    marginTop: responsiveHeight(5),
+    fontFamily: "Montserrat-SemiBold",
+    color: "#ffffff",
   },
   sampleChecklistButton: {
     marginTop: responsiveHeight(24),
     paddingVertical: responsiveHeight(16),
     paddingHorizontal: responsiveWidth(32),
     borderRadius: responsiveWidth(16),
-    backgroundColor: "#FEF0F3",
+    backgroundColor: "#fef3f2",
     width: "85%",
   },
   sampleChecklistButtonContent: {
@@ -845,7 +844,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     justifyContent: "center",
     borderBottomWidth: 1,
-    borderColor: "#F9E2E7",
+    borderColor: "#fef3f2",
   },
   rowBack: {
     alignItems: "center",
@@ -897,6 +896,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#8a8485ff",
     paddingBottom: 8,
+    color: "#000000",
   },
   datePickerButton: {
     borderWidth: 1,
@@ -980,6 +980,11 @@ const styles = StyleSheet.create({
   modalText: {
     fontSize: responsiveFont(12),
     marginBottom: 10,
+    color: "#000000",
+  },
+  modalLabel: {
+    fontWeight: "bold",
+    color: "#000000",
   },
   noteText: {
     fontSize: responsiveFont(10),

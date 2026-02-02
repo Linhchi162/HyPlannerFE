@@ -109,7 +109,7 @@ const ListFooter = memo(
                   alignSelf: "center",
                 }}
               >
-                <Entypo name="plus" size={24} />
+                <Entypo name="plus" size={24} color="#ffffff" />
                 <Text style={styles.addStageButtonLabel}>Thêm giai đoạn</Text>
               </View>
             </TouchableOpacity>
@@ -129,7 +129,7 @@ const ListFooter = memo(
                   alignSelf: "center",
                 }}
               >
-                <Feather name="edit" size={20} />
+                <Feather name="edit" size={20} color="#ffffff" />
                 <Text style={styles.addStageButtonLabel}>
                   Chỉnh sửa giai đoạn
                 </Text>
@@ -412,7 +412,7 @@ export default function TaskListScreen() {
         logger.error("Error toggling task:", error);
         setErrorMessage(
           "Có lỗi xảy ra khi cập nhật công việc: " +
-            (error.message || "Vui lòng thử lại")
+          (error.message || "Vui lòng thử lại")
         );
         setErrorDialogVisible(true);
       }
@@ -637,22 +637,22 @@ export default function TaskListScreen() {
             {selectedTask && (
               <>
                 <Text style={styles.modalText}>
-                  <Text style={{ fontWeight: "bold" }}>Tên công việc: </Text>
+                  <Text style={styles.modalLabel}>Tên công việc: </Text>
                   {selectedTask.text}
                 </Text>
                 {/* Ghi chú */}
                 <Text style={styles.modalText}>
-                  <Text style={{ fontWeight: "bold" }}>Ghi chú: </Text>
+                  <Text style={styles.modalLabel}>Ghi chú: </Text>
                   {selectedTask.note || "Không có ghi chú"}
                 </Text>
                 {/* Trạng thái */}
                 <Text style={styles.modalText}>
-                  <Text style={{ fontWeight: "bold" }}>Trạng thái: </Text>
+                  <Text style={styles.modalLabel}>Trạng thái: </Text>
                   {selectedTask.completed ? "Đã hoàn thành" : "Chưa hoàn thành"}
                 </Text>
                 {/* Người thực hiện */}
                 <Text style={styles.modalText}>
-                  <Text style={{ fontWeight: "bold" }}>Người thực hiện:</Text>
+                  <Text style={styles.modalLabel}>Người thực hiện:</Text>
                 </Text>
                 {selectedTask.assignee.length > 0 ? (
                   <FlatList
@@ -703,12 +703,17 @@ export default function TaskListScreen() {
           onPress={onBack}
           style={{ padding: 8, marginRight: 8 }}
         >
-          <Entypo name="chevron-left" size={24} color="#000000" />
+          <Entypo name="chevron-left" size={24} color="#ffffff" />
         </TouchableOpacity>
-        <Appbar.Content
-          title="Danh sách công việc"
-          titleStyle={styles.appbarTitle}
-        />
+        <View style={styles.appbarTitleContainer}>
+          <Text
+            numberOfLines={1}
+            ellipsizeMode="tail"
+            style={styles.appbarTitle}
+          >
+            Danh sách công việc
+          </Text>
+        </View>
         {userId === creatorId ? (
           <TouchableOpacity
             onPress={onAdd}
@@ -717,9 +722,9 @@ export default function TaskListScreen() {
             <Feather
               name="user-plus"
               size={24}
-              color="#000000"
+              color="#ffffff"
               style={{
-                backgroundColor: "#edc2cbff",
+                backgroundColor: "#ff5a7a",
                 borderRadius: 8,
                 padding: 7,
               }}
@@ -735,7 +740,7 @@ export default function TaskListScreen() {
               size={24}
               color="#000000"
               style={{
-                backgroundColor: "#edc2cbff",
+                backgroundColor: "#ff5a7a",
                 borderRadius: 8,
                 padding: 7,
               }}
@@ -1060,13 +1065,18 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
   },
   appbarHeader: {
-    backgroundColor: "#FEF0F3",
+    backgroundColor: "#ff5a7a",
     elevation: 0,
     shadowOpacity: 0,
   },
+  appbarTitleContainer: {
+    flex: 1,
+    justifyContent: "center",
+    marginHorizontal: 8,
+  },
   appbarTitle: {
-    color: "#333",
-    fontFamily: "Montserrat-SemiBold",
+    color: "#ffffff",
+    fontFamily: "MavenPro",
     fontSize: responsiveFont(16),
     fontWeight: "700",
     textAlign: "center",
@@ -1082,35 +1092,35 @@ const styles = StyleSheet.create({
     marginVertical: responsiveHeight(13),
   },
   progressText: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "MavenPro",
     color: "#333333",
     fontSize: responsiveFont(12),
   },
   progressBar: {
     height: responsiveHeight(10),
     borderRadius: 5,
-    backgroundColor: "#F9E2E7",
+    backgroundColor: "#fef3f2",
   },
   listSection: {
     marginTop: 0,
   },
   accordion: {
-    backgroundColor: "#FCFAF2",
+    backgroundColor: "#fef3f2",
   },
   accordionTitle: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "MavenPro",
     fontSize: responsiveFont(14),
     fontWeight: "700",
-    color: "#333333",
+    color: "#ff5a7a",
   },
   accordionDescription: {
-    fontFamily: "Montserrat-Regular",
+    fontFamily: "MavenPro",
     fontSize: responsiveFont(10),
-    color: "#6B7280",
+    color: "#000000",
   },
   taskText: {
-    fontFamily: "Montserrat-Regular",
-    color: "#333333",
+    fontFamily: "MavenPro",
+    color: "#000000",
   },
   taskTextCompleted: {
     textDecorationLine: "line-through",
@@ -1125,24 +1135,29 @@ const styles = StyleSheet.create({
   addTaskButtonLabel: {
     fontSize: responsiveFont(14),
     marginLeft: responsiveWidth(4),
+    fontFamily: "MavenPro",
+    color: "#000000",
   },
   addStageButton: {
     marginTop: responsiveHeight(14),
     padding: responsiveHeight(18),
     borderRadius: 12,
-    backgroundColor: "#FEF0F3",
+    backgroundColor: "#ff5a7a",
   },
   addStageButtonLabel: {
     fontSize: responsiveFont(14),
     textAlign: "center",
     marginLeft: 4,
+    marginTop: responsiveHeight(5),
+    fontFamily: "Montserrat-SemiBold",
+    color: "#ffffff",
   },
   sampleChecklistButton: {
     marginTop: responsiveHeight(24),
     paddingVertical: responsiveHeight(16),
     paddingHorizontal: responsiveWidth(32),
     borderRadius: responsiveWidth(16),
-    backgroundColor: "#FEF0F3",
+    backgroundColor: "#fef3f2",
     width: "85%",
   },
   sampleChecklistButtonContent: {
@@ -1161,7 +1176,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     justifyContent: "center",
     borderBottomWidth: 1,
-    borderColor: "#F9E2E7",
+    borderColor: "#fef3f2",
   },
   rowBack: {
     alignItems: "center",
@@ -1208,6 +1223,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontWeight: "bold",
     fontSize: responsiveFont(14),
+    color: "#000",
     marginBottom: 12,
     textAlign: "center",
     borderBottomWidth: 1,
@@ -1295,11 +1311,16 @@ const styles = StyleSheet.create({
   },
   modalText: {
     fontSize: responsiveFont(12),
+    color: "#000",
     marginBottom: 10,
+  },
+  modalLabel: {
+    fontWeight: "bold",
+    color: "#000",
   },
   noteText: {
     fontSize: responsiveFont(10),
-    color: "#5b5858ff",
+    color: "#000",
   },
   assigneeContainer: {
     flexDirection: "row",
@@ -1315,10 +1336,10 @@ const styles = StyleSheet.create({
   assigneeName: {
     fontSize: responsiveFont(12),
     fontWeight: "bold",
-    color: "#333",
+    color: "#000",
   },
   assigneeEmail: {
     fontSize: responsiveFont(10),
-    color: "#6B7280",
+    color: "#000",
   },
 });

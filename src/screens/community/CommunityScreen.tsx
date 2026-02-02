@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -15,7 +15,7 @@ import {
   Platform,
 } from "react-native";
 import { useDispatch, useSelector } from "react-redux";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import {
   Plus,
@@ -25,6 +25,7 @@ import {
   Users,
   Image as ImageIcon,
   Bookmark,
+  ChevronLeft,
 } from "lucide-react-native";
 import { AppDispatch, RootState } from "../../store";
 import {
@@ -63,6 +64,16 @@ const CommunityScreen = () => {
 
   const [refreshing, setRefreshing] = useState(false);
   const [showSavedMenu, setShowSavedMenu] = useState(false);
+
+  // Chỉ đặt StatusBar khi màn này focus; không reset trong cleanup để màn đích (vd Home) tự set, tránh top panel bị lỗi
+  useFocusEffect(
+    useCallback(() => {
+      StatusBar.setBackgroundColor("#ff5a7a");
+      StatusBar.setBarStyle("light-content");
+      if (Platform.OS === "android") StatusBar.setTranslucent(false);
+      return () => {};
+    }, [])
+  );
 
   useEffect(() => {
     MixpanelService.track("Viewed Community");
@@ -149,14 +160,35 @@ const CommunityScreen = () => {
     />
   );
 
-  return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar
-        barStyle="dark-content"
-        backgroundColor="transparent"
-        translucent={true}
-      />
+  const topPad =
+    Platform.OS === "android" ? (StatusBar.currentHeight || 0) + 8 : 0;
 
+  return (
+    <SafeAreaView style={[styles.container, { paddingTop: topPad }]}>
+      <StatusBar
+        barStyle="light-content"
+        backgroundColor="#ff5a7a"
+        translucent={false}
+      />
+      {/* StatusBar thực tế được set trong useFocusEffect để tránh ghi đè lên Home khi đổi tab */}
+
+      {/* Top panel giống Tủ đồ */}
+      <View style={styles.header}>
+        <View style={styles.headerRow}>
+          <TouchableOpacity
+            onPress={() =>
+              (navigation as any).navigate("Main", { screen: "Home" })
+            }
+          >
+            <ChevronLeft size={24} color="#ffffff" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Trang Cộng đồng</Text>
+          <View style={{ width: 24 }} />
+        </View>
+      </View>
+
+      {/* Nội dung */}
+      <View style={styles.content}>
       {/* Search Bar with Bookmark Button */}
       <View style={styles.searchRow}>
         <View style={styles.searchContainer}>
@@ -271,12 +303,36 @@ const CommunityScreen = () => {
       <TouchableOpacity style={styles.fab} onPress={handleCreatePost}>
         <Plus size={28} color="#ffffff" strokeWidth={2.5} />
       </TouchableOpacity>
+      </View>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+    backgroundColor: "#ff5a7a",
+  },
+  header: {
+    backgroundColor: "#ff5a7a",
+    paddingHorizontal: responsiveWidth(16),
+    height: responsiveHeight(10),
+    justifyContent: "center",
+    overflow: "visible",
+  },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: responsiveHeight(-38),
+  },
+  headerTitle: {
+    fontFamily: "MavenPro",
+    fontSize: responsiveFont(20),
+    fontWeight: "700",
+    color: "#ffffff",
+  },
+  content: {
     flex: 1,
     backgroundColor: "#f8f9fa",
   },

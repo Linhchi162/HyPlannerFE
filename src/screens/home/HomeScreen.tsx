@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
 import {
   View,
   Text,
@@ -21,7 +21,7 @@ import { selectCurrentUser, updateUserField } from "../../store/authSlice";
 import { getAccountLimits, getUpgradeMessage } from "../../utils/accountLimits";
 import apiClient from "../../api/client";
 import { StackNavigationProp } from "@react-navigation/stack";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { RootStackParamList } from "../../navigation/types"; // Đảm bảo đường dẫn này đúng
 import {
   ChevronRight,
@@ -131,7 +131,6 @@ const HomeScreen = () => {
 
   // Animation cho trái tim
   const heartScale = React.useRef(new Animated.Value(1)).current;
-  const heartOpacity = React.useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     // Đồng bộ giá trị Animated với ScrollView
@@ -149,6 +148,20 @@ const HomeScreen = () => {
     seconds: 0,
     totalSeconds: 0,
   });
+
+  // Panel hồng luôn xuất hiện trên Home; set ngay + set lại sau 1 frame để thắng cleanup từ Tủ đồ/Cộng đồng (tránh top panel bị đẩy lên)
+  useFocusEffect(
+    useCallback(() => {
+      const apply = () => {
+        StatusBar.setBackgroundColor("#ff5a7a");
+        StatusBar.setBarStyle("light-content");
+        if (Platform.OS === "android") StatusBar.setTranslucent(false);
+      };
+      apply();
+      const id = setTimeout(apply, 0);
+      return () => clearTimeout(id);
+    }, [])
+  );
 
   useEffect(() => {
     MixpanelService.track("Viewed Dashboard");
@@ -241,30 +254,16 @@ const HomeScreen = () => {
   useEffect(() => {
     const pulseAnimation = Animated.loop(
       Animated.sequence([
-        Animated.parallel([
-          Animated.timing(heartScale, {
-            toValue: 1.15,
-            duration: 1000,
-            useNativeDriver: true,
-          }),
-          Animated.timing(heartOpacity, {
-            toValue: 0.7,
-            duration: 1000,
-            useNativeDriver: true,
-          }),
-        ]),
-        Animated.parallel([
-          Animated.timing(heartScale, {
-            toValue: 1,
-            duration: 1000,
-            useNativeDriver: true,
-          }),
-          Animated.timing(heartOpacity, {
-            toValue: 1,
-            duration: 1000,
-            useNativeDriver: true,
-          }),
-        ]),
+        Animated.timing(heartScale, {
+          toValue: 1.15,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(heartScale, {
+          toValue: 1,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
       ])
     );
 
@@ -297,6 +296,13 @@ const HomeScreen = () => {
   }, [randomImages.length, width]);
 
   // --- TÍNH TOÁN SỐ NGÀY ĐẾM NGƯỢC ĐỘNG (giữ lại cho các phần khác nếu cần) ---
+  const weddingDateLabel = useMemo(() => {
+    if (!weddingEvent?.timeToMarried) {
+      return "";
+    }
+    return new Date(weddingEvent.timeToMarried).toLocaleDateString("vi-VN");
+  }, [weddingEvent?.timeToMarried]);
+
   const daysLeft = useMemo(() => {
     if (!weddingEvent?.timeToMarried) {
       return 0;
@@ -374,9 +380,9 @@ const HomeScreen = () => {
   return (
     <View style={styles.container}>
       <StatusBar
-        barStyle="dark-content"
-        backgroundColor="transparent"
-        translucent={true}
+        barStyle="light-content"
+        backgroundColor="#ff5a7a"
+        translucent={false}
       />
 
       {/* Top Panel Section - Đã chuyển sang nền trong suốt và nổi lên trên */}
@@ -467,25 +473,41 @@ const HomeScreen = () => {
               styles.heartBackground,
               {
                 transform: [{ scale: heartScale }],
-                opacity: heartOpacity,
               },
             ]}
           >
-            <Heart
-              size={responsiveWidth(280)}
-              color="#ff6b9d"
-              fill="#ff6b9d"
-              strokeWidth={1}
+            <Image
+              source={require("../../../assets/images/name_heart.png")}
+              style={styles.heartImage}
+              resizeMode="contain"
             />
           </Animated.View>
+          <Image
+            source={require("../../../assets/images/side_flowers.png")}
+            style={[styles.sideFlower, styles.sideFlowerLeft]}
+            resizeMode="contain"
+          />
+          <Image
+            source={require("../../../assets/images/side_flowers.png")}
+            style={[styles.sideFlower, styles.sideFlowerRight]}
+            resizeMode="contain"
+          />
 
           <View style={styles.countdownContent}>
             {(weddingEvent.brideName || weddingEvent.groomName) && (
-              <Text style={styles.coupleNames}>
-                {weddingEvent.brideName && weddingEvent.groomName
-                  ? `${weddingEvent.brideName} & ${weddingEvent.groomName}`
-                  : weddingEvent.brideName || weddingEvent.groomName}
-              </Text>
+              <View style={styles.namesContainer}>
+                {weddingEvent.brideName && weddingEvent.groomName ? (
+                  <>
+                    <Text style={styles.nameText}>{weddingEvent.brideName}</Text>
+                    <Text style={styles.ampersandText}>&</Text>
+                    <Text style={styles.nameText}>{weddingEvent.groomName}</Text>
+                  </>
+                ) : (
+                  <Text style={styles.nameText}>
+                    {weddingEvent.brideName || weddingEvent.groomName}
+                  </Text>
+                )}
+              </View>
             )}
             <View style={styles.timeUnitsContainer}>
               <View style={styles.timeUnit}>
@@ -510,6 +532,9 @@ const HomeScreen = () => {
                 </Text>
               </View>
             </View>
+            {weddingDateLabel ? (
+              <Text style={styles.weddingDateText}>{weddingDateLabel}</Text>
+            ) : null}
           </View>
         </View>
 
@@ -525,15 +550,16 @@ const HomeScreen = () => {
             disabled={!eventId}
           >
             <View style={styles.menuItemLeft}>
-              <View style={styles.menuIcon}>
-                <List size={16} color="white" />
-              </View>
               <View style={styles.menuTextContainer}>
                 <Text style={styles.menuTitle}>Danh sách của bạn</Text>
                 <Text style={styles.menuSubtitle}>Danh sách công việc</Text>
               </View>
             </View>
-            <ChevronRight size={20} color="#9ca3af" />
+            <Image
+              source={require("../../../assets/images/forward.png")}
+              style={styles.menuArrow}
+              resizeMode="contain"
+            />
           </TouchableOpacity>
 
           {(user?.id || user?._id) === weddingEvent.creatorId && (
@@ -542,15 +568,16 @@ const HomeScreen = () => {
               onPress={() => navigation.navigate("BudgetList")}
             >
               <View style={styles.menuItemLeft}>
-                <View style={styles.menuIcon}>
-                  <Wallet size={16} color="white" />
-                </View>
                 <View style={styles.menuTextContainer}>
                   <Text style={styles.menuTitle}>Ngân sách của bạn</Text>
                   <Text style={styles.menuSubtitle}>Danh sách ngân sách</Text>
                 </View>
               </View>
-              <ChevronRight size={20} color="#9ca3af" />
+              <Image
+                source={require("../../../assets/images/forward.png")}
+                style={styles.menuArrow}
+                resizeMode="contain"
+              />
             </TouchableOpacity>
           )}
 
@@ -560,9 +587,6 @@ const HomeScreen = () => {
               onPress={() => navigation.navigate("GuestManagementScreen")}
             >
               <View style={styles.menuItemLeft}>
-                <View style={styles.menuIcon}>
-                  <Users size={16} color="white" />
-                </View>
                 <View style={styles.menuTextContainer}>
                   <Text style={styles.menuTitle}>Quản lý khách mời</Text>
                   <Text style={styles.menuSubtitle}>
@@ -570,7 +594,11 @@ const HomeScreen = () => {
                   </Text>
                 </View>
               </View>
-              <ChevronRight size={20} color="#9ca3af" />
+              <Image
+                source={require("../../../assets/images/forward.png")}
+                style={styles.menuArrow}
+                resizeMode="contain"
+              />
             </TouchableOpacity>
           )}
 
@@ -652,9 +680,6 @@ const HomeScreen = () => {
               }}
             >
               <View style={styles.menuItemLeft}>
-                <View style={styles.menuIcon}>
-                  <LifeBuoy size={16} color="white" />
-                </View>
                 <View style={styles.menuTextContainer}>
                   <Text style={styles.menuTitle}>Ai là người tiếp theo?</Text>
                   <Text style={styles.menuSubtitle}>
@@ -662,7 +687,11 @@ const HomeScreen = () => {
                   </Text>
                 </View>
               </View>
-              <ChevronRight size={20} color="#9ca3af" />
+              <Image
+                source={require("../../../assets/images/forward.png")}
+                style={styles.menuArrow}
+                resizeMode="contain"
+              />
             </TouchableOpacity>
           )}
         </View>
@@ -680,7 +709,7 @@ const styles = StyleSheet.create({
   },
   topPanelContainer: {
     width: "100%",
-    height: responsiveHeight(145), // Tăng để không bị cắt phần đáy
+    height: responsiveHeight(110), // Panel giấy cao hơn
     position: "absolute",
     top: 0,
     left: 0,
@@ -703,12 +732,12 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: responsiveWidth(20),
-    paddingTop: Platform.OS === "android" ? responsiveHeight(45) : responsiveHeight(25), // Đẩy xuống một chút để cân đối
+    paddingTop: Platform.OS === "android" ? responsiveHeight(15) : responsiveHeight(8), // Logo và nút cao hơn trên panel
     backgroundColor: "transparent",
   },
   logo: {
-    width: responsiveWidth(60), // Tăng size logo
-    height: responsiveHeight(50),
+    width: responsiveWidth(64),
+    height: responsiveHeight(54),
   },
   headerButtons: {
     flexDirection: "row",
@@ -716,8 +745,8 @@ const styles = StyleSheet.create({
     gap: responsiveWidth(15),
   },
   headerButton: {
-    width: responsiveWidth(47), // Tăng size icon
-    height: responsiveWidth(52),
+    width: responsiveWidth(50),
+    height: responsiveWidth(56),
     justifyContent: "center",
     alignItems: "center",
   },
@@ -755,14 +784,35 @@ const styles = StyleSheet.create({
     position: "relative",
     alignItems: "center",
     justifyContent: "center",
-    height: responsiveHeight(300),
-    marginTop: -responsiveHeight(15), // Đẩy nhẹ lên để lồng vào mép rách giấy
+    height: responsiveHeight(270),
+    marginTop: -responsiveHeight(230), // Đẩy nhẹ lên để lồng vào mép rách giấy
     marginBottom: responsiveHeight(16),
   },
   heartBackground: {
     position: "absolute",
     alignItems: "center",
     justifyContent: "center",
+    zIndex: 10,
+  },
+  sideFlower: {
+    position: "absolute",
+    width: responsiveWidth(190),
+    height: responsiveWidth(180),
+    zIndex: 1,
+  },
+  sideFlowerLeft: {
+    left: -responsiveWidth(35),
+    top: responsiveHeight(20),
+    transform: [{ scaleX: -1 }],
+  },
+  sideFlowerRight: {
+    right: -responsiveWidth(35),
+    top: responsiveHeight(20),
+    transform: [{ scaleX: 1 }],
+  },
+  heartImage: {
+    width: responsiveWidth(350),
+    height: responsiveWidth(330),
   },
   countdownContent: {
     position: "absolute",
@@ -770,52 +820,71 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     zIndex: 10,
   },
-  coupleNames: {
-    fontFamily: "Agbalumo",
-    fontSize: responsiveFont(18),
-    color: "#ffffff",
-    marginBottom: responsiveHeight(6),
+  namesContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
+    alignItems: "center",
+    width: responsiveWidth(280), // Khung tên hẹp để tự xuống dòng nếu dài
+    marginBottom: responsiveHeight(-20),
+    marginTop: responsiveHeight(-40),
+  },
+  nameText: {
+    fontFamily: "Charm-Bold",
+    fontSize: responsiveFont(20),
+    color: "#fd4166",
     textAlign: "center",
-    textShadowColor: "rgba(0, 0, 0, 0.3)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
+    maxWidth: responsiveWidth(120),
+  },
+  ampersandText: {
+    fontFamily: "Charm-Bold",
+    fontSize: responsiveFont(20),
+    color: "#fd4166",
+    textAlign: "center",
+    marginHorizontal: responsiveWidth(0),
   },
   countdownTitle: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Charm-Bold",
+
     fontSize: responsiveFont(12),
-    color: "#ffffff",
+    color: "#fd4166",
     marginBottom: responsiveHeight(10),
     textAlign: "center",
   },
   timeUnitsContainer: {
     flexDirection: "row",
     alignItems: "center",
-    gap: responsiveWidth(4),
+    gap: responsiveWidth(5),
   },
   timeUnit: {
     alignItems: "center",
   },
   timeNumber: {
-    fontFamily: "Montserrat-Bold",
-    fontSize: responsiveFont(22),
-    fontWeight: "bold",
-    color: "#ffffff",
-    textShadowColor: "rgba(0, 0, 0, 0.3)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
+    fontFamily: "Charm-Bold",
+    fontSize: responsiveFont(26),
+    color: "#fd4166",
+    marginTop: responsiveHeight(-6),
   },
   timeLabel: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Charm-Bold",
     fontSize: responsiveFont(9),
-    color: "#ffffff",
+    color: "#fd4166",
     marginTop: responsiveHeight(2),
   },
   timeSeparator: {
-    fontFamily: "Montserrat-Bold",
-    fontSize: responsiveFont(18),
+    fontFamily: "Charm-Bold",
+    fontSize: responsiveFont(17),
     fontWeight: "bold",
-    color: "#ffffff",
-    marginBottom: responsiveHeight(10),
+    color: "#fd4166",
+    marginBottom: responsiveHeight(-5),
+  },
+  weddingDateText: {
+    marginTop: responsiveHeight(-20),
+    fontFamily: "Charm-Regular",
+    fontSize: responsiveFont(17),
+    color: "#fd4166",
+    opacity: 1,
+    textAlign: "center",
   },
   countdownContainer: {
     flexDirection: "row",
@@ -823,13 +892,13 @@ const styles = StyleSheet.create({
     gap: responsiveWidth(8),
   },
   countdownNumber: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Charm-regular",
     fontSize: responsiveFont(36),
     fontWeight: "bold",
     color: "#ff6b9d",
   },
   countdownLabel: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Charm-regular",
     color: "#6b7280",
     fontSize: responsiveFont(24),
   },
@@ -866,36 +935,38 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    backgroundColor: "#f3f4f6",
-    borderRadius: responsiveWidth(12),
+    backgroundColor: "transparent",
+    borderRadius: 0,
     padding: responsiveWidth(16),
   },
   menuItemLeft: {
     flexDirection: "row",
     alignItems: "center",
-    gap: responsiveWidth(12),
-  },
-  menuIcon: {
-    width: responsiveWidth(32),
-    height: responsiveWidth(32), // Giữ hình vuông
-    backgroundColor: "#ff6b9d",
-    borderRadius: responsiveWidth(8),
-    justifyContent: "center",
-    alignItems: "center",
+    gap: responsiveWidth(8),
   },
   menuTextContainer: {
     gap: responsiveHeight(2),
   },
   menuTitle: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "MavenPro",
     fontWeight: "500",
-    color: "#1f2937",
-    fontSize: responsiveFont(18),
+    color: "#fd4166",
+    textShadowColor: "rgba(236, 182, 192, 0.6)",
+    textShadowOffset: { width: -1, height: 1.5 },
+    textShadowRadius: 2,
+    fontSize: responsiveFont(22),
   },
   menuSubtitle: {
-    fontFamily: "Montserrat-Medium",
-    fontSize: responsiveFont(14),
-    color: "#6b7280",
+    fontFamily: "MavenPro",
+    fontSize: responsiveFont(16),
+    color: "rgba(226, 62, 92, 0.6)",
+
+
+  },
+  menuArrow: {
+    width: responsiveWidth(22),
+    height: responsiveWidth(22),
+    marginLeft: responsiveWidth(8),
   },
   bottomPadding: {
     height: responsiveHeight(85), // Không gian cho thanh điều hướng dưới cùng

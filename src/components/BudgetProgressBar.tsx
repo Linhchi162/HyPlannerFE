@@ -20,11 +20,21 @@ const BudgetProgressBar: React.FC<BudgetProgressBarProps> = ({
   totalExpectedBudget,
   totalActualBudget,
 }) => {
+  const safeTotalBudget = totalBudget > 0 ? totalBudget : 0;
+  const expectedProgress =
+    safeTotalBudget > 0
+      ? Math.min(totalExpectedBudget / safeTotalBudget, 1)
+      : 0;
+  const actualProgress =
+    safeTotalBudget > 0
+      ? Math.min(totalActualBudget / safeTotalBudget, 1)
+      : 0;
+
   return (
     <View style={styles.container}>
       {/* ProgressBar cho ngân sách dự kiến */}
       <ProgressBar
-        progress={totalExpectedBudget / totalBudget}
+        progress={expectedProgress}
         color="#D95D74"
         style={styles.progressBar}
       />
@@ -70,7 +80,7 @@ const BudgetProgressBar: React.FC<BudgetProgressBarProps> = ({
       </View>
       {/* ProgressBar cho ngân sách thực tế */}
       <ProgressBar
-        progress={totalActualBudget / totalBudget}
+        progress={actualProgress}
         color="#4CAF50"
         style={styles.progressBar}
       />

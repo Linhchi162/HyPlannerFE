@@ -6,10 +6,10 @@ import {
   Animated,
   Easing,
   Text,
-  FlatList,
   Dimensions,
   Keyboard,
   Platform,
+  ScrollView,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
@@ -48,13 +48,23 @@ interface AppBarWINMProps {
 }
 const AppBar = ({ onBack }: AppBarWINMProps) => (
   <Appbar.Header style={styles.appbarHeader}>
-    <TouchableOpacity onPress={onBack} style={styles.appbarBack}>
-      <Entypo name="chevron-left" size={24} color="#000000" />
-    </TouchableOpacity>
-    <Appbar.Content
-      title="Ai là người tiếp theo sẽ kết hôn"
-      titleStyle={styles.appbarTitle}
-    />
+    <View style={styles.appbarSide}>
+      <TouchableOpacity onPress={onBack} style={styles.appbarBack}>
+        <Entypo name="chevron-left" size={24} color="#ffffff" />
+      </TouchableOpacity>
+    </View>
+
+    <View style={styles.appbarTitleContainer}>
+      <Text
+        numberOfLines={1}
+        ellipsizeMode="tail"
+        style={styles.appbarTitle}
+      >
+        Ai là người tiếp theo sẽ kết hôn
+      </Text>
+    </View>
+
+    <View style={styles.appbarSide} />
   </Appbar.Header>
 );
 
@@ -207,20 +217,23 @@ export default function WhoIsNextMarriedScreen() {
       <AppBar onBack={() => navigation.goBack()} />
       {isLoading ? (
         <View style={[styles.container, { justifyContent: "center" }]}>
-          <ActivityIndicator size="large" color="#F06292" />
+          <ActivityIndicator size="large" color="#ff5a7a" />
           <Text style={{ marginTop: 12, fontSize: responsiveFont(13) }}>
             Đang tải thông tin
           </Text>
         </View>
       ) : (
-        <View
-          style={[
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={[
             styles.container,
             {
               paddingBottom:
                 Platform.OS === "android" ? 40 + insets.bottom : 40,
             },
           ]}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
           {/* Vòng quay hoặc Thông báo Chúc mừng */}
           {members && members.length > 0 ? (
@@ -328,30 +341,43 @@ export default function WhoIsNextMarriedScreen() {
               style={styles.textInput}
               mode="outlined"
               dense
-              outlineColor="#F06292"
-              activeOutlineColor="#F06292"
+              outlineColor="#ff5a7a"
+              activeOutlineColor="#ff5a7a"
+              textColor="#000000"
+              theme={{
+                colors: {
+                  background: "#ffffff",
+                  text: "#000000",
+                  onSurface: "#000000",
+                },
+              }}
               disabled={spinning}
             />
             <Button
               onPress={addMember}
-              mode="contained"
+              mode="text"
               style={styles.addButton}
               disabled={spinning || newName.trim() === ""}
               icon="plus"
+              textColor="#ff5a7a"
+              labelStyle={styles.addButtonLabel}
+              theme={{
+                colors: {
+                  onSurfaceDisabled: "#9ca3af",
+                },
+              }}
             >
               Thêm
             </Button>
           </View>
 
-          {/* Danh sách thành viên có thể xóa */}
+          {/* Danh sách thành viên có thể xóa - dùng map thay FlatList để tránh lỗi nested VirtualizedList trong ScrollView */}
           {members && members.length > 0 && (
             <View style={styles.memberListContainer}>
               <Text style={styles.listTitle}>Thành viên đang tham gia:</Text>
-              <FlatList
-                data={members}
-                keyExtractor={(item) => item._id}
-                renderItem={({ item, index }) => (
-                  <View style={styles.memberItem}>
+              <View style={styles.list}>
+                {members.map((item, index) => (
+                  <View key={item._id} style={styles.memberItem}>
                     <View
                       style={[
                         styles.memberColorChip,
@@ -373,39 +399,69 @@ export default function WhoIsNextMarriedScreen() {
                       />
                     </TouchableOpacity>
                   </View>
-                )}
-                style={styles.list}
-              />
+                ))}
+              </View>
             </View>
           )}
 
           {/* Nút điều khiển */}
           <View style={styles.buttons}>
-            <Button
-              mode="contained"
-              onPress={spinWheel}
-              disabled={spinning || !members || members.length === 0}
-              style={styles.spinButton}
-            >
-              {spinning ? "Đang quay..." : "Quay"}
-            </Button>
-            <Button
-              mode="outlined"
-              onPress={shuffleMembers}
-              style={styles.shuffleButton}
-              disabled={spinning || !members || members.length === 0}
-            >
-              Xáo trộn
-            </Button>
-            <Button
-              mode="outlined"
-              onPress={resetWheel}
-              style={styles.resetButton}
-            >
-              Làm mới
-            </Button>
+            <View style={styles.primaryButtonRow}>
+              <Button
+                mode="contained"
+                onPress={spinWheel}
+                disabled={spinning || !members || members.length === 0}
+                style={styles.spinButton}
+                textColor="#ffffff"
+                theme={{
+                  colors: {
+                    primary: "#ff5a7a",
+                    onPrimary: "#ffffff",
+                    surfaceDisabled: "#ffd1da",
+                    onSurfaceDisabled: "#ffffff",
+                  },
+                }}
+              >
+                {spinning ? "Đang quay..." : "Quay"}
+              </Button>
+            </View>
+
+            <View style={styles.secondaryButtonsRow}>
+              <Button
+                mode="outlined"
+                onPress={shuffleMembers}
+                style={styles.shuffleButton}
+                disabled={spinning || !members || members.length === 0}
+                labelStyle={[styles.outlinedButtonLabel, { color: "#ff5a7a" }]}
+                textColor="#ff5a7a"
+                theme={{
+                  colors: {
+                    outline: "#ff5a7a",
+                    onSurface: "#ff5a7a",
+                    onSurfaceDisabled: "#9ca3af",
+                  },
+                }}
+              >
+                Xáo trộn
+              </Button>
+              <Button
+                mode="outlined"
+                onPress={resetWheel}
+                style={styles.resetButton}
+                labelStyle={[styles.outlinedButtonLabel, { color: "rgb(35, 141, 233)" }]}
+                textColor="rgb(35, 141, 233)"
+                theme={{
+                  colors: {
+                    outline: "rgb(35, 141, 233)",
+                    onSurface: "rgb(35, 141, 233)",
+                  },
+                }}
+              >
+                Làm mới
+              </Button>
+            </View>
           </View>
-        </View>
+        </ScrollView>
       )}
 
       {/* (Dialog kết quả và Confetti không đổi) */}
@@ -427,8 +483,8 @@ export default function WhoIsNextMarriedScreen() {
             />
             <Text style={styles.dialogText}>{winner?.fullName}</Text>
             <Text style={styles.dialogSubText}>
-              <Heart color="#F06292" /> là người tiếp theo sẽ kết hôn!{" "}
-              <Heart color="#F06292" />
+              <Heart color="#ff5a7a" /> là người tiếp theo sẽ kết hôn!{" "}
+              <Heart color="#ff5a7a" />
             </Text>
           </Dialog.Content>
           <Dialog.Actions style={styles.dialogActions}>
@@ -439,6 +495,13 @@ export default function WhoIsNextMarriedScreen() {
               }}
               mode="contained"
               style={styles.dialogButton}
+              textColor="#ffffff"
+              theme={{
+                colors: {
+                  primary: "#ff5a7a",
+                  onPrimary: "#ffffff",
+                },
+              }}
             >
               Tuyệt vời!
             </Button>
@@ -463,28 +526,39 @@ export default function WhoIsNextMarriedScreen() {
 const styles = StyleSheet.create({
   // ... (appbar styles)
   appbarHeader: {
-    backgroundColor: "#FEF0F3",
+    backgroundColor: "#ff5a7a",
     elevation: 0,
     shadowOpacity: 0,
-    justifyContent: "center",
     minHeight: responsiveHeight(30),
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  appbarSide: {
+    width: responsiveWidth(48),
+    alignItems: "flex-start",
+    justifyContent: "center",
   },
   appbarBack: {
-    position: "absolute",
-    left: 0,
     padding: responsiveWidth(8),
-    zIndex: 1,
+  },
+  appbarTitleContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
   },
   appbarTitle: {
-    color: "#333",
-    fontFamily: "Agbalumo",
+    color: "#ffffff",
+    fontFamily: "MavenPro",
     fontSize: responsiveFont(16),
     lineHeight: responsiveFont(24),
     textAlign: "center",
-    alignSelf: "center",
+    fontWeight: "700",
+  },
+  scrollView: {
+    flex: 1,
   },
   container: {
-    flex: 1,
+    flexGrow: 1,
     alignItems: "center",
     justifyContent: "flex-start",
     paddingTop: responsiveHeight(20),
@@ -512,31 +586,50 @@ const styles = StyleSheet.create({
   },
   textInput: {
     flex: 1,
+    backgroundColor: "#ffffff",
   },
   addButton: {
-    backgroundColor: "#F06292",
+    backgroundColor: "transparent",
     justifyContent: "center",
+    elevation: 0,
+  },
+  addButtonLabel: {
+    fontFamily: "MavenPro",
+    fontSize: responsiveFont(14),
+    fontWeight: "700",
+  },
+  outlinedButtonLabel: {
+    fontFamily: "MavenPro",
+    fontWeight: "700",
   },
 
   // ... (button styles)
   buttons: {
+    width: "90%",
+    marginTop: responsiveHeight(30),
+  },
+  primaryButtonRow: {
+    width: "100%",
+    marginBottom: responsiveHeight(10),
+  },
+  secondaryButtonsRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     gap: responsiveWidth(10),
     alignItems: "center",
-    width: "90%",
-    marginTop: responsiveHeight(30),
+    width: "100%",
   },
   spinButton: {
-    backgroundColor: "#F06292",
+    backgroundColor: "#ff5a7a",
     flex: 1,
   },
   shuffleButton: {
-    borderColor: "#F06292",
+    borderColor: "#ff5a7a",
     flex: 1,
   },
   resetButton: {
     flex: 1,
+    borderColor: "#0891b2",
   },
   // ... (congrats styles)
   congratsContainer: {
@@ -544,10 +637,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     padding: responsiveWidth(15),
     marginHorizontal: responsiveWidth(20),
-    backgroundColor: "#FEF0F3",
+    backgroundColor: "#fef3f2",
     borderRadius: responsiveWidth(20),
     borderWidth: 2,
-    borderColor: "#F06292",
+    borderColor: "#ff5a7a",
   },
   congratsEmoji: {
     fontSize: responsiveFont(48),
@@ -561,12 +654,11 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
 
-  // ✅ CHỈNH SỬA: Thay đổi marginTop
+  // ✅ CHỈNH SỬA: maxHeight để nút Quay luôn hiển thị trên màn hình
   memberListContainer: {
     width: "90%",
-    marginTop: responsiveHeight(20), // Giảm margin
-    flexShrink: 1,
-    flex: 1,
+    marginTop: responsiveHeight(20),
+    maxHeight: responsiveHeight(180),
   },
   // ... (list styles)
   listTitle: {
@@ -615,7 +707,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontFamily: "Montserrat-SemiBold",
     fontSize: responsiveFont(22),
-    color: "#F06292",
+    color: "#ff5a7a",
     fontWeight: "700",
   },
   dialogContent: {
@@ -623,21 +715,21 @@ const styles = StyleSheet.create({
     paddingBottom: responsiveHeight(20),
   },
   dialogIcon: {
-    backgroundColor: "#F06292",
+    backgroundColor: "#ff5a7a",
     marginBottom: responsiveWidth(16),
   },
   dialogText: {
     fontSize: responsiveFont(20),
     fontFamily: "Montserrat-SemiBold",
-    color: "#333",
+    color: "#ffffff",
     textAlign: "center",
     fontWeight: "600",
   },
   dialogSubText: {
     fontSize: responsiveFont(16),
-    color: "#555",
+    color: "#ffffff",
     textAlign: "center",
-    marginTop: responsiveHeight(4),
+    marginTop: responsiveHeight(-6),
   },
   dialogActions: {
     justifyContent: "center",
@@ -645,7 +737,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: responsiveWidth(16),
   },
   dialogButton: {
-    backgroundColor: "#F06292",
+    backgroundColor: "#ff5a7a",
     width: "100%",
   },
 });

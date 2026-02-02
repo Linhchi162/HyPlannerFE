@@ -334,13 +334,14 @@ const ProfileScreen = () => {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <ArrowLeft size={responsiveWidth(24)} color={COLORS.textPrimary} />
+          <ArrowLeft size={responsiveWidth(24)} color="#ffffff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Cài đặt</Text>
+        <Text style={styles.headerTitle}>Hồ sơ</Text>
         <View style={{ width: responsiveWidth(24) }} />
       </View>
 
       <ScrollView
+        style={styles.scrollView}
         contentContainerStyle={[
           styles.scrollContainer,
           {
@@ -576,8 +577,7 @@ const styles = StyleSheet.create({
   },
   safeArea: {
     flex: 1,
-    paddingTop: responsiveHeight(20),
-    backgroundColor: COLORS.background,
+    backgroundColor: "#ff5a7a",
   },
   header: {
     flexDirection: "row",
@@ -585,12 +585,18 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: responsiveWidth(16),
     paddingVertical: responsiveHeight(12),
-    backgroundColor: COLORS.background,
+    height: responsiveHeight(56),
+    backgroundColor: "#ff5a7a",
   },
   headerTitle: {
-    fontFamily: "Agbalumo",
+    fontFamily: "MavenPro",
     fontSize: responsiveFont(20),
-    color: COLORS.textPrimary,
+    fontWeight: "700",
+    color: "#ffffff",
+  },
+  scrollView: {
+    flex: 1,
+    backgroundColor: COLORS.background,
   },
   scrollContainer: {
     paddingHorizontal: responsiveWidth(16),

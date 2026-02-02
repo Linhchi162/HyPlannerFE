@@ -83,7 +83,7 @@ export default function WebsiteManagementScreen() {
           <TouchableOpacity
             onPress={() => navigation.navigate("Main", { screen: "Home" })}
           >
-            <ChevronLeft size={24} color="#374151" />
+            <ChevronLeft size={24} color="#ffffff" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Đang tải...</Text>
           <View style={{ width: 24 }} />
@@ -226,6 +226,15 @@ export default function WebsiteManagementScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <View style={styles.header}>
+        <TouchableOpacity
+          onPress={() => navigation.navigate("Main", { screen: "Home" })}
+        >
+          <ChevronLeft size={24} color="#ffffff" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Quản lý</Text>
+        <View style={{ width: 24 }} />
+      </View>
       <ScrollView
         contentContainerStyle={[
           styles.container,
@@ -437,20 +446,19 @@ const styles = StyleSheet.create({
     backgroundColor: "#f7f7f7",
   },
   header: {
-    backgroundColor: "#fbe2e7",
+    backgroundColor: "#ff5a7a",
     paddingHorizontal: responsiveWidth(16),
     paddingVertical: responsiveHeight(12),
+    height: responsiveHeight(56),
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    borderBottomWidth: 1,
-    borderBottomColor: "#f0d4d9",
   },
   headerTitle: {
-    fontFamily: "Agbalumo",
-    fontSize: responsiveFont(18),
-    fontWeight: "600",
-    color: "#e07181",
+    fontFamily: "MavenPro",
+    fontSize: responsiveFont(20),
+    fontWeight: "700",
+    color: "#ffffff",
   },
   container: {
     padding: responsiveWidth(16),

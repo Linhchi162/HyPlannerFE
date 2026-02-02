@@ -68,6 +68,9 @@ export default function App() {
       "Montserrat-Medium": require("./assets/fonts/Montserrat-Medium.ttf"),
       "Montserrat-SemiBold": require("./assets/fonts/Montserrat-SemiBold.ttf"),
       "Gwendolyn-Regular": require("./assets/fonts/Gwendolyn-Regular.ttf"),
+      "Charm-Regular": require("./assets/fonts/Charm-Regular.ttf"),
+      "Charm-Bold": require("./assets/fonts/Charm-Bold.ttf"),
+      MavenPro: require("./assets/fonts/MavenPro-VariableFont_wght.ttf"),
       // ...các font khác
     }).then(() => setFontsLoaded(true));
 

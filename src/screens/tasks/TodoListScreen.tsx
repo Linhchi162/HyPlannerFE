@@ -69,9 +69,9 @@ const todoStyles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: responsiveFont(24),
-    fontWeight: "bold",
+    fontWeight: "700",
     color: "#d35a68",
-    fontFamily: "serif",
+    fontFamily: "MavenPro",
   },
   content: {
     flex: 1,
