@@ -45,9 +45,9 @@ import {
   fetchUserInvitation,
   selectUserInvitation,
 } from "../../store/invitationSlice";
-import apiClient from "../../api/client";
+import invitationClient from "../../api/invitationClient";
 import QRCode from "react-native-qrcode-svg"; // --- THÊM
-import Clipboard from "@react-native-clipboard/clipboard"; // --- THÊM
+import * as Clipboard from "expo-clipboard"; // --- SỬA (Expo Go friendly)
 import {
   responsiveWidth,
   responsiveHeight,
@@ -71,8 +71,8 @@ export default function WebsiteManagementScreen() {
   const invitation = useAppSelector(selectUserInvitation);
 
   // --- THÊM HÀM SAO CHÉP ---
-  const copyToClipboard = (url: string) => {
-    Clipboard.setString(url);
+  const copyToClipboard = async (url: string) => {
+    await Clipboard.setStringAsync(url);
     Alert.alert("Đã sao chép", "Đã sao chép đường dẫn website vào bộ nhớ.");
   };
 
@@ -83,7 +83,7 @@ export default function WebsiteManagementScreen() {
           <TouchableOpacity
             onPress={() => navigation.navigate("Main", { screen: "Home" })}
           >
-            <ChevronLeft size={24} color="#374151" />
+            <ChevronLeft size={24} color="#ffffff" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Đang tải...</Text>
           <View style={{ width: 24 }} />
@@ -102,7 +102,13 @@ export default function WebsiteManagementScreen() {
     );
   }
 
-  const websiteUrl = `https://hy-planner-be.vercel.app/inviletter/${invitation.slug}`;
+  const invitationBaseUrl =
+    process.env.EXPO_PUBLIC_INVITATION_BASE_URL ||
+    process.env.EXPO_PUBLIC_BASE_URL ||
+    "https://hy-planner-be.vercel.app";
+  const websiteUrl = `${invitationBaseUrl.replace(/\\/+$/, "")}/inviletter/${
+    invitation.slug
+  }`;
 
   const handleDeleteWebsite = () => {
     Alert.alert(
@@ -115,7 +121,7 @@ export default function WebsiteManagementScreen() {
           style: "destructive",
           onPress: async () => {
             try {
-              const response = await apiClient.delete(
+              const response = await invitationClient.delete(
                 "/invitation/my-invitation"
               );
 
@@ -226,6 +232,15 @@ export default function WebsiteManagementScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <View style={styles.header}>
+        <TouchableOpacity
+          onPress={() => navigation.navigate("Main", { screen: "Home" })}
+        >
+          <ChevronLeft size={24} color="#ffffff" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Quản lý</Text>
+        <View style={{ width: 24 }} />
+      </View>
       <ScrollView
         contentContainerStyle={[
           styles.container,
@@ -389,7 +404,7 @@ export default function WebsiteManagementScreen() {
             <Text style={styles.modalTitle}>Lời Chúc Từ Khách Mời</Text>
 
             {!invitation.guestbookMessages ||
-            invitation.guestbookMessages.length === 0 ? (
+              invitation.guestbookMessages.length === 0 ? (
               <Text
                 style={{
                   fontSize: responsiveFont(14),
@@ -437,20 +452,19 @@ const styles = StyleSheet.create({
     backgroundColor: "#f7f7f7",
   },
   header: {
-    backgroundColor: "#fbe2e7",
+    backgroundColor: "#ff5a7a",
     paddingHorizontal: responsiveWidth(16),
     paddingVertical: responsiveHeight(12),
+    height: responsiveHeight(56),
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    borderBottomWidth: 1,
-    borderBottomColor: "#f0d4d9",
   },
   headerTitle: {
-    fontFamily: "Agbalumo",
-    fontSize: responsiveFont(18),
-    fontWeight: "600",
-    color: "#e07181",
+    fontFamily: "MavenPro",
+    fontSize: responsiveFont(20),
+    fontWeight: "700",
+    color: "#ffffff",
   },
   container: {
     padding: responsiveWidth(16),

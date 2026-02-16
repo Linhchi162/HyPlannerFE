@@ -1,8 +1,10 @@
 import axios, { AxiosHeaders } from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
+const DEFAULT_BASE_URL = "https://hy-planner-be.vercel.app";
+
 const apiClient = axios.create({
-  baseURL: process.env.EXPO_PUBLIC_BASE_URL,
+  baseURL: process.env.EXPO_PUBLIC_BASE_URL || DEFAULT_BASE_URL,
   timeout: 30000, // 30 seconds - increased for slow backend responses
   headers: {
     "Content-Type": "application/json",

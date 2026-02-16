@@ -208,7 +208,7 @@ const styles = StyleSheet.create({
     marginBottom: 48,
   },
   title: {
-    fontFamily: "Agbalumo",
+    fontFamily: "MavenPro-Bold",
     fontSize: 28,
     color: "#e56e8a",
     marginBottom: 8,

@@ -54,7 +54,7 @@ export const MainTabNavigator = () => {
             return <User color={color} size={iconSize} />;
           return null;
         },
-        tabBarActiveTintColor: "#ff6b9d",
+        tabBarActiveTintColor: "#fd4166",
         tabBarInactiveTintColor: "#9ca3af",
         tabBarLabelStyle: {
           fontFamily: "Montserrat-Medium",
@@ -100,14 +100,8 @@ export const MainTabNavigator = () => {
       />
       <Tab.Screen
         name="MoodBoard"
-        component={DummyComponent}
+        component={AlbumScreen}
         options={{ tabBarLabel: "Tủ đồ" }}
-        listeners={{
-          tabPress: (e) => {
-            e.preventDefault();
-            navigation.navigate("Album");
-          },
-        }}
       />
       <Tab.Screen
         name="Community"
@@ -131,14 +125,8 @@ export const MainTabNavigator = () => {
       )}
       <Tab.Screen
         name="ProfileTab"
-        component={DummyComponent}
+        component={ProfileScreen}
         options={{ tabBarLabel: "Hồ sơ" }}
-        listeners={{
-          tabPress: (e) => {
-            e.preventDefault();
-            navigation.navigate("Profile");
-          },
-        }}
       />
     </Tab.Navigator>
   );

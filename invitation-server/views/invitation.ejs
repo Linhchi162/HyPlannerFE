@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>
+      Thiệp cưới | <%= weddingData.groomName %> & <%= weddingData.brideName %>
+    </title>
+    <style>
+      :root {
+        --bg: #fff7f8;
+        --card: #ffffff;
+        --text: #1f2937;
+        --muted: #6b7280;
+        --border: #f1d6dc;
+        --primary: #e07181;
+        --primary2: #ff6b9d;
+        --shadow: 0 12px 30px rgba(31, 41, 55, 0.12);
+      }
+
+      /* Simple theming by templateId (4-10 won't crash here) */
+      <% const t = Number(weddingData.templateId || 1); %>
+      <% if ([4,5,6].includes(t)) { %>
+        :root { --primary: #2c5f2d; --primary2: #d4a574; --border: #dbe8dd; --bg: #f6fbf7; }
+      <% } else if ([7,8,9,10].includes(t)) { %>
+        :root { --primary: #0b0c1d; --primary2: #f3d494; --border: rgba(243,212,148,.35); --bg: #0b0c1d; --card: #11142a; --text: #f1ede4; --muted: rgba(241,237,228,.75); }
+      <% } %>
+
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+        background: var(--bg);
+        color: var(--text);
+        line-height: 1.55;
+      }
+      a { color: inherit; }
+      .wrap {
+        max-width: 980px;
+        margin: 0 auto;
+        padding: 24px 16px 60px;
+      }
+      .hero {
+        border: 1px solid var(--border);
+        background: radial-gradient(1200px 400px at 20% -10%, rgba(224,113,129,.25), transparent 50%),
+                    radial-gradient(1200px 400px at 80% 0%, rgba(255,107,157,.18), transparent 55%),
+                    var(--card);
+        border-radius: 18px;
+        box-shadow: var(--shadow);
+        padding: 28px 22px;
+      }
+      .badge {
+        display: inline-flex;
+        gap: 8px;
+        align-items: center;
+        border: 1px solid var(--border);
+        padding: 8px 12px;
+        border-radius: 999px;
+        font-size: 12px;
+        color: var(--muted);
+        background: rgba(255,255,255,.65);
+      }
+      .title {
+        margin: 14px 0 8px;
+        font-size: 34px;
+        letter-spacing: .2px;
+      }
+      .subtitle {
+        margin: 0;
+        color: var(--muted);
+        font-size: 14px;
+      }
+      .grid {
+        display: grid;
+        gap: 16px;
+        margin-top: 16px;
+      }
+      @media (min-width: 840px) {
+        .grid { grid-template-columns: 1.25fr .75fr; }
+      }
+      .card {
+        border: 1px solid var(--border);
+        background: var(--card);
+        border-radius: 16px;
+        box-shadow: var(--shadow);
+        padding: 18px;
+      }
+      .card h2 {
+        margin: 0 0 10px;
+        font-size: 18px;
+      }
+      .muted { color: var(--muted); }
+      .row { display: grid; gap: 10px; }
+      .row2 { display: grid; gap: 10px; }
+      @media (min-width: 640px) { .row2 { grid-template-columns: 1fr 1fr; } }
+      input, textarea, button {
+        width: 100%;
+        padding: 12px 12px;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        background: transparent;
+        color: inherit;
+        outline: none;
+      }
+      textarea { min-height: 92px; resize: vertical; }
+      button {
+        cursor: pointer;
+        font-weight: 700;
+        background: linear-gradient(135deg, var(--primary), var(--primary2));
+        border: 0;
+      }
+      button:disabled { opacity: .6; cursor: not-allowed; }
+      .pill {
+        display: inline-block;
+        font-size: 12px;
+        padding: 6px 10px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        color: var(--muted);
+      }
+      .gallery {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+      }
+      @media (min-width: 720px) { .gallery { grid-template-columns: repeat(3, 1fr); } }
+      .gallery img {
+        width: 100%;
+        height: 160px;
+        object-fit: cover;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+      }
+      .msg {
+        border-left: 3px solid var(--primary2);
+        padding-left: 10px;
+        margin: 10px 0;
+      }
+      .footer {
+        text-align: center;
+        color: var(--muted);
+        font-size: 12px;
+        margin-top: 22px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="hero">
+        <div class="badge">
+          <span>Template</span>
+          <strong>#<%= weddingData.templateId %></strong>
+          <span class="pill">RSVP: <%= weddingData.guestRsvpCount || 0 %></span>
+        </div>
+        <h1 class="title"><%= weddingData.groomName %> & <%= weddingData.brideName %></h1>
+        <p class="subtitle">
+          Ngày cưới: <strong><%= weddingData.weddingDate %></strong> · Slug: <code><%= weddingData.slug %></code>
+        </p>
+      </div>
+
+      <div class="grid">
+        <div class="card">
+          <h2>Giới thiệu</h2>
+          <div class="muted"><%= weddingData.aboutCouple || "Chưa cập nhật." %></div>
+
+          <% if (weddingData.youtubeUrl) { %>
+            <div style="height: 12px"></div>
+            <h2>Video</h2>
+            <a href="<%= weddingData.youtubeUrl %>" target="_blank" rel="noreferrer">Mở video</a>
+          <% } %>
+
+          <% if (Array.isArray(weddingData.loveStory) && weddingData.loveStory.length) { %>
+            <div style="height: 12px"></div>
+            <h2>Chuyện tình yêu</h2>
+            <% weddingData.loveStory.forEach(function(item){ %>
+              <div class="msg">
+                <div><strong><%= item.time || "" %></strong> — <%= item.title || "" %></div>
+                <div class="muted"><%= item.content || "" %></div>
+              </div>
+            <% }) %>
+          <% } %>
+
+          <% if (Array.isArray(weddingData.album) && weddingData.album.length) { %>
+            <div style="height: 12px"></div>
+            <h2>Album ảnh</h2>
+            <div class="gallery">
+              <% weddingData.album.forEach(function(url){ %>
+                <img src="<%= url %>" alt="photo" />
+              <% }) %>
+            </div>
+          <% } %>
+
+          <% if (Array.isArray(weddingData.events) && weddingData.events.length) { %>
+            <div style="height: 12px"></div>
+            <h2>Sự kiện</h2>
+            <% weddingData.events.forEach(function(ev){ %>
+              <div class="msg">
+                <div><strong><%= ev.name || "Sự kiện" %></strong> — <span class="muted"><%= ev.time || "" %></span></div>
+                <div class="muted"><%= ev.venue || "" %> · <%= ev.address || "" %></div>
+                <% if (ev.mapLink) { %>
+                  <div><a href="<%= ev.mapLink %>" target="_blank" rel="noreferrer">Xem bản đồ</a></div>
+                <% } %>
+              </div>
+            <% }) %>
+          <% } %>
+
+          <% if (weddingData.bankAccount && (weddingData.bankAccount.bankBin || weddingData.bankAccount.accountNumber)) { %>
+            <div style="height: 12px"></div>
+            <h2>Thông tin mừng cưới</h2>
+            <div class="muted">Bank BIN: <%= weddingData.bankAccount.bankBin || "-" %></div>
+            <div class="muted">STK: <%= weddingData.bankAccount.accountNumber || "-" %></div>
+          <% } %>
+        </div>
+
+        <div class="card">
+          <h2>RSVP</h2>
+          <div class="muted">Bấm để xác nhận tham dự (demo).</div>
+          <div style="height: 10px"></div>
+          <button id="btnRsvp">Xác nhận tham dự</button>
+          <div id="rsvpMsg" class="muted" style="margin-top: 10px"></div>
+
+          <div style="height: 18px"></div>
+          <h2>Gửi lời chúc</h2>
+          <div class="row">
+            <input id="wishName" placeholder="Tên của bạn" />
+            <textarea id="wishMessage" placeholder="Lời chúc"></textarea>
+            <button id="btnWish">Gửi</button>
+            <div id="wishMsg" class="muted"></div>
+          </div>
+
+          <div style="height: 18px"></div>
+          <h2>Lời chúc gần đây</h2>
+          <div class="muted">
+            <% if (Array.isArray(weddingData.guestbookMessages) && weddingData.guestbookMessages.length) { %>
+              <% weddingData.guestbookMessages.slice(0, 6).forEach(function(m){ %>
+                <div class="msg">
+                  <div><strong><%= m.name || "Khách" %></strong></div>
+                  <div class="muted"><%= m.message || "" %></div>
+                </div>
+              <% }) %>
+            <% } else { %>
+              Chưa có lời chúc nào.
+            <% } %>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer">
+        Served by invitation-server · <%= baseUrl %>
+      </div>
+    </div>
+
+    <script>
+      const slug = <%- JSON.stringify(weddingData.slug) %>;
+      const baseUrl = <%- JSON.stringify(baseUrl) %>;
+
+      async function postJson(path, data) {
+        const res = await fetch(baseUrl + path, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data || {}),
+        });
+        const txt = await res.text();
+        try { return { ok: res.ok, json: JSON.parse(txt) }; } catch { return { ok: res.ok, json: { message: txt } }; }
+      }
+
+      document.getElementById("btnRsvp").addEventListener("click", async () => {
+        const out = document.getElementById("rsvpMsg");
+        out.textContent = "Đang gửi...";
+        const r = await postJson(`/invitation/${slug}/rsvp`, {});
+        out.textContent = r.json && r.json.message ? r.json.message : (r.ok ? "OK" : "Lỗi");
+        if (r.json && typeof r.json.count !== "undefined") {
+          out.textContent += ` (RSVP: ${r.json.count})`;
+        }
+      });
+
+      document.getElementById("btnWish").addEventListener("click", async () => {
+        const out = document.getElementById("wishMsg");
+        out.textContent = "Đang gửi...";
+        const name = document.getElementById("wishName").value;
+        const message = document.getElementById("wishMessage").value;
+        const r = await postJson(`/invitation/${slug}/add-wish`, { name, message });
+        out.textContent = r.json && r.json.message ? r.json.message : (r.ok ? "OK" : "Lỗi");
+      });
+    </script>
+  </body>
+</html>
+

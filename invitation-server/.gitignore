@@ -1,0 +1,16 @@
+node_modules/
+
+# Local data (do not commit)
+data/
+
+# Vercel local settings
+.vercel/
+
+# Env files
+.env
+.env*.local
+
+# Logs
+npm-debug.*
+yarn-debug.*
+yarn-error.*

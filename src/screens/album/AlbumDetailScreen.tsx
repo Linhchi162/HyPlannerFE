@@ -850,7 +850,7 @@ const AlbumDetailScreen = () => {
             name={item.name}
             image={item.image}
             isSelected={true}
-            onSelect={() => {}}
+            onSelect={() => { }}
             showPinButton={false}
           />
         </TouchableOpacity>
@@ -868,8 +868,7 @@ const AlbumDetailScreen = () => {
     );
   };
 
-  const topPad =
-    Platform.OS === "android" ? (StatusBar.currentHeight || 0) + 8 : 0;
+  const topPad = 0;
 
   const filteredItems = useMemo(() => {
     // Empty array means show all
@@ -904,7 +903,7 @@ const AlbumDetailScreen = () => {
     return (
       <SafeAreaView style={[styles.container, { paddingTop: topPad }]}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#F9CBD6" />
+          <ActivityIndicator size="large" color="#ffa9ba" />
           <Text style={styles.loadingText}>Đang tải album...</Text>
         </View>
       </SafeAreaView>
@@ -988,8 +987,8 @@ const AlbumDetailScreen = () => {
               >
                 <Heart
                   size={24}
-                  color={isLiked ? "#ff6b9d" : "#6b7280"}
-                  fill={isLiked ? "#ff6b9d" : "none"}
+                  color={isLiked ? "#ffa9ba" : "#6b7280"}
+                  fill={isLiked ? "#ffa9ba" : "none"}
                 />
               </TouchableOpacity>
               <TouchableOpacity
@@ -1117,7 +1116,7 @@ const AlbumDetailScreen = () => {
                     style={[
                       styles.checkbox,
                       tempSelectedCategories.includes(category) &&
-                        styles.checkboxChecked,
+                      styles.checkboxChecked,
                     ]}
                   >
                     {tempSelectedCategories.includes(category) && (
@@ -1276,7 +1275,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: responsiveFont(20),
-    fontFamily: "Agbalumo",
+    fontFamily: "MavenPro",
     color: "#1f2937",
   },
   headerSubtitle: {
@@ -1305,7 +1304,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.montserratSemiBold,
     color: "#1f2937",
     borderBottomWidth: 2,
-    borderBottomColor: "#F9CBD6",
+    borderBottomColor: "#ffa9ba",
     paddingVertical: spacing.xs,
     textAlign: "center",
   },
@@ -1361,7 +1360,7 @@ const styles = StyleSheet.create({
     padding: spacing.xs,
   },
   confirmButton: {
-    backgroundColor: "#F9CBD6",
+    backgroundColor: "#ffa9ba",
     paddingVertical: spacing.md,
     paddingHorizontal: responsiveWidth(24),
     borderRadius: borderRadius.sm,
@@ -1404,7 +1403,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   filterButtonActive: {
-    backgroundColor: "#F9CBD6",
+    backgroundColor: "#ff5a7a",
   },
   filterButtonText: {
     fontFamily: fonts.montserratMedium,
@@ -1413,6 +1412,7 @@ const styles = StyleSheet.create({
   },
   filterButtonTextActive: {
     fontFamily: fonts.montserratSemiBold,
+    color: "#fff",
   },
   modalOverlay: {
     flex: 1,
@@ -1467,8 +1467,8 @@ const styles = StyleSheet.create({
     marginRight: spacing.md,
   },
   checkboxChecked: {
-    backgroundColor: "#F9CBD6",
-    borderColor: "#F9CBD6",
+    backgroundColor: "#ffa9ba",
+    borderColor: "#ffa9ba",
   },
   checkmark: {
     color: "#1f2937",
@@ -1503,7 +1503,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: spacing.md,
     borderRadius: borderRadius.lg,
-    backgroundColor: "#F9CBD6",
+    backgroundColor: "#ffa9ba",
     alignItems: "center",
   },
   applyButtonText: {
@@ -1617,7 +1617,7 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.lg,
     alignItems: "center",
     borderWidth: 2,
-    borderColor: "#F9CBD6",
+    borderColor: "#ffa9ba",
   },
   shareCodeText: {
     fontSize: responsiveFont(28),

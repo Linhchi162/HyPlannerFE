@@ -25,6 +25,15 @@ import {
   responsiveFont,
 } from "../../../assets/styles/utils/responsive";
 
+const COLORS = {
+  primary: "#ff5a7a",
+  primarySoft: "#ffe1e8",
+  textDark: "#1f2937",
+  textMuted: "#6b7280",
+  bg: "#f8f9fa",
+  white: "#ffffff",
+};
+
 export const TopicGroupDetailScreen = ({ route, navigation }: any) => {
   const { groupId } = route.params;
   const dispatch = useAppDispatch();
@@ -90,7 +99,7 @@ export const TopicGroupDetailScreen = ({ route, navigation }: any) => {
   if (isLoading || !currentGroup) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#e91e63" />
+        <ActivityIndicator size="large" color={COLORS.primary} />
       </View>
     );
   }
@@ -101,7 +110,7 @@ export const TopicGroupDetailScreen = ({ route, navigation }: any) => {
     <SafeAreaView style={styles.container} edges={["top"]}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <ArrowLeft size={24} color="#1a1a1a" />
+          <ArrowLeft size={24} color={COLORS.white} />
         </TouchableOpacity>
       </View>
 
@@ -140,7 +149,7 @@ export const TopicGroupDetailScreen = ({ route, navigation }: any) => {
               )}
 
               <View style={styles.statsRow}>
-                <Users size={20} color="#666" />
+                <Users size={20} color={COLORS.textMuted} />
                 <Text style={styles.statsText}>
                   {currentGroup.totalMembers} thành viên •{" "}
                   {currentGroup.totalPosts} bài viết
@@ -192,7 +201,7 @@ export const TopicGroupDetailScreen = ({ route, navigation }: any) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: COLORS.bg,
   },
   loadingContainer: {
     flex: 1,
@@ -204,6 +213,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: responsiveWidth(5),
     paddingVertical: responsiveHeight(2),
+    backgroundColor: COLORS.primary,
   },
   coverImage: {
     width: "100%",
@@ -211,19 +221,19 @@ const styles = StyleSheet.create({
     resizeMode: "cover",
   },
   groupInfo: {
-    backgroundColor: "#fff",
+    backgroundColor: COLORS.white,
     padding: responsiveWidth(5),
     marginBottom: responsiveHeight(1),
   },
   groupName: {
     fontSize: responsiveFont(24),
     fontWeight: "700",
-    color: "#1a1a1a",
+    color: COLORS.textDark,
     marginBottom: responsiveHeight(1),
   },
   categoryBadge: {
     alignSelf: "flex-start",
-    backgroundColor: "#f0f0f0",
+    backgroundColor: COLORS.primarySoft,
     paddingHorizontal: responsiveWidth(3),
     paddingVertical: responsiveHeight(0.5),
     borderRadius: 12,
@@ -231,12 +241,12 @@ const styles = StyleSheet.create({
   },
   categoryText: {
     fontSize: responsiveFont(13),
-    color: "#666",
+    color: COLORS.primary,
     fontWeight: "600",
   },
   description: {
     fontSize: responsiveFont(15),
-    color: "#666",
+    color: COLORS.textMuted,
     lineHeight: 22,
     marginBottom: responsiveHeight(2),
   },
@@ -247,11 +257,11 @@ const styles = StyleSheet.create({
   },
   statsText: {
     fontSize: responsiveFont(14),
-    color: "#666",
+    color: COLORS.textMuted,
     marginLeft: responsiveWidth(2),
   },
   actionButton: {
-    backgroundColor: "#e91e63",
+    backgroundColor: COLORS.primary,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -259,23 +269,23 @@ const styles = StyleSheet.create({
     borderRadius: 25,
   },
   leaveButton: {
-    backgroundColor: "#999",
+    backgroundColor: "#9ca3af",
   },
   actionButtonText: {
     fontSize: responsiveFont(16),
-    color: "#fff",
+    color: COLORS.white,
     fontWeight: "600",
     marginLeft: responsiveWidth(2),
   },
   postsHeader: {
-    backgroundColor: "#fff",
+    backgroundColor: COLORS.white,
     padding: responsiveWidth(5),
     marginBottom: responsiveHeight(1),
   },
   postsTitle: {
     fontSize: responsiveFont(18),
     fontWeight: "700",
-    color: "#1a1a1a",
+    color: COLORS.textDark,
   },
   emptyContainer: {
     paddingVertical: responsiveHeight(10),
@@ -283,6 +293,6 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: responsiveFont(16),
-    color: "#999",
+    color: COLORS.textMuted,
   },
 });

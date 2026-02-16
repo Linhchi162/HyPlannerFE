@@ -62,6 +62,16 @@ const AlbumScreen = () => {
     }, [activeTab])
   );
 
+  // Chỉ đặt StatusBar khi màn này focus; không reset trong cleanup để tránh ghi đè sau khi Home đã set (top panel bị đẩy lên khi quay từ Tủ đồ)
+  useFocusEffect(
+    useCallback(() => {
+      StatusBar.setBackgroundColor("#ff5a7a");
+      StatusBar.setBarStyle("light-content");
+      if (Platform.OS === "android") StatusBar.setTranslucent(false);
+      return () => {};
+    }, [])
+  );
+
   const fetchAlbums = async () => {
     setIsLoading(true);
     try {
@@ -100,25 +110,17 @@ const AlbumScreen = () => {
   return (
     <SafeAreaView style={[styles.container, { paddingTop: topPad }]}>
       <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() =>
-            (navigation as any).navigate("Main", { screen: "Home" })
-          }
-        >
-          <ChevronLeft size={24} color="#1f2937" />
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={() =>
-            (navigation as any).navigate("Main", { screen: "Home" })
-          }
-        >
-          <Image
-            source={require("../../../assets/images/logo.png")}
-            style={styles.logo}
-            resizeMode="contain"
-          />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => {}}></TouchableOpacity>
+        <View style={styles.headerRow}>
+          <TouchableOpacity
+            onPress={() =>
+              (navigation as any).navigate("Main", { screen: "Home" })
+            }
+          >
+            <ChevronLeft size={24} color="#ffffff" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Tủ đồ</Text>
+          <View style={{ width: 24 }} />
+        </View>
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -179,21 +181,26 @@ const AlbumScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: "#ff5a7a",
   },
   header: {
+    backgroundColor: "#ff5a7a",
+    paddingHorizontal: responsiveWidth(16),
+    height: responsiveHeight(10),
+    justifyContent: "center",
+    overflow: "visible",
+  },
+  headerRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: responsiveWidth(16),
-    height: responsiveHeight(64),
-    backgroundColor: "#fff",
-    borderBottomWidth: 1,
-    borderBottomColor: "#F3F4F6",
+    marginTop: responsiveHeight(-38),
   },
-  logo: {
-    height: responsiveHeight(32),
-    width: responsiveWidth(48),
+  headerTitle: {
+    fontFamily: "MavenPro",
+    fontSize: responsiveFont(20),
+    fontWeight: "700",
+    color: "#ffffff",
   },
   avatar: {
     width: responsiveWidth(32),
@@ -203,6 +210,7 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingTop: responsiveHeight(16),
+    backgroundColor: "#fff",
   },
   albumGrid: {
     flexDirection: "row",

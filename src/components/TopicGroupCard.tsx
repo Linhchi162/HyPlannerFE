@@ -8,6 +8,14 @@ import {
   responsiveFont,
 } from "../../assets/styles/utils/responsive";
 
+const COLORS = {
+  primary: "#ff5a7a",
+  primarySoft: "#ffe1e8",
+  textDark: "#1f2937",
+  textMuted: "#6b7280",
+  white: "#ffffff",
+};
+
 interface TopicGroupCardProps {
   group: TopicGroup;
   onPress: () => void;
@@ -66,7 +74,7 @@ export const TopicGroupCard: React.FC<TopicGroupCardProps> = ({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: "#fff",
+    backgroundColor: COLORS.white,
     borderRadius: 12,
     marginBottom: responsiveHeight(2),
     overflow: "hidden",
@@ -93,7 +101,7 @@ const styles = StyleSheet.create({
   name: {
     fontSize: responsiveFont(18),
     fontWeight: "700",
-    color: "#1a1a1a",
+    color: COLORS.textDark,
     flex: 1,
   },
   lockIcon: {
@@ -101,13 +109,13 @@ const styles = StyleSheet.create({
   },
   description: {
     fontSize: responsiveFont(14),
-    color: "#666",
+    color: COLORS.textMuted,
     marginBottom: responsiveHeight(1.5),
     lineHeight: 20,
   },
   categoryContainer: {
     alignSelf: "flex-start",
-    backgroundColor: "#f0f0f0",
+    backgroundColor: COLORS.primarySoft,
     paddingHorizontal: responsiveWidth(3),
     paddingVertical: responsiveHeight(0.5),
     borderRadius: 12,
@@ -115,7 +123,7 @@ const styles = StyleSheet.create({
   },
   category: {
     fontSize: responsiveFont(12),
-    color: "#666",
+    color: COLORS.primary,
     fontWeight: "600",
   },
   footer: {
@@ -129,18 +137,18 @@ const styles = StyleSheet.create({
   },
   statsText: {
     fontSize: responsiveFont(13),
-    color: "#666",
+    color: COLORS.textMuted,
     marginLeft: responsiveWidth(1),
   },
   joinedBadge: {
-    backgroundColor: "#e8f5e9",
+    backgroundColor: COLORS.primarySoft,
     paddingHorizontal: responsiveWidth(3),
     paddingVertical: responsiveHeight(0.5),
     borderRadius: 12,
   },
   joinedText: {
     fontSize: responsiveFont(12),
-    color: "#4caf50",
+    color: COLORS.primary,
     fontWeight: "600",
   },
 });

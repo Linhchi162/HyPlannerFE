@@ -1025,8 +1025,7 @@ const TestCreateAlbum = () => {
     );
   };
 
-  const topPad =
-    Platform.OS === "android" ? (StatusBar.currentHeight || 0) + 8 : 0;
+  const topPad = 0;
 
   if (isLoading) {
     return (
@@ -1128,7 +1127,7 @@ const TestCreateAlbum = () => {
                     style={[
                       styles.checkbox,
                       tempSelectedCategories.includes(category) &&
-                        styles.checkboxChecked,
+                      styles.checkboxChecked,
                     ]}
                   >
                     {tempSelectedCategories.includes(category) && (
@@ -1312,13 +1311,13 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: responsiveFont(20),
-    fontFamily: "Agbalumo",
+    fontFamily: "MavenPro-Bold",
     color: "#1f2937",
   },
   headerSubtitle: {
     fontSize: responsiveFont(12),
     fontFamily: fonts.montserratMedium,
-    color: "#F9CBD6",
+    color: "#ff5a7a",
     marginTop: spacing.xs / 2,
   },
   loadingContainer: {
@@ -1352,7 +1351,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   filterButtonActive: {
-    backgroundColor: "#F9CBD6",
+    backgroundColor: "#ff5a7a",
   },
   filterButtonText: {
     fontFamily: fonts.montserratMedium,
@@ -1361,6 +1360,7 @@ const styles = StyleSheet.create({
   },
   filterButtonTextActive: {
     fontFamily: fonts.montserratSemiBold,
+    color: "#ffffff",
   },
   modalOverlay: {
     flex: 1,
@@ -1412,11 +1412,11 @@ const styles = StyleSheet.create({
     marginRight: spacing.md,
   },
   checkboxChecked: {
-    backgroundColor: "#F9CBD6",
-    borderColor: "#F9CBD6",
+    backgroundColor: "#ff5a7a",
+    borderColor: "#ff5a7a",
   },
   checkmark: {
-    color: "#1f2937",
+    color: "#ffffff",
     fontSize: responsiveFont(16),
     fontFamily: fonts.montserratSemiBold,
   },
@@ -1448,13 +1448,13 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: spacing.md,
     borderRadius: borderRadius.lg,
-    backgroundColor: "#F9CBD6",
+    backgroundColor: "#ff5a7a",
     alignItems: "center",
   },
   applyButtonText: {
     fontSize: responsiveFont(14),
     fontFamily: fonts.montserratSemiBold,
-    color: "#1f2937",
+    color: "#ffffff",
   },
   scrollContent: {
     paddingBottom: responsiveHeight(100),
@@ -1513,7 +1513,7 @@ const styles = StyleSheet.create({
     borderTopColor: "#F3F4F6",
   },
   saveButton: {
-    backgroundColor: "#F9CBD6",
+    backgroundColor: "#ff5a7a",
     paddingVertical: spacing.md + 4,
     borderRadius: borderRadius.lg,
     alignItems: "center",
@@ -1525,7 +1525,7 @@ const styles = StyleSheet.create({
   saveButtonText: {
     fontSize: responsiveFont(16),
     fontFamily: fonts.montserratSemiBold,
-    color: "#1f2937",
+    color: "#ffffff",
   },
   importButton: {
     padding: spacing.xs,

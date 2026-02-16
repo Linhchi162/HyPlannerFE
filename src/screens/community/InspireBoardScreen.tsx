@@ -197,7 +197,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   logo: {
-    fontFamily: "Agbalumo",
+    fontFamily: "MavenPro-Bold",
     fontSize: responsiveFont(24),
     color: "#1f2937",
     flex: 1,

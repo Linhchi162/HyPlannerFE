@@ -50,11 +50,7 @@
         "android.permission.CAMERA",
         "android.permission.POST_NOTIFICATIONS"
       ],
-      "package": "com.yourcompany.hyplanner",
-      "statusBar": {
-        "barStyle": "dark-content",
-        "backgroundColor": "#ffffff"
-      }
+      "package": "com.yourcompany.hyplanner"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -84,7 +80,7 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "8a14e1f2-0834-484c-984b-850febe4a8ff"
+        "projectId": "b643b066-9271-4b2d-ab45-d2e527bbfd3d"
       }
     }
   }

@@ -22,6 +22,16 @@ import {
   responsiveFont,
 } from "../../../assets/styles/utils/responsive";
 
+const COLORS = {
+  primary: "#ff5a7a",
+  primarySoft: "#ffe1e8",
+  textDark: "#1f2937",
+  textMuted: "#6b7280",
+  bg: "#f8f9fa",
+  white: "#ffffff",
+  border: "#e5e7eb",
+};
+
 export const TopicGroupsScreen = ({ navigation }: any) => {
   const dispatch = useAppDispatch();
   const { groups, myGroups, isLoading } = useAppSelector(
@@ -62,7 +72,7 @@ export const TopicGroupsScreen = ({ navigation }: any) => {
   };
 
   const handleGroupPress = (groupId: string) => {
-    navigation.navigate("TopicGroupDetail", { groupId });
+    navigation.navigate("TopicGroupDetailScreen", { groupId });
   };
 
   const handleCreateGroup = () => {
@@ -74,27 +84,27 @@ export const TopicGroupsScreen = ({ navigation }: any) => {
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
-      {/* Header - Thread Style */}
+      {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerTop}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
-            <ChevronLeft size={24} color="#374151" />
+            <ChevronLeft size={24} color={COLORS.white} />
           </TouchableOpacity>
           <Text style={styles.logo}>Nhóm</Text>
+          <View style={styles.headerSpacer} />
         </View>
+        <Text style={styles.subtitle}>
+          Kết nối với những người có cùng sở thích
+        </Text>
       </View>
-
-      <Text style={styles.subtitle}>
-        Kết nối với những người có cùng sở thích
-      </Text>
 
       {/* Search Bar */}
       <View style={styles.searchContainer}>
-        <Search size={20} color="#9ca3af" style={styles.searchIcon} />
+        <Search size={20} color={COLORS.textMuted} style={styles.searchIcon} />
         <TextInput
           style={styles.searchInput}
           placeholder="Tìm kiếm..."
-          placeholderTextColor="#9ca3af"
+          placeholderTextColor={COLORS.textMuted}
         />
       </View>
 
@@ -166,7 +176,7 @@ export const TopicGroupsScreen = ({ navigation }: any) => {
       {/* Groups List */}
       {isLoading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#e91e63" />
+          <ActivityIndicator size="large" color={COLORS.primary} />
         </View>
       ) : (
         <FlatList
@@ -199,25 +209,26 @@ export const TopicGroupsScreen = ({ navigation }: any) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f8f9fa",
+    backgroundColor: COLORS.bg,
   },
   header: {
-    backgroundColor: "#ffffff",
+    backgroundColor: COLORS.primary,
     paddingHorizontal: responsiveWidth(16),
     paddingTop: responsiveHeight(8),
     paddingBottom: responsiveHeight(12),
-    borderBottomWidth: 0.5,
-    borderBottomColor: "#e5e7eb",
   },
   headerTop: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
+  headerSpacer: {
+    width: responsiveWidth(24),
+  },
   logo: {
-    fontFamily: "Agbalumo",
+    fontFamily: "MavenPro-Bold",
     fontSize: responsiveFont(24),
-    color: "#1f2937",
+    color: COLORS.white,
     flex: 1,
     textAlign: "center",
   },
@@ -236,7 +247,7 @@ const styles = StyleSheet.create({
   subtitle: {
     fontFamily: "Montserrat-Medium",
     fontSize: responsiveFont(13),
-    color: "#6b7280",
+    color: COLORS.primarySoft,
     textAlign: "center",
     paddingHorizontal: responsiveWidth(16),
     paddingTop: responsiveHeight(4),
@@ -253,14 +264,14 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#ffffff",
+    backgroundColor: COLORS.white,
     marginHorizontal: responsiveWidth(16),
     marginBottom: responsiveHeight(8),
     paddingHorizontal: responsiveWidth(16),
     paddingVertical: responsiveHeight(10),
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: "#e5e7eb",
+    borderColor: COLORS.primarySoft,
   },
   searchIcon: {
     marginRight: responsiveWidth(8),
@@ -269,7 +280,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontFamily: "Montserrat-Medium",
     fontSize: responsiveFont(14),
-    color: "#1f2937",
+    color: COLORS.textDark,
   },
   tabContainer: {
     flexDirection: "row",
@@ -282,11 +293,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#ffffff",
+    backgroundColor: COLORS.white,
     paddingVertical: responsiveHeight(12),
     borderRadius: responsiveWidth(12),
     borderWidth: 1,
-    borderColor: "#e5e7eb",
+    borderColor: COLORS.primarySoft,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
@@ -294,16 +305,16 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   activeTab: {
-    backgroundColor: "#ff6b9d",
-    borderColor: "#ff6b9d",
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
   },
   tabText: {
     fontFamily: "Montserrat-SemiBold",
     fontSize: responsiveFont(14),
-    color: "#1f2937",
+    color: COLORS.textDark,
   },
   activeTabText: {
-    color: "#ffffff",
+    color: COLORS.white,
   },
   categoriesList: {
     maxHeight: responsiveHeight(50),
@@ -311,13 +322,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: responsiveWidth(16),
   },
   categoryChip: {
-    backgroundColor: "#ffffff",
+    backgroundColor: COLORS.white,
     paddingHorizontal: responsiveWidth(16),
     paddingVertical: responsiveHeight(10),
     borderRadius: responsiveWidth(12),
     marginRight: responsiveWidth(8),
     borderWidth: 1,
-    borderColor: "#e5e7eb",
+    borderColor: COLORS.primarySoft,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
@@ -325,16 +336,16 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   activeCategoryChip: {
-    backgroundColor: "#ff6b9d",
-    borderColor: "#ff6b9d",
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
   },
   categoryText: {
     fontFamily: "Montserrat-SemiBold",
     fontSize: responsiveFont(13),
-    color: "#1f2937",
+    color: COLORS.textDark,
   },
   activeCategoryText: {
-    color: "#ffffff",
+    color: COLORS.white,
   },
   listContent: {
     paddingHorizontal: responsiveWidth(5),
@@ -351,7 +362,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: responsiveFont(16),
-    color: "#999",
+    color: COLORS.textMuted,
   },
   fab: {
     position: "absolute",
@@ -360,7 +371,7 @@ const styles = StyleSheet.create({
     width: responsiveWidth(56),
     height: responsiveWidth(56),
     borderRadius: responsiveWidth(28),
-    backgroundColor: "#ff6b9d",
+    backgroundColor: COLORS.primary,
     justifyContent: "center",
     alignItems: "center",
   },

@@ -4,19 +4,35 @@ import { Platform } from "react-native";
 import Constants from "expo-constants";
 import logger from "./logger";
 
-// Check if running in Expo Go
-const isExpoGo = Constants.appOwnership === "expo";
-
 // Configure how notifications are displayed when app is in foreground
-if (!isExpoGo) {
-  Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-      shouldShowAlert: true,
-      shouldPlaySound: true,
-      shouldSetBadge: true,
-      shouldShowBanner: true,
-      shouldShowList: true,
-    }),
+// (để bạn thấy "hiện ngoài app" cả khi đang mở app)
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
+  }),
+});
+
+async function ensurePermission() {
+  const { status: existingStatus } = await Notifications.getPermissionsAsync();
+  let finalStatus = existingStatus;
+  if (existingStatus !== "granted") {
+    const { status } = await Notifications.requestPermissionsAsync();
+    finalStatus = status;
+  }
+  return finalStatus === "granted";
+}
+
+async function ensureAndroidChannel() {
+  if (Platform.OS !== "android") return;
+  await Notifications.setNotificationChannelAsync("default", {
+    name: "default",
+    importance: Notifications.AndroidImportance.MAX,
+    vibrationPattern: [0, 250, 250, 250],
+    lightColor: "#FF6B9D",
   });
 }
 
@@ -26,36 +42,13 @@ if (!isExpoGo) {
 export async function registerForPushNotificationsAsync(): Promise<
   string | undefined
 > {
-  // Skip in Expo Go
-  if (isExpoGo) {
-    logger.warn(
-      "Push notifications not available in Expo Go. Build a development build to test."
-    );
-    return undefined;
-  }
-
   let token;
 
-  if (Platform.OS === "android") {
-    await Notifications.setNotificationChannelAsync("default", {
-      name: "default",
-      importance: Notifications.AndroidImportance.MAX,
-      vibrationPattern: [0, 250, 250, 250],
-      lightColor: "#FF6B9D",
-    });
-  }
+  await ensureAndroidChannel();
 
   if (Device.isDevice) {
-    const { status: existingStatus } =
-      await Notifications.getPermissionsAsync();
-    let finalStatus = existingStatus;
-
-    if (existingStatus !== "granted") {
-      const { status } = await Notifications.requestPermissionsAsync();
-      finalStatus = status;
-    }
-
-    if (finalStatus !== "granted") {
+    const granted = await ensurePermission();
+    if (!granted) {
       logger.log("Failed to get push token for push notification!");
       return;
     }
@@ -79,6 +72,28 @@ export async function registerForPushNotificationsAsync(): Promise<
 }
 
 /**
+ * Get FCM token (Android) / APNs token (iOS)
+ * Use with Firebase Cloud Messaging directly.
+ */
+export async function getFcmTokenAsync(): Promise<string | undefined> {
+  if (!Device.isDevice) {
+    logger.log("Must use physical device for Push Notifications");
+    return undefined;
+  }
+
+  const granted = await ensurePermission();
+  if (!granted) return undefined;
+
+  try {
+    const token = await Notifications.getDevicePushTokenAsync();
+    return token.data;
+  } catch (error) {
+    logger.error("Error getting device push token:", error);
+    return undefined;
+  }
+}
+
+/**
  * Schedule a local notification
  */
 export async function scheduleLocalNotification(
@@ -87,10 +102,9 @@ export async function scheduleLocalNotification(
   data?: any,
   triggerSeconds: number = 0
 ) {
-  if (isExpoGo) {
-    logger.warn("Local notifications not available in Expo Go");
-    return;
-  }
+  await ensureAndroidChannel();
+  const granted = await ensurePermission();
+  if (!granted) return;
 
   await Notifications.scheduleNotificationAsync({
     content: {
@@ -119,7 +133,6 @@ export async function showNotification(
  * Clear all notifications
  */
 export async function clearAllNotifications() {
-  if (isExpoGo) return;
   await Notifications.dismissAllNotificationsAsync();
 }
 
@@ -127,7 +140,6 @@ export async function clearAllNotifications() {
  * Get notification badge count
  */
 export async function getBadgeCount(): Promise<number> {
-  if (isExpoGo) return 0;
   return await Notifications.getBadgeCountAsync();
 }
 
@@ -135,7 +147,6 @@ export async function getBadgeCount(): Promise<number> {
  * Set notification badge count
  */
 export async function setBadgeCount(count: number) {
-  if (isExpoGo) return;
   await Notifications.setBadgeCountAsync(count);
 }
 
@@ -146,9 +157,6 @@ export async function setBadgeCount(count: number) {
 export function addNotificationReceivedListener(
   listener: (notification: Notifications.Notification) => void
 ) {
-  if (isExpoGo) {
-    return { remove: () => {} };
-  }
   return Notifications.addNotificationReceivedListener(listener);
 }
 
@@ -159,9 +167,6 @@ export function addNotificationReceivedListener(
 export function addNotificationResponseListener(
   listener: (response: Notifications.NotificationResponse) => void
 ) {
-  if (isExpoGo) {
-    return { remove: () => {} };
-  }
   return Notifications.addNotificationResponseReceivedListener(listener);
 }
 
@@ -171,6 +176,5 @@ export function addNotificationResponseListener(
 export function removeNotificationSubscription(
   subscription: Notifications.Subscription
 ) {
-  if (isExpoGo) return;
   Notifications.removeNotificationSubscription(subscription);
 }

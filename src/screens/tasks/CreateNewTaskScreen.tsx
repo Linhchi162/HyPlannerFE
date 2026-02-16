@@ -163,9 +163,12 @@ export default function CreateNewTaskScreen() {
                   onChangeText={setTaskName}
                   style={styles.textInput}
                   outlineStyle={styles.textInputOutline}
+                  textColor="#000000"
                   theme={{
                     colors: {
                       primary: "#D95D74",
+                      text: "#000000",
+                      onSurface: "#000000",
                       onSurfaceVariant: "#AAAAAA",
                     },
                   }}
@@ -193,9 +196,12 @@ export default function CreateNewTaskScreen() {
                   numberOfLines={4}
                   style={[styles.textInput, styles.textArea]}
                   outlineStyle={styles.textInputOutline}
+                  textColor="#000000"
                   theme={{
                     colors: {
                       primary: "#D95D74",
+                      text: "#000000",
+                      onSurface: "#000000",
                       onSurfaceVariant: "#AAAAAA",
                     },
                   }}
@@ -298,6 +304,7 @@ const styles = StyleSheet.create({
   textInput: {
     backgroundColor: "#FFFFFF",
     fontFamily: "Montserrat-Regular",
+    color: "#000000",
   },
   textArea: {
     textAlignVertical: "top",

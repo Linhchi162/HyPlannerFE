@@ -210,7 +210,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   title: {
-    fontFamily: "Agbalumo",
+    fontFamily: "MavenPro-Bold",
     fontSize: 32,
     color: "#560b4eff",
     textAlign: "center",

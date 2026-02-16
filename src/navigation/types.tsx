@@ -67,6 +67,7 @@ export type RootStackParamList = {
   PasswordUpdated: undefined;
   InviteOrCreate: undefined;
   Main: NavigatorScreenParams<MainTabParamList>; // Lồng Tab Navigator vào
+  VendorMain: NavigatorScreenParams<VendorTabParamList>;
   Profile: undefined;
   UpgradeAccountScreen: { status?: "success" | "cancelled" } | undefined;
   EditProfileScreen: {
@@ -81,12 +82,12 @@ export type RootStackParamList = {
   EditCoupleInfo: {
     invitation: InvitationData;
     sectionType:
-      | "coupleInfo"
-      | "album"
-      | "loveStory"
-      | "events"
-      | "youtubeVideo"
-      | "bankAccount"; // <-- Thêm vào đây
+    | "coupleInfo"
+    | "album"
+    | "loveStory"
+    | "events"
+    | "youtubeVideo"
+    | "bankAccount"; // <-- Thêm vào đây
     title: string;
   };
   PaymentSuccess: undefined;
@@ -142,8 +143,6 @@ export type RootStackParamList = {
   CommunityScreen: undefined;
   PostDetailScreen: { postId: string };
   CreatePostScreen: { postId?: string }; // Optional: for editing existing post
-  TopicGroupsScreen: undefined;
-  TopicGroupDetailScreen: { groupId: string };
   InspireBoardScreen: undefined;
   CommunityAlbumsScreen: undefined;
   SavedPostsScreen: undefined;
@@ -152,6 +151,26 @@ export type RootStackParamList = {
   GuestManagementScreen: undefined;
   GuestDetailScreen: { guestId: string };
   NotificationListScreen: { weddingEventId: string };
+  VendorList: undefined;
+  VendorDetail: { vendorId: string };
+  VendorDashboard: undefined;
+  VendorAuth: undefined;
+  VendorOnboarding: undefined;
+  VendorProfileEdit: undefined;
+  VendorChangePassword: undefined;
+  VendorServices: undefined;
+  VendorRequests: undefined;
+  ChatList: { role?: "user" | "vendor" } | undefined;
+  ChatDetail: {
+    chatId?: string;
+    userId?: string;
+    userName?: string;
+    userImageUrl?: string;
+    vendorId?: string;
+    vendorName?: string;
+    vendorImageUrl?: string;
+    role?: "user" | "vendor";
+  } | undefined;
 };
 
 // Định nghĩa các màn hình trong Tab Navigator
@@ -161,4 +180,9 @@ export type MainTabParamList = {
   Community: undefined;
   MoodBoard: undefined;
   ProfileTab: undefined;
+};
+
+export type VendorTabParamList = {
+  VendorHome: undefined;
+  VendorLeads: undefined;
 };

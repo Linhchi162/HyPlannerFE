@@ -224,10 +224,10 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   title: {
-    fontFamily: "Agbalumo",
+    fontFamily: "MavenPro-Bold",
     fontSize: 24,
     fontWeight: "600",
-    color: "#e56e8a",
+    color: "#ff5a7a",
   },
   form: {
     maxWidth: 400,
@@ -281,21 +281,21 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   checkIconActive: {
-    backgroundColor: "#9ca3af",
+    backgroundColor: "#ff5a7a",
   },
   requirementText: {
     fontSize: 14,
     color: "#9ca3af",
   },
   saveButton: {
-    backgroundColor: "#adaebc",
+    backgroundColor: "#f7b2bf",
     borderRadius: 8,
     paddingVertical: 12,
     alignItems: "center",
     marginBottom: 24,
   },
   saveButtonActive: {
-    backgroundColor: "#9ca3af",
+    backgroundColor: "#ff5a7a",
   },
   saveButtonText: {
     color: "white",
@@ -317,7 +317,7 @@ const styles = StyleSheet.create({
   shieldIcon: {
     width: 24,
     height: 24,
-    backgroundColor: "#e56e8a",
+    backgroundColor: "#ff5a7a",
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",

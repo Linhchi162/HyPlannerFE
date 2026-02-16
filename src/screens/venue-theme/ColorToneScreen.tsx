@@ -292,7 +292,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
   },
   headerTitle: {
-    fontFamily: "Agbalumo",
+    fontFamily: "MavenPro-Bold",
     fontSize: responsiveFont(24),
     color: "#1f2937",
   },

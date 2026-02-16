@@ -921,18 +921,24 @@ const GuestManagementScreen = () => {
     return (
       <SafeAreaView style={styles.container}>
         <StatusBar
-          barStyle="dark-content"
-          backgroundColor="#ffffff"
+          barStyle="light-content"
+          backgroundColor="#ff5a7a"
           translucent={false}
         />
 
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <ChevronLeft size={24} color="#1f2937" />
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={styles.headerBackButton}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <ChevronLeft size={24} color="#ffffff" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Quản lý khách mời</Text>
-          <View style={{ width: 24 }} />
+          <View style={styles.headerTitleContainer}>
+            <Text style={styles.headerTitle}>Quản lý khách mời</Text>
+          </View>
+          <View style={styles.headerButtonsPlaceholder} />
         </View>
 
         {/* Loading State */}
@@ -952,17 +958,23 @@ const GuestManagementScreen = () => {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar
-        barStyle="dark-content"
-        backgroundColor="#ffffff"
+        barStyle="light-content"
+        backgroundColor="#ff5a7a"
         translucent={false}
       />
 
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <ChevronLeft size={24} color="#1f2937" />
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.headerBackButton}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <ChevronLeft size={24} color="#ffffff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Quản lý khách mời</Text>
+        <View style={styles.headerTitleContainer}>
+          <Text style={styles.headerTitle}>Quản lý khách mời</Text>
+        </View>
         <View style={styles.headerButtons}>
           {/* <TouchableOpacity
             onPress={() => {
@@ -982,9 +994,9 @@ const GuestManagementScreen = () => {
             style={styles.exportButton}
           >
             {isImporting ? (
-              <ActivityIndicator size="small" color="#ff6b9d" />
+              <ActivityIndicator size="small" color="#ffffff" />
             ) : (
-              <UserPlus size={24} color="#ff6b9d" />
+              <UserPlus size={24} color="#ffffff" />
             )}
           </TouchableOpacity>
           {/* <TouchableOpacity
@@ -1012,8 +1024,8 @@ const GuestManagementScreen = () => {
               />
             )}
           </TouchableOpacity> */}
-          <TouchableOpacity onPress={handleAddGuest}>
-            <Plus size={24} color="#ff6b9d" />
+          <TouchableOpacity onPress={handleAddGuest} style={styles.exportButton}>
+            <Plus size={24} color="#ffffff" />
           </TouchableOpacity>
         </View>
       </View>
@@ -2689,18 +2701,31 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: responsiveWidth(20),
     paddingVertical: responsiveHeight(18),
-    borderBottomWidth: 1,
-    borderBottomColor: "#f3f4f6",
+    backgroundColor: "#ff5a7a",
+    borderBottomWidth: 0,
+  },
+  headerBackButton: {
+    padding: 8,
+    marginRight: 8,
+  },
+  headerTitleContainer: {
+    flex: 1,
+    alignItems: "center",
   },
   headerTitle: {
-    fontFamily: "Agbalumo",
+    fontFamily: "MavenPro",
     fontSize: responsiveFont(16),
-    color: "#1f2937",
+    color: "#ffffff",
+    fontWeight: "700",
+    textAlign: "center",
   },
   headerButtons: {
     flexDirection: "row",
     alignItems: "center",
     gap: 16,
+  },
+  headerButtonsPlaceholder: {
+    width: responsiveWidth(40),
   },
   exportButton: {
     padding: 4,
@@ -2809,7 +2834,7 @@ const styles = StyleSheet.create({
   progressPercentage: {
     fontFamily: "Montserrat-Bold",
     fontSize: responsiveFont(16),
-    color: "#ff6b9d",
+    color: "#ff5a7a",
   },
   progressBarContainer: {
     height: 8,
@@ -2819,7 +2844,7 @@ const styles = StyleSheet.create({
   },
   progressBarFill: {
     height: "100%",
-    backgroundColor: "#ff6b9d",
+    backgroundColor: "#ff5a7a",
     borderRadius: 4,
   },
   // New Table Suggestion Styles
@@ -2892,10 +2917,10 @@ const styles = StyleSheet.create({
     width: responsiveWidth(40),
     height: responsiveWidth(40),
     borderRadius: responsiveWidth(20),
-    backgroundColor: "#ff6b9d",
+    backgroundColor: "#ff5a7a",
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#ff6b9d",
+    shadowColor: "#ff5a7a",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
@@ -2916,7 +2941,7 @@ const styles = StyleSheet.create({
   tableConfigValue: {
     fontFamily: "Montserrat-Bold",
     fontSize: responsiveFont(32),
-    color: "#ff6b9d",
+    color: "#ff5a7a",
     lineHeight: responsiveFont(36),
   },
   tableConfigUnit: {
@@ -3593,7 +3618,7 @@ const styles = StyleSheet.create({
     color: "#6b7280",
   },
   thankYouButton: {
-    backgroundColor: "#ff6b9d",
+    backgroundColor: "#ff5a7a",
     paddingVertical: responsiveHeight(14),
     borderRadius: responsiveWidth(12),
     alignItems: "center",

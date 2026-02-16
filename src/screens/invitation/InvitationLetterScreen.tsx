@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import {
   SafeAreaView,
   View,
@@ -18,12 +18,19 @@ import { RootStackParamList } from "../../navigation/types";
 import { NavigationProp, useNavigation } from "@react-navigation/core";
 import { useSelector } from "react-redux";
 import { selectCurrentUser } from "../../store/authSlice";
-import apiClient from "../../api/client";
+import invitationClient from "../../api/invitationClient";
 
 // Lấy base URL từ apiClient hoặc định nghĩa hằng số
 // Đảm bảo rằng process.env.EXPO_PUBLIC_BASE_URL đã được định nghĩa trong file .env của bạn
 const BACKEND_URL =
-  process.env.EXPO_PUBLIC_BASE_URL || "https://hy-planner-be.vercel.app";
+  process.env.EXPO_PUBLIC_INVITATION_BASE_URL ||
+  process.env.EXPO_PUBLIC_BASE_URL ||
+  "https://hy-planner-be.vercel.app";
+
+const normalizeTemplateType = (type?: string) => {
+  if (!type) return "Miễn phí";
+  return type.toUpperCase().includes("VIP") ? "VIP" : "Miễn phí";
+};
 
 export type Template = {
   id: number;
@@ -32,19 +39,34 @@ export type Template = {
   image: string;
 };
 
+type TemplateHealthStatus = "unknown" | "checking" | "ok" | "error";
+
 // Component Card cho từng mẫu thiệp
 const TemplateCard = ({
   template,
   navigation,
   userAccountType,
+  healthStatus,
 }: {
   template: Template;
   navigation: NavigationProp<RootStackParamList>;
   userAccountType: string;
+  healthStatus: TemplateHealthStatus;
 }) => {
+  const templateType = normalizeTemplateType(template.type);
+  const isTemplateAvailable = healthStatus === "ok" || healthStatus === "unknown";
+
   const handleUseTemplate = () => {
+    if (!isTemplateAvailable) {
+      Alert.alert(
+        "Mẫu đang lỗi trên server",
+        "Mẫu này hiện render bị lỗi (backend trả về 500) nên chưa thể dùng. Bạn có thể chọn mẫu khác, hoặc chạy BE local / deploy BE mới để dùng mẫu này."
+      );
+      return;
+    }
+
     // Kiểm tra quyền truy cập VIP template
-    if (template.type === "VIP" && userAccountType === "FREE") {
+    if (templateType === "VIP" && userAccountType === "FREE") {
       Alert.alert(
         "Nâng cấp tài khoản",
         "Mẫu thiệp này chỉ dành cho tài khoản VIP. Vui lòng nâng cấp tài khoản để sử dụng.",
@@ -77,6 +99,13 @@ const TemplateCard = ({
   };
 
   const handlePreview = () => {
+    if (!isTemplateAvailable) {
+      Alert.alert(
+        "Không thể xem mẫu",
+        "Backend hiện không render được mẫu này. Vui lòng chọn mẫu khác (hoặc chạy BE local/deploy mới)."
+      );
+      return;
+    }
     // URL này cần khớp với cấu trúc route public trên backend của bạn
     const previewUrl = `${BACKEND_URL}/inviletter/preview/${template.id}`;
     Linking.openURL(previewUrl).catch((err) =>
@@ -96,18 +125,30 @@ const TemplateCard = ({
           <Text
             style={[
               styles.badgeText,
-              template.type === "VIP" ? styles.vipBadge : styles.freeBadge,
+              templateType === "VIP" ? styles.vipBadge : styles.freeBadge,
             ]}
           >
-            {template.type}
+            {templateType}
           </Text>
         </View>
+
+        {healthStatus === "checking" && (
+          <View style={styles.healthBadge}>
+            <Text style={styles.healthBadgeText}>Đang kiểm tra…</Text>
+          </View>
+        )}
+        {healthStatus === "error" && (
+          <View style={[styles.healthBadge, styles.healthBadgeError]}>
+            <Text style={styles.healthBadgeText}>Bảo trì</Text>
+          </View>
+        )}
       </View>
 
       <View style={styles.buttonRow}>
         <TouchableOpacity
           style={[styles.button, styles.outlineButton]}
           onPress={handlePreview}
+          disabled={!isTemplateAvailable}
         >
           <Text style={[styles.buttonText, styles.outlineButtonText]}>
             Mẫu thử
@@ -117,17 +158,19 @@ const TemplateCard = ({
           style={[
             styles.button,
             styles.primaryButton,
-            template.type === "VIP" &&
+            templateType === "VIP" &&
               userAccountType === "FREE" &&
               styles.lockedButton,
+            !isTemplateAvailable && styles.disabledButton,
           ]}
           onPress={handleUseTemplate}
+          disabled={!isTemplateAvailable}
         >
-          {template.type === "VIP" && userAccountType === "FREE" && (
+          {templateType === "VIP" && userAccountType === "FREE" && (
             <Crown size={16} color="#ffffff" style={{ marginRight: 6 }} />
           )}
           <Text style={[styles.buttonText, styles.primaryButtonText]}>
-            {template.type === "VIP" && userAccountType === "FREE"
+            {templateType === "VIP" && userAccountType === "FREE"
               ? "Nâng cấp"
               : "Sử dụng"}
           </Text>
@@ -141,16 +184,19 @@ export default function InvitationLetterScreen() {
   const [activeTab, setActiveTab] = useState("Tất cả");
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const currentUser = useSelector(selectCurrentUser);
-  const userAccountType = currentUser?.accountType || "FREE";
+  const userAccountType = String(currentUser?.accountType || "FREE").toUpperCase();
 
   const [templates, setTemplates] = useState<Template[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [templateHealth, setTemplateHealth] = useState<
+    Record<number, TemplateHealthStatus>
+  >({});
 
   useEffect(() => {
     const fetchTemplates = async () => {
       try {
-        const response = await apiClient.get("/templates");
+        const response = await invitationClient.get("/templates");
         setTemplates(response.data);
       } catch (err: any) {
         setError(err.message || "Không thể tải danh sách mẫu.");
@@ -161,9 +207,59 @@ export default function InvitationLetterScreen() {
     fetchTemplates();
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    const baseUrl = BACKEND_URL.replace(/\/+$/, "");
+    const ids = templates.map((t) => t.id);
+
+    if (ids.length === 0) return;
+
+    // init unknown/checking states
+    setTemplateHealth((prev) => {
+      const next = { ...prev };
+      for (const id of ids) {
+        if (!next[id]) next[id] = "unknown";
+      }
+      return next;
+    });
+
+    const concurrency = 4;
+    let idx = 0;
+
+    const worker = async () => {
+      while (!cancelled && idx < ids.length) {
+        const id = ids[idx++];
+        setTemplateHealth((prev) => ({ ...prev, [id]: "checking" }));
+        try {
+          const resp = await fetch(`${baseUrl}/inviletter/preview/${id}`, {
+            method: "GET",
+          });
+          const ok = resp.ok;
+          if (!cancelled) {
+            setTemplateHealth((prev) => ({ ...prev, [id]: ok ? "ok" : "error" }));
+          }
+        } catch {
+          if (!cancelled) {
+            setTemplateHealth((prev) => ({ ...prev, [id]: "error" }));
+          }
+        }
+      }
+    };
+
+    Promise.all(Array.from({ length: concurrency }, () => worker()));
+
+    return () => {
+      cancelled = true;
+    };
+  }, [templates]);
+
   const filteredTemplates = templates.filter((template) => {
     if (activeTab === "Tất cả") return true;
-    return template.type === activeTab;
+    if (activeTab === "VIP") return normalizeTemplateType(template.type) === "VIP";
+    if (activeTab === "Miễn phí")
+      return normalizeTemplateType(template.type) === "Miễn phí";
+    return true;
   });
 
   const renderHeader = () => (
@@ -233,6 +329,7 @@ export default function InvitationLetterScreen() {
             template={item}
             navigation={navigation}
             userAccountType={userAccountType}
+            healthStatus={templateHealth[item.id] || "unknown"}
           />
         )}
         ListHeaderComponent={renderHeader}
@@ -265,7 +362,7 @@ const styles = StyleSheet.create({
     borderBottomColor: "#f3f4f6",
   },
   headerTitle: {
-    fontFamily: "Agbalumo",
+    fontFamily: "MavenPro-Bold",
     fontSize: 18,
     fontWeight: "600",
     color: "#e07181",
@@ -335,6 +432,24 @@ const styles = StyleSheet.create({
     right: 16,
     zIndex: 10,
   },
+  healthBadge: {
+    position: "absolute",
+    left: 16,
+    top: 16,
+    zIndex: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 9999,
+    backgroundColor: "rgba(17, 24, 39, 0.75)",
+  },
+  healthBadgeError: {
+    backgroundColor: "rgba(220, 38, 38, 0.85)",
+  },
+  healthBadgeText: {
+    fontFamily: "Montserrat-SemiBold",
+    color: "#ffffff",
+    fontSize: 12,
+  },
   badgeText: {
     fontFamily: "Montserrat-Medium",
     paddingHorizontal: 12,
@@ -373,6 +488,9 @@ const styles = StyleSheet.create({
   },
   lockedButton: {
     backgroundColor: "#9ca3af",
+  },
+  disabledButton: {
+    opacity: 0.6,
   },
   buttonText: {
     fontFamily: "Montserrat-SemiBold",

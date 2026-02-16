@@ -1,12 +1,12 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import apiClient from "../api/client";
+import invitationClient from "../api/invitationClient";
 import type { RootState } from "./store";
 
 export const fetchUserInvitation = createAsyncThunk(
   "invitation/fetchUserInvitation",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await apiClient.get("/invitation/my-invitation");
+      const response = await invitationClient.get("/invitation/my-invitation");
       return response.data;
     } catch (error) {
       return rejectWithValue(

@@ -115,26 +115,31 @@ const NotificationListScreen = () => {
     }
   };
 
-  const handleDeleteNotification = async (notificationId: string) => {
-    Alert.alert("Xóa thông báo", "Bạn có chắc chắn muốn xóa thông báo này?", [
-      { text: "Hủy", style: "cancel" },
-      {
-        text: "Xóa",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            await notificationService.deleteNotification(notificationId);
+  const handleDeleteAll = async () => {
+    try {
+      // Delete all without confirm: mark all read then delete read notifications
+      await notificationService.markAllAsRead(weddingEventId);
+      await notificationService.deleteReadNotifications(weddingEventId);
+      setNotifications([]);
+      setUnreadCount(0);
+    } catch (error: any) {
+      console.error("Error deleting all notifications:", error);
+      Alert.alert("Lỗi", error.message || "Không thể xóa tất cả thông báo");
+    }
+  };
 
-            setNotifications((prev) =>
-              prev.filter((notif) => notif._id !== notificationId)
-            );
-          } catch (error: any) {
-            console.error("Error deleting notification:", error);
-            Alert.alert("Lỗi", error.message || "Không thể xóa thông báo");
-          }
-        },
-      },
-    ]);
+  const handleDeleteNotification = async (notificationId: string) => {
+    try {
+      const notif = notifications.find((n) => n._id === notificationId);
+      await notificationService.deleteNotification(notificationId);
+      setNotifications((prev) => prev.filter((notif) => notif._id !== notificationId));
+      if (notif && !notif.isRead) {
+        setUnreadCount((prev) => Math.max(0, prev - 1));
+      }
+    } catch (error: any) {
+      console.error("Error deleting notification:", error);
+      Alert.alert("Lỗi", error.message || "Không thể xóa thông báo");
+    }
   };
 
   const getNotificationIcon = (type: string, priority: string) => {
@@ -251,9 +256,9 @@ const NotificationListScreen = () => {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar
-        barStyle="dark-content"
-        backgroundColor="transparent"
-        translucent={true}
+        barStyle="light-content"
+        backgroundColor="#ff5a7a"
+        translucent={false}
       />
 
       {/* Header */}
@@ -264,17 +269,31 @@ const NotificationListScreen = () => {
         ]}
       >
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <ChevronLeft size={24} color="#1f2937" />
+          <ChevronLeft size={24} color="#ffffff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>
-          Thông báo {unreadCount > 0 && `(${unreadCount})`}
-        </Text>
-        {unreadCount > 0 && (
-          <TouchableOpacity onPress={handleMarkAllAsRead}>
-            <Text style={styles.markAllReadText}>Đọc tất cả</Text>
-          </TouchableOpacity>
-        )}
-        {unreadCount === 0 && <View style={{ width: 24 }} />}
+        <View style={{ flex: 1, paddingHorizontal: responsiveWidth(12) }}>
+          <Text style={styles.headerTitle}>
+            Thông báo {unreadCount > 0 && `(${unreadCount})`}
+          </Text>
+        </View>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+          {notifications.length > 0 ? (
+            <TouchableOpacity
+              style={styles.headerIconBtn}
+              onPress={handleDeleteAll}
+              hitSlop={10}
+            >
+              <Trash2 size={20} color="#ffffff" />
+            </TouchableOpacity>
+          ) : (
+            <View style={{ width: 24 }} />
+          )}
+          {unreadCount > 0 ? (
+            <TouchableOpacity onPress={handleMarkAllAsRead}>
+              <Text style={styles.markAllReadText}>Đọc tất cả</Text>
+            </TouchableOpacity>
+          ) : null}
+        </View>
       </View>
 
       {/* Notification List */}
@@ -305,7 +324,7 @@ const NotificationListScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f9fafb",
+    backgroundColor: "#ffffff",
   },
   header: {
     flexDirection: "row",
@@ -313,19 +332,28 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: responsiveWidth(20),
     paddingVertical: responsiveHeight(16),
-    backgroundColor: "#ffffff",
-    borderBottomWidth: 1,
-    borderBottomColor: "#f3f4f6",
+    backgroundColor: "#ff5a7a",
   },
   headerTitle: {
     fontSize: responsiveFont(20),
-    fontFamily: "Agbalumo",
-    color: "#ff6b9d",
+    fontFamily: "MavenPro",
+    fontWeight: "800",
+    color: "#ffffff",
   },
   markAllReadText: {
     fontFamily: "Montserrat-SemiBold",
     fontSize: responsiveFont(14),
-    color: "#ff6b9d",
+    color: "#ffffff",
+  },
+  headerIconBtn: {
+    width: responsiveWidth(28),
+    height: responsiveWidth(28),
+    borderRadius: responsiveWidth(14),
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,0.18)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.28)",
   },
   loadingContainer: {
     flex: 1,
@@ -347,15 +375,10 @@ const styles = StyleSheet.create({
     borderRadius: responsiveWidth(12),
     borderWidth: 1,
     borderColor: "#e5e7eb",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
   },
   notificationUnread: {
-    backgroundColor: "#fef3f8",
-    borderColor: "#ffc9e0",
+    backgroundColor: "#fff6f8",
+    borderColor: "#ffd0dc",
   },
   notificationIconContainer: {
     marginRight: responsiveWidth(12),
@@ -392,7 +415,7 @@ const styles = StyleSheet.create({
     width: responsiveWidth(8),
     height: responsiveWidth(8),
     borderRadius: responsiveWidth(4),
-    backgroundColor: "#ff6b9d",
+    backgroundColor: "#ff5a7a",
   },
   emptyContainer: {
     flex: 1,

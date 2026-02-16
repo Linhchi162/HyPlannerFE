@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
 import {
   View,
   Text,
@@ -21,7 +21,7 @@ import { selectCurrentUser, updateUserField } from "../../store/authSlice";
 import { getAccountLimits, getUpgradeMessage } from "../../utils/accountLimits";
 import apiClient from "../../api/client";
 import { StackNavigationProp } from "@react-navigation/stack";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { RootStackParamList } from "../../navigation/types"; // Đảm bảo đường dẫn này đúng
 import {
   ChevronRight,
@@ -44,6 +44,7 @@ import { getWeddingEvent } from "../../service/weddingEventService";
 import { AppDispatch, RootState } from "../../store";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MixpanelService } from "../../service/mixpanelService";
+import * as notificationService from "../../service/notificationService";
 
 import {
   responsiveWidth,
@@ -121,17 +122,44 @@ const HomeScreen = () => {
   );
   const eventId = weddingEvent?._id;
   const member = weddingEvent?.member || [];
+  const [notifUnread, setNotifUnread] = useState(0);
 
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [randomImages, setRandomImages] = useState<typeof weddingImages>([]);
   const scrollViewRef = React.useRef<ScrollView>(null);
-  const scrollAnimation = React.useRef(new Animated.Value(0)).current;
+  const scrollX = React.useRef(new Animated.Value(0)).current; // Dùng để điều khiển vị trí lướt
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const dispatch = useDispatch<AppDispatch>();
 
   // Animation cho trái tim
-  const [heartScale] = useState(new Animated.Value(1));
-  const [heartOpacity] = useState(new Animated.Value(1));
+  const heartScale = React.useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    // Đồng bộ giá trị Animated với ScrollView
+    const listenerId = scrollX.addListener(({ value }) => {
+      scrollViewRef.current?.scrollTo({ x: value, animated: false });
+    });
+    return () => scrollX.removeListener(listenerId);
+  }, []);
+
+  const fetchNotifUnread = useCallback(async () => {
+    if (!eventId) {
+      setNotifUnread(0);
+      return;
+    }
+    try {
+      const res = await notificationService.getNotifications(eventId, { limit: 1 });
+      setNotifUnread(res.unreadCount || 0);
+    } catch {
+      // ignore
+    }
+  }, [eventId]);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchNotifUnread();
+    }, [fetchNotifUnread])
+  );
 
   // Countdown state (theo giây)
   const [timeLeft, setTimeLeft] = useState({
@@ -141,6 +169,20 @@ const HomeScreen = () => {
     seconds: 0,
     totalSeconds: 0,
   });
+
+  // Panel hồng luôn xuất hiện trên Home; set ngay + set lại sau 1 frame để thắng cleanup từ Tủ đồ/Cộng đồng (tránh top panel bị đẩy lên)
+  useFocusEffect(
+    useCallback(() => {
+      const apply = () => {
+        StatusBar.setBackgroundColor("#ff5a7a");
+        StatusBar.setBarStyle("light-content");
+        if (Platform.OS === "android") StatusBar.setTranslucent(false);
+      };
+      apply();
+      const id = setTimeout(apply, 0);
+      return () => clearTimeout(id);
+    }, [])
+  );
 
   useEffect(() => {
     MixpanelService.track("Viewed Dashboard");
@@ -233,30 +275,16 @@ const HomeScreen = () => {
   useEffect(() => {
     const pulseAnimation = Animated.loop(
       Animated.sequence([
-        Animated.parallel([
-          Animated.timing(heartScale, {
-            toValue: 1.15,
-            duration: 1000,
-            useNativeDriver: true,
-          }),
-          Animated.timing(heartOpacity, {
-            toValue: 0.7,
-            duration: 1000,
-            useNativeDriver: true,
-          }),
-        ]),
-        Animated.parallel([
-          Animated.timing(heartScale, {
-            toValue: 1,
-            duration: 1000,
-            useNativeDriver: true,
-          }),
-          Animated.timing(heartOpacity, {
-            toValue: 1,
-            duration: 1000,
-            useNativeDriver: true,
-          }),
-        ]),
+        Animated.timing(heartScale, {
+          toValue: 1.15,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(heartScale, {
+          toValue: 1,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
       ])
     );
 
@@ -265,7 +293,7 @@ const HomeScreen = () => {
     return () => pulseAnimation.stop();
   }, []); // ✅ FIXED: Empty deps array - animation chỉ start 1 lần
 
-  // Auto-scroll carousel với transition mượt mà
+  // Auto-scroll carousel với transition mượt mà chuẩn Native
   useEffect(() => {
     if (randomImages.length === 0) return;
 
@@ -274,41 +302,28 @@ const HomeScreen = () => {
         const nextIndex = (prevIndex + 1) % randomImages.length;
         const targetX = nextIndex * width;
 
-        // Sử dụng Animated.timing để có transition mượt mà hơn
-        Animated.timing(scrollAnimation, {
+        // Sử dụng Animated.timing để kiểm soát tốc độ lướt (1000ms = 1 giây)
+        Animated.timing(scrollX, {
           toValue: targetX,
-          duration: 2000, // ← Transition mượt mà trong 2 giây
+          duration: 500, // --- GIẢM TỐC ĐỘ LƯỚT (1.5 giây) ---
           useNativeDriver: false,
-        }).start(() => {
-          // Callback sau khi animation hoàn thành
-          scrollViewRef.current?.scrollTo({
-            x: targetX,
-            animated: false,
-          });
-        });
+        }).start();
 
         return nextIndex;
       });
-    }, 5000); // Hiển thị mỗi ảnh 8 giây
+    }, 5000); // 5 giây đổi ảnh 1 lần
 
     return () => clearInterval(autoScrollInterval);
-  }, [randomImages.length, scrollAnimation]);
-
-  // ✅ Listener để sync scrollAnimation với ScrollView
-  useEffect(() => {
-    const listenerId = scrollAnimation.addListener(({ value }) => {
-      scrollViewRef.current?.scrollTo({
-        x: value,
-        animated: false, // Không dùng animation của ScrollView
-      });
-    });
-
-    return () => {
-      scrollAnimation.removeListener(listenerId);
-    };
-  }, [scrollAnimation]);
+  }, [randomImages.length, width]);
 
   // --- TÍNH TOÁN SỐ NGÀY ĐẾM NGƯỢC ĐỘNG (giữ lại cho các phần khác nếu cần) ---
+  const weddingDateLabel = useMemo(() => {
+    if (!weddingEvent?.timeToMarried) {
+      return "";
+    }
+    return new Date(weddingEvent.timeToMarried).toLocaleDateString("vi-VN");
+  }, [weddingEvent?.timeToMarried]);
+
   const daysLeft = useMemo(() => {
     if (!weddingEvent?.timeToMarried) {
       return 0;
@@ -384,83 +399,84 @@ const HomeScreen = () => {
 
   // --- GIAO DIỆN CHÍNH KHI CÓ DỮ LIỆU ---
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <StatusBar
-        barStyle="dark-content"
-        backgroundColor="transparent"
-        translucent={true}
+        barStyle="light-content"
+        backgroundColor="#ff5a7a"
+        translucent={false}
       />
+
+      {/* Top Panel Section - Đã chuyển sang nền trong suốt và nổi lên trên */}
+      <View style={styles.topPanelContainer} pointerEvents="box-none">
+        <Image
+          source={require("../../../assets/images/top.png")}
+          style={styles.topPanelBg}
+          resizeMode="stretch"
+        />
+        <SafeAreaView style={styles.headerContent} pointerEvents="box-none">
+          <View style={styles.headerRow} pointerEvents="box-none">
+            <Image
+              source={require("../../../assets/images/hyLogo.png")}
+              style={styles.logo}
+              resizeMode="contain"
+            />
+            <View style={styles.headerButtons}>
+              <TouchableOpacity
+                style={styles.headerButton}
+                onPress={() => Alert.alert("Thông báo", "Tính năng Chatbot AI đang được phát triển!")}
+              >
+                <Image
+                  source={require("../../../assets/images/ai.png")}
+                  style={styles.headerIcon}
+                  resizeMode="contain"
+                />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.headerButton}
+                onPress={() => {
+                  if (eventId) {
+                    navigation.navigate("NotificationListScreen", {
+                      weddingEventId: eventId,
+                    });
+                  } else {
+                    navigation.navigate("Notifications");
+                  }
+                }}
+              >
+                <View style={styles.notificationIconWrap}>
+                  <Image
+                    source={require("../../../assets/images/notification.png")}
+                    style={styles.headerIcon}
+                    resizeMode="contain"
+                  />
+                  {notifUnread > 0 && (
+                    <View style={styles.notifBadge}>
+                      <Text style={styles.notifBadgeText}>
+                        {notifUnread > 99 ? "99+" : notifUnread}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </SafeAreaView>
+      </View>
+
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
+          paddingTop: responsiveHeight(200), // Tăng lên để tránh cắt phần đáy top.png
           paddingBottom:
             Platform.OS === "android"
               ? responsiveHeight(80)
               : insets.bottom > 0
-              ? insets.bottom
-              : responsiveHeight(20),
+                ? insets.bottom
+                : responsiveHeight(20),
         }}
       >
-        {/* Heart Countdown Widget */}
-        <View style={styles.heartCountdownContainer}>
-          <Animated.View
-            style={[
-              styles.heartBackground,
-              {
-                transform: [{ scale: heartScale }],
-                opacity: heartOpacity,
-              },
-            ]}
-          >
-            <Heart
-              size={responsiveWidth(280)}
-              color="#ff6b9d"
-              fill="#ff6b9d"
-              strokeWidth={1}
-            />
-          </Animated.View>
-
-          <View style={styles.countdownContent}>
-            {(weddingEvent.brideName || weddingEvent.groomName) && (
-              <Text style={styles.coupleNames}>
-                {weddingEvent.brideName && weddingEvent.groomName
-                  ? `${weddingEvent.brideName} & ${weddingEvent.groomName}`
-                  : weddingEvent.brideName || weddingEvent.groomName}
-              </Text>
-            )}
-            <Text style={styles.countdownTitle}>Đếm ngược đến ngày cưới</Text>
-            <View style={styles.timeUnitsContainer}>
-              <View style={styles.timeUnit}>
-                <Text style={styles.timeNumber}>{timeLeft.days}</Text>
-                <Text style={styles.timeLabel}>ngày</Text>
-              </View>
-              <Text style={styles.timeSeparator}>:</Text>
-              <View style={styles.timeUnit}>
-                <Text style={styles.timeNumber}>
-                  {String(timeLeft.hours).padStart(2, "0")}
-                </Text>
-                <Text style={styles.timeLabel}>giờ</Text>
-              </View>
-              <Text style={styles.timeSeparator}>:</Text>
-              <View style={styles.timeUnit}>
-                <Text style={styles.timeNumber}>
-                  {String(timeLeft.minutes).padStart(2, "0")}
-                </Text>
-                <Text style={styles.timeLabel}>phút</Text>
-              </View>
-              <Text style={styles.timeSeparator}>:</Text>
-              <View style={styles.timeUnit}>
-                <Text style={styles.timeNumber}>
-                  {String(timeLeft.seconds).padStart(2, "0")}
-                </Text>
-                <Text style={styles.timeLabel}>giây</Text>
-              </View>
-            </View>
-          </View>
-        </View>
-
-        {/* Wedding Image Carousel */}
+        {/* Wedding Image Carousel - Đã chuyển lên đầu và tràn màn hình */}
         <View style={styles.imageSection}>
           <ScrollView
             ref={scrollViewRef}
@@ -488,6 +504,88 @@ const HomeScreen = () => {
           </Text>
         </View>
 
+        {/* Heart Countdown Widget */}
+        <View style={styles.heartCountdownContainer}>
+          <Animated.View
+            style={[
+              styles.heartBackground,
+              {
+                transform: [{ scale: heartScale }],
+              },
+            ]}
+          >
+            <Image
+              source={require("../../../assets/images/name_heart.png")}
+              style={styles.heartImage}
+              resizeMode="contain"
+            />
+          </Animated.View>
+          <Image
+            source={require("../../../assets/images/side_flowers.png")}
+            style={[styles.sideFlower, styles.sideFlowerLeft]}
+            resizeMode="contain"
+          />
+          <Image
+            source={require("../../../assets/images/side_flowers.png")}
+            style={[styles.sideFlower, styles.sideFlowerRight]}
+            resizeMode="contain"
+          />
+
+          <View style={styles.countdownContent}>
+            {(weddingEvent.brideName || weddingEvent.groomName) && (
+              <View style={styles.namesContainer}>
+                {weddingEvent.brideName && weddingEvent.groomName ? (
+                  <>
+                    <View style={styles.nameBlock}>
+                      <Text style={styles.nameText} numberOfLines={2}>
+                        {weddingEvent.brideName}
+                      </Text>
+                    </View>
+                    <Text style={styles.ampersandText}>&</Text>
+                    <View style={styles.nameBlock}>
+                      <Text style={styles.nameText} numberOfLines={2}>
+                        {weddingEvent.groomName}
+                      </Text>
+                    </View>
+                  </>
+                ) : (
+                  <View style={styles.nameBlock}>
+                    <Text style={styles.nameText} numberOfLines={2}>
+                      {weddingEvent.brideName || weddingEvent.groomName}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            )}
+            <View style={styles.timeUnitsContainer}>
+              <View style={styles.timeUnit}>
+                <Text style={styles.timeNumber}>{timeLeft.days}</Text>
+              </View>
+              <Text style={styles.timeSeparator}>:</Text>
+              <View style={styles.timeUnit}>
+                <Text style={styles.timeNumber}>
+                  {String(timeLeft.hours).padStart(2, "0")}
+                </Text>
+              </View>
+              <Text style={styles.timeSeparator}>:</Text>
+              <View style={styles.timeUnit}>
+                <Text style={styles.timeNumber}>
+                  {String(timeLeft.minutes).padStart(2, "0")}
+                </Text>
+              </View>
+              <Text style={styles.timeSeparator}>:</Text>
+              <View style={styles.timeUnit}>
+                <Text style={styles.timeNumber}>
+                  {String(timeLeft.seconds).padStart(2, "0")}
+                </Text>
+              </View>
+            </View>
+            {weddingDateLabel ? (
+              <Text style={styles.weddingDateText}>{weddingDateLabel}</Text>
+            ) : null}
+          </View>
+        </View>
+
         {/* Menu Items */}
         <View style={styles.menuSection}>
           <TouchableOpacity
@@ -500,15 +598,16 @@ const HomeScreen = () => {
             disabled={!eventId}
           >
             <View style={styles.menuItemLeft}>
-              <View style={styles.menuIcon}>
-                <List size={16} color="white" />
-              </View>
               <View style={styles.menuTextContainer}>
                 <Text style={styles.menuTitle}>Danh sách của bạn</Text>
                 <Text style={styles.menuSubtitle}>Danh sách công việc</Text>
               </View>
             </View>
-            <ChevronRight size={20} color="#9ca3af" />
+            <Image
+              source={require("../../../assets/images/forward.png")}
+              style={styles.menuArrow}
+              resizeMode="contain"
+            />
           </TouchableOpacity>
 
           {(user?.id || user?._id) === weddingEvent.creatorId && (
@@ -517,15 +616,16 @@ const HomeScreen = () => {
               onPress={() => navigation.navigate("BudgetList")}
             >
               <View style={styles.menuItemLeft}>
-                <View style={styles.menuIcon}>
-                  <Wallet size={16} color="white" />
-                </View>
                 <View style={styles.menuTextContainer}>
                   <Text style={styles.menuTitle}>Ngân sách của bạn</Text>
                   <Text style={styles.menuSubtitle}>Danh sách ngân sách</Text>
                 </View>
               </View>
-              <ChevronRight size={20} color="#9ca3af" />
+              <Image
+                source={require("../../../assets/images/forward.png")}
+                style={styles.menuArrow}
+                resizeMode="contain"
+              />
             </TouchableOpacity>
           )}
 
@@ -535,9 +635,6 @@ const HomeScreen = () => {
               onPress={() => navigation.navigate("GuestManagementScreen")}
             >
               <View style={styles.menuItemLeft}>
-                <View style={styles.menuIcon}>
-                  <Users size={16} color="white" />
-                </View>
                 <View style={styles.menuTextContainer}>
                   <Text style={styles.menuTitle}>Quản lý khách mời</Text>
                   <Text style={styles.menuSubtitle}>
@@ -545,9 +642,32 @@ const HomeScreen = () => {
                   </Text>
                 </View>
               </View>
-              <ChevronRight size={20} color="#9ca3af" />
+              <Image
+                source={require("../../../assets/images/forward.png")}
+                style={styles.menuArrow}
+                resizeMode="contain"
+              />
             </TouchableOpacity>
           )}
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => navigation.navigate("VendorList")}
+          >
+            <View style={styles.menuItemLeft}>
+              <View style={styles.menuTextContainer}>
+                <Text style={styles.menuTitle}>Kết nối dịch vụ cưới</Text>
+                <Text style={styles.menuSubtitle}>
+                  Tìm & liên hệ nhà cung cấp
+                </Text>
+              </View>
+            </View>
+            <Image
+              source={require("../../../assets/images/forward.png")}
+              style={styles.menuArrow}
+              resizeMode="contain"
+            />
+          </TouchableOpacity>
 
           {/* <TouchableOpacity
             style={styles.menuItem}
@@ -627,9 +747,6 @@ const HomeScreen = () => {
               }}
             >
               <View style={styles.menuItemLeft}>
-                <View style={styles.menuIcon}>
-                  <LifeBuoy size={16} color="white" />
-                </View>
                 <View style={styles.menuTextContainer}>
                   <Text style={styles.menuTitle}>Ai là người tiếp theo?</Text>
                   <Text style={styles.menuSubtitle}>
@@ -637,14 +754,18 @@ const HomeScreen = () => {
                   </Text>
                 </View>
               </View>
-              <ChevronRight size={20} color="#9ca3af" />
+              <Image
+                source={require("../../../assets/images/forward.png")}
+                style={styles.menuArrow}
+                resizeMode="contain"
+              />
             </TouchableOpacity>
           )}
         </View>
 
         <View style={styles.bottomPadding} />
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -652,10 +773,83 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#ffffff",
-    paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
+  },
+  topPanelContainer: {
+    width: "100%",
+    height: responsiveHeight(110), // Panel giấy cao hơn
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 100,
+    backgroundColor: "transparent",
+  },
+  topPanelBg: {
+    position: "absolute",
+    width: "100%",
+    height: "100%",
+    backgroundColor: "transparent",
+  },
+  headerContent: {
+    flex: 1,
+    backgroundColor: "transparent",
+  },
+  headerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: responsiveWidth(20),
+    paddingTop: Platform.OS === "android" ? responsiveHeight(15) : responsiveHeight(8), // Logo và nút cao hơn trên panel
+    backgroundColor: "transparent",
+  },
+  logo: {
+    width: responsiveWidth(64),
+    height: responsiveHeight(54),
+  },
+  headerButtons: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: responsiveWidth(15),
+  },
+  headerButton: {
+    width: responsiveWidth(50),
+    height: responsiveWidth(56),
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  headerIcon: {
+    width: "100%",
+    height: "100%",
+  },
+  notificationIconWrap: {
+    width: "100%",
+    height: "100%",
+    position: "relative",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  notifBadge: {
+    position: "absolute",
+    top: responsiveHeight(4),
+    right: responsiveWidth(4),
+    minWidth: responsiveWidth(18),
+    height: responsiveWidth(18),
+    paddingHorizontal: responsiveWidth(5),
+    borderRadius: responsiveWidth(9),
+    backgroundColor: "#ffffff",
+    borderWidth: 1,
+    borderColor: "#ff5a7a",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  notifBadgeText: {
+    fontFamily: "Montserrat-SemiBold",
+    fontSize: responsiveFont(10),
+    color: "#ff5a7a",
   },
   scrollView: {
     flex: 1,
+    backgroundColor: "#ffffff",
   },
   greetingCard: {
     marginHorizontal: responsiveWidth(16),
@@ -683,14 +877,35 @@ const styles = StyleSheet.create({
     position: "relative",
     alignItems: "center",
     justifyContent: "center",
-    height: responsiveHeight(300),
-    marginVertical: responsiveHeight(16),
-    marginTop: responsiveHeight(32),
+    height: responsiveHeight(270),
+    marginTop: -responsiveHeight(230), // Đẩy nhẹ lên để lồng vào mép rách giấy
+    marginBottom: responsiveHeight(16),
   },
   heartBackground: {
     position: "absolute",
     alignItems: "center",
     justifyContent: "center",
+    zIndex: 10,
+  },
+  sideFlower: {
+    position: "absolute",
+    width: responsiveWidth(190),
+    height: responsiveWidth(180),
+    zIndex: 1,
+  },
+  sideFlowerLeft: {
+    left: -responsiveWidth(35),
+    top: responsiveHeight(20),
+    transform: [{ scaleX: -1 }],
+  },
+  sideFlowerRight: {
+    right: -responsiveWidth(35),
+    top: responsiveHeight(20),
+    transform: [{ scaleX: 1 }],
+  },
+  heartImage: {
+    width: responsiveWidth(350),
+    height: responsiveWidth(330),
   },
   countdownContent: {
     position: "absolute",
@@ -698,52 +913,75 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     zIndex: 10,
   },
-  coupleNames: {
-    fontFamily: "Agbalumo",
-    fontSize: responsiveFont(18),
-    color: "#ffffff",
-    marginBottom: responsiveHeight(6),
+  namesContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
+    alignItems: "center",
+    width: responsiveWidth(200), // Khung tên nhỏ hơn, tên 2 chữ trở lên tự xuống dòng
+    marginBottom: responsiveHeight(-20),
+    marginTop: responsiveHeight(-40),
+  },
+  nameBlock: {
+    maxWidth: responsiveWidth(88),
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  nameText: {
+    fontFamily: "Charm-Bold",
+    fontSize: responsiveFont(20),
+    color: "#fd4166",
     textAlign: "center",
-    textShadowColor: "rgba(0, 0, 0, 0.3)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
+  },
+  ampersandText: {
+    fontFamily: "Charm-Bold",
+    fontSize: responsiveFont(20),
+    color: "#fd4166",
+    textAlign: "center",
+    marginHorizontal: responsiveWidth(0),
   },
   countdownTitle: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Charm-Bold",
+
     fontSize: responsiveFont(12),
-    color: "#ffffff",
+    color: "#fd4166",
     marginBottom: responsiveHeight(10),
     textAlign: "center",
   },
   timeUnitsContainer: {
     flexDirection: "row",
     alignItems: "center",
-    gap: responsiveWidth(4),
+    gap: responsiveWidth(5),
   },
   timeUnit: {
     alignItems: "center",
   },
   timeNumber: {
-    fontFamily: "Montserrat-Bold",
-    fontSize: responsiveFont(22),
-    fontWeight: "bold",
-    color: "#ffffff",
-    textShadowColor: "rgba(0, 0, 0, 0.3)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
+    fontFamily: "Charm-Bold",
+    fontSize: responsiveFont(26),
+    color: "#fd4166",
+    marginTop: responsiveHeight(-6),
   },
   timeLabel: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Charm-Bold",
     fontSize: responsiveFont(9),
-    color: "#ffffff",
+    color: "#fd4166",
     marginTop: responsiveHeight(2),
   },
   timeSeparator: {
-    fontFamily: "Montserrat-Bold",
-    fontSize: responsiveFont(18),
+    fontFamily: "Charm-Bold",
+    fontSize: responsiveFont(17),
     fontWeight: "bold",
-    color: "#ffffff",
-    marginBottom: responsiveHeight(10),
+    color: "#fd4166",
+    marginBottom: responsiveHeight(-5),
+  },
+  weddingDateText: {
+    marginTop: responsiveHeight(-20),
+    fontFamily: "Charm-Regular",
+    fontSize: responsiveFont(17),
+    color: "#fd4166",
+    opacity: 1,
+    textAlign: "center",
   },
   countdownContainer: {
     flexDirection: "row",
@@ -751,32 +989,32 @@ const styles = StyleSheet.create({
     gap: responsiveWidth(8),
   },
   countdownNumber: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Charm-regular",
     fontSize: responsiveFont(36),
     fontWeight: "bold",
     color: "#ff6b9d",
   },
   countdownLabel: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Charm-regular",
     color: "#6b7280",
     fontSize: responsiveFont(24),
   },
   imageSection: {
-    marginBottom: responsiveHeight(16),
+    marginBottom: responsiveHeight(60),
+    marginTop: -responsiveHeight(140), // Đẩy lên thêm một chút
   },
   carouselContainer: {
     // Để trống vì nó đã tự động theo chiều rộng màn hình
   },
   imageContainer: {
-    width: width - responsiveWidth(32), // Chiều rộng màn hình trừ đi lề 2 bên
-    marginHorizontal: responsiveWidth(16),
-    borderRadius: responsiveWidth(16),
+    width: width, // Tràn màn hình
+    marginHorizontal: 0,
+    borderRadius: 0, // Bỏ bo góc
     overflow: "hidden",
-    marginBottom: responsiveHeight(12),
   },
   weddingImage: {
     width: "100%",
-    height: (width - responsiveWidth(32)) * 0.8, // Giữ tỷ lệ ảnh responsive
+    height: width * 1.2, // Tăng chiều cao để ảnh trông sang trọng hơn
   },
   imageCaption: {
     fontFamily: "Montserrat-Medium",
@@ -794,36 +1032,38 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    backgroundColor: "#f3f4f6",
-    borderRadius: responsiveWidth(12),
+    backgroundColor: "transparent",
+    borderRadius: 0,
     padding: responsiveWidth(16),
   },
   menuItemLeft: {
     flexDirection: "row",
     alignItems: "center",
-    gap: responsiveWidth(12),
-  },
-  menuIcon: {
-    width: responsiveWidth(32),
-    height: responsiveWidth(32), // Giữ hình vuông
-    backgroundColor: "#ff6b9d",
-    borderRadius: responsiveWidth(8),
-    justifyContent: "center",
-    alignItems: "center",
+    gap: responsiveWidth(8),
   },
   menuTextContainer: {
     gap: responsiveHeight(2),
   },
   menuTitle: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "MavenPro",
     fontWeight: "500",
-    color: "#1f2937",
-    fontSize: responsiveFont(18),
+    color: "#fd4166",
+    textShadowColor: "rgba(236, 182, 192, 0.6)",
+    textShadowOffset: { width: -1, height: 1.5 },
+    textShadowRadius: 2,
+    fontSize: responsiveFont(22),
   },
   menuSubtitle: {
-    fontFamily: "Montserrat-Medium",
-    fontSize: responsiveFont(14),
-    color: "#6b7280",
+    fontFamily: "MavenPro",
+    fontSize: responsiveFont(16),
+    color: "rgba(226, 62, 92, 0.6)",
+
+
+  },
+  menuArrow: {
+    width: responsiveWidth(22),
+    height: responsiveWidth(22),
+    marginLeft: responsiveWidth(8),
   },
   bottomPadding: {
     height: responsiveHeight(85), // Không gian cho thanh điều hướng dưới cùng

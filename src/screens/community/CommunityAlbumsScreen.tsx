@@ -26,6 +26,15 @@ import {
   responsiveFont,
 } from "../../../assets/styles/utils/responsive";
 
+const COLORS = {
+  primary: "#ff5a7a",
+  primarySoft: "#ffe1e8",
+  textDark: "#1f2937",
+  textMuted: "#6b7280",
+  bg: "#f8f9fa",
+  white: "#ffffff",
+};
+
 export const CommunityAlbumsScreen = ({ navigation }: any) => {
   const [albums, setAlbums] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -137,12 +146,13 @@ export const CommunityAlbumsScreen = ({ navigation }: any) => {
   const renderHeader = () => (
     <View>
       {/* Header - Thread Style */}
-      <View style={styles.mainHeader}>
+        <View style={styles.mainHeader}>
         <View style={styles.headerTop}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <ChevronLeft size={24} color="#374151" />
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBack}>
+            <ChevronLeft size={24} color={COLORS.white} />
           </TouchableOpacity>
-          <Text style={styles.logo}>Album ảnh cưới</Text>
+          <Text style={styles.headerTitle} numberOfLines={1}>Album ảnh cưới</Text>
+          <View style={styles.headerSpacer} />
         </View>
       </View>
 
@@ -190,7 +200,7 @@ export const CommunityAlbumsScreen = ({ navigation }: any) => {
     if (!isLoading || albums.length === 0) return null;
     return (
       <View style={styles.footerLoader}>
-        <ActivityIndicator size="small" color="#ff6b9d" />
+      <ActivityIndicator size="small" color={COLORS.primary} />
       </View>
     );
   };
@@ -199,7 +209,7 @@ export const CommunityAlbumsScreen = ({ navigation }: any) => {
     <SafeAreaView style={styles.container} edges={["top"]}>
       {isLoading && albums.length === 0 ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#ff6b9d" />
+          <ActivityIndicator size="large" color={COLORS.primary} />
         </View>
       ) : (
         <FlatList
@@ -221,8 +231,8 @@ export const CommunityAlbumsScreen = ({ navigation }: any) => {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={handleRefresh}
-              colors={["#ff6b9d"]}
-              tintColor="#ff6b9d"
+              colors={[COLORS.primary]}
+              tintColor={COLORS.primary}
             />
           }
           onEndReached={handleLoadMore}
@@ -248,25 +258,39 @@ export const CommunityAlbumsScreen = ({ navigation }: any) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f8f9fa",
+    backgroundColor: COLORS.bg,
   },
   mainHeader: {
-    backgroundColor: "#ffffff",
+    backgroundColor: COLORS.primary,
     paddingHorizontal: responsiveWidth(16),
     paddingTop: responsiveHeight(8),
     paddingBottom: responsiveHeight(12),
-    borderBottomWidth: 0.5,
-    borderBottomColor: "#e5e7eb",
   },
   headerTop: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
+    justifyContent: "space-between",
+  },
+  headerBack: {
+    zIndex: 1,
+  },
+  headerSpacer: {
+    width: responsiveWidth(24),
+    zIndex: 1,
+  },
+  headerTitle: {
+    fontFamily: "MavenPro-Bold",
+    fontSize: responsiveFont(20),
+    color: COLORS.white,
+    position: "absolute",
+    left: responsiveWidth(48),
+    right: responsiveWidth(48),
+    textAlign: "center",
   },
   logo: {
-    fontFamily: "Agbalumo",
+    fontFamily: "MavenPro-Bold",
     fontSize: responsiveFont(24),
-    color: "#1f2937",
+    color: COLORS.white,
     flex: 1,
     textAlign: "center",
   },
@@ -285,7 +309,7 @@ const styles = StyleSheet.create({
   subtitle: {
     fontFamily: "Montserrat-Medium",
     fontSize: responsiveFont(13),
-    color: "#6b7280",
+    color: COLORS.textMuted,
     textAlign: "center",
     paddingHorizontal: responsiveWidth(16),
     paddingTop: responsiveHeight(4),
@@ -302,11 +326,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#ffffff",
+    backgroundColor: COLORS.white,
     paddingVertical: responsiveHeight(12),
     borderRadius: responsiveWidth(12),
     borderWidth: 1,
-    borderColor: "#e5e7eb",
+    borderColor: COLORS.primarySoft,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
@@ -314,27 +338,28 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   filterButtonActive: {
-    backgroundColor: "#9333ea",
-    borderColor: "#9333ea",
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
   },
   filterText: {
     fontFamily: "Montserrat-SemiBold",
     fontSize: responsiveFont(14),
-    color: "#1f2937",
+    color: COLORS.textDark,
   },
   filterTextActive: {
-    color: "#ffffff",
+    color: COLORS.white,
   },
   listContent: {
-    paddingHorizontal: responsiveWidth(5),
     paddingBottom: responsiveHeight(3),
   },
   row: {
     justifyContent: "space-between",
+    gap: responsiveWidth(12),
+    paddingHorizontal: responsiveWidth(16),
   },
   albumWrapper: {
     flex: 1,
-    marginBottom: responsiveHeight(1),
+    marginBottom: responsiveHeight(2),
   },
   albumStats: {
     flexDirection: "row",
@@ -351,7 +376,7 @@ const styles = StyleSheet.create({
   statText: {
     fontSize: responsiveFont(14),
     fontFamily: "Montserrat-SemiBold",
-    color: "#333",
+    color: COLORS.textDark,
   },
   ratingText: {
     fontSize: responsiveFont(14),
@@ -373,7 +398,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: responsiveFont(16),
-    color: "#999",
+    color: COLORS.textMuted,
   },
   fab: {
     position: "absolute",
@@ -382,7 +407,7 @@ const styles = StyleSheet.create({
     width: responsiveWidth(56),
     height: responsiveWidth(56),
     borderRadius: responsiveWidth(28),
-    backgroundColor: "#9333ea",
+    backgroundColor: COLORS.primary,
     justifyContent: "center",
     alignItems: "center",
   },

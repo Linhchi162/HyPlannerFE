@@ -62,8 +62,8 @@ const COLORS = {
   card: "#FFFFFF",
   textPrimary: "#1F2024",
   textSecondary: "#6D6D6D",
-  primary: "#F2C4CE",
-  iconColor: "#D8707E",
+  primary: "#ff5a7a",
+  iconColor: "#FFFFFF",
   white: "#FFFFFF",
 };
 
@@ -334,13 +334,14 @@ const ProfileScreen = () => {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <ArrowLeft size={responsiveWidth(24)} color={COLORS.textPrimary} />
+          <ArrowLeft size={responsiveWidth(24)} color="#ffffff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Cài đặt</Text>
+        <Text style={styles.headerTitle}>Hồ sơ</Text>
         <View style={{ width: responsiveWidth(24) }} />
       </View>
 
       <ScrollView
+        style={styles.scrollView}
         contentContainerStyle={[
           styles.scrollContainer,
           {
@@ -464,10 +465,10 @@ const ProfileScreen = () => {
             value={
               user.weddingDate
                 ? new Date(user.weddingDate).toLocaleDateString("vi-VN", {
-                    day: "2-digit",
-                    month: "2-digit",
-                    year: "numeric",
-                  })
+                  day: "2-digit",
+                  month: "2-digit",
+                  year: "numeric",
+                })
                 : "Chưa đặt"
             }
             onPress={() =>
@@ -536,7 +537,7 @@ const ProfileScreen = () => {
             <Text style={styles.dialogTitle}>Cảnh báo</Text>
             <Text style={styles.dialogMessage}>
               {weddingEvent &&
-              (user?.id || user?._id) === weddingEvent.creatorId
+                (user?.id || user?._id) === weddingEvent.creatorId
                 ? "Bạn là người tạo sự kiện. Nếu rời khỏi, toàn bộ kế hoạch cưới sẽ bị xóa vĩnh viễn và tất cả thành viên sẽ bị loại khỏi kế hoạch này.\n\nĐể tránh làm mất kế hoạch cưới đã tạo trước đó, bạn nên sử dụng một tài khoản mới khi dùng tính năng này.\n\nHành động này không thể hoàn tác!"
                 : "Bạn có chắc chắn muốn rời khỏi kế hoạch cưới hiện tại?\n\nBạn sẽ mất quyền truy cập vào tất cả thông tin và công việc trong kế hoạch này."}
             </Text>
@@ -553,7 +554,7 @@ const ProfileScreen = () => {
               >
                 <Text style={styles.dialogButtonTextConfirm}>
                   {weddingEvent &&
-                  (user?.id || user?._id) === weddingEvent.creatorId
+                    (user?.id || user?._id) === weddingEvent.creatorId
                     ? "Xóa kế hoạch"
                     : "Đồng ý"}
                 </Text>
@@ -576,8 +577,7 @@ const styles = StyleSheet.create({
   },
   safeArea: {
     flex: 1,
-    paddingTop: responsiveHeight(20),
-    backgroundColor: COLORS.background,
+    backgroundColor: "#ff5a7a",
   },
   header: {
     flexDirection: "row",
@@ -585,12 +585,18 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: responsiveWidth(16),
     paddingVertical: responsiveHeight(12),
-    backgroundColor: COLORS.background,
+    height: responsiveHeight(56),
+    backgroundColor: "#ff5a7a",
   },
   headerTitle: {
-    fontFamily: "Agbalumo",
+    fontFamily: "MavenPro",
     fontSize: responsiveFont(20),
-    color: COLORS.textPrimary,
+    fontWeight: "700",
+    color: "#ffffff",
+  },
+  scrollView: {
+    flex: 1,
+    backgroundColor: COLORS.background,
   },
   scrollContainer: {
     paddingHorizontal: responsiveWidth(16),
@@ -625,7 +631,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     bottom: responsiveHeight(5),
     right: "35%",
-    backgroundColor: COLORS.iconColor,
+    backgroundColor: COLORS.primary,
     width: responsiveWidth(32),
     height: responsiveWidth(32),
     borderRadius: responsiveWidth(16),
@@ -698,7 +704,7 @@ const styles = StyleSheet.create({
   logoutButtonText: {
     fontFamily: "Montserrat-SemiBold",
     fontSize: responsiveFont(16),
-    color: COLORS.iconColor,
+    color: COLORS.white,
     fontWeight: "bold",
   },
   // Dialog styles

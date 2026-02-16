@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1027527445853",
+    "project_id": "hyplanner-9366d",
+    "storage_bucket": "hyplanner-9366d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1027527445853:android:7ee9f911c5af74684decb4",
+        "android_client_info": {
+          "package_name": "com.yourcompany.hyplanner"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCdDqU42qMDZdYFX1u4wqspYvtI95LpqwM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

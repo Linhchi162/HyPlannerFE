@@ -1,6 +1,8 @@
 import { useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { getWeddingEvent } from "../service/weddingEventService";
+import { signInAnonymously } from "firebase/auth";
+import { auth } from "../service/firebase";
 import { selectCurrentUser } from "../store/authSlice";
 
 /**
@@ -22,6 +24,13 @@ export const useAppInitialization = () => {
       if (userId) {
         getWeddingEvent(userId, dispatch).catch((error) => {
           console.error("Failed to initialize app data:", error);
+        });
+      }
+
+      // Ensure Firebase Auth for Firestore actions (chat/request)
+      if (!auth.currentUser) {
+        signInAnonymously(auth).catch((error) => {
+          console.error("Failed to sign in anonymously:", error);
         });
       }
     }
