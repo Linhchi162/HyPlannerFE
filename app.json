@@ -50,11 +50,7 @@
         "android.permission.CAMERA",
         "android.permission.POST_NOTIFICATIONS"
       ],
-      "package": "com.yourcompany.hyplanner",
-      "statusBar": {
-        "barStyle": "dark-content",
-        "backgroundColor": "#ffffff"
-      }
+      "package": "com.yourcompany.hyplanner"
     },
     "web": {
       "favicon": "./assets/favicon.png"

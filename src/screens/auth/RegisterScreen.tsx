@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
   Alert,
   ActivityIndicator,
   Platform,
+  KeyboardAvoidingView,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Eye, EyeOff } from "lucide-react-native";
@@ -22,6 +23,15 @@ import { useDispatch } from "react-redux";
 import { setCredentials } from "../../store/authSlice";
 import type { RootStackParamList } from "../../navigation/types";
 import logger from "../../utils/logger";
+
+const COLORS = {
+  bg: "#fedef0",
+  primary: "#ff5a7a",
+  text: "#111827",
+  muted: "#6b7280",
+  border: "#e5e7eb",
+  card: "#ffffff",
+} as const;
 
 const isValidEmail = (email: string) => {
   const emailRegex = /\S+@\S+\.\S+/;
@@ -97,178 +107,181 @@ export default function RegistrationScreen() {
     <SafeAreaView style={styles.container}>
       <StatusBar
         barStyle="dark-content"
-        backgroundColor="#f8f9fa"
+        backgroundColor={COLORS.bg}
         translucent={false}
       />
-      <ScrollView
-        contentContainerStyle={[
-          styles.scrollContainer,
-          {
-            paddingBottom: Platform.OS === "android" ? 16 + insets.bottom : 16,
-          },
-        ]}
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        <View style={styles.formContainer}>
-          {/* Header */}
-          <View style={styles.header}>
-            <Text style={styles.title}>Đăng ký</Text>
-            <Text style={styles.subtitle}>
-              Cùng nhau tạo nên lễ cưới trong mơ.{"\n"}
-              Đăng ký hôm nay - yêu nhau mãi mãi!
-            </Text>
-          </View>
-
-          {/* Registration Form */}
-          <View style={styles.form}>
-            {/* Username Field */}
-            <View style={styles.fieldContainer}>
-              <Text style={styles.label}>Tên đăng nhập</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Nhập tên đăng nhập của bạn"
-                placeholderTextColor="#9ca3af"
-                value={username}
-                onChangeText={setUsername}
-                autoCapitalize="none"
-              />
+        <ScrollView
+          contentContainerStyle={[
+            styles.scrollContainer,
+            { paddingBottom: Math.max(insets.bottom, 24) },
+          ]}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.page}>
+            {/* Header */}
+            <View style={styles.header}>
+              <Text style={styles.title}>Đăng ký</Text>
+              
             </View>
 
-            {/* Email Field */}
-            <View style={styles.fieldContainer}>
-              <Text style={styles.label}>Email</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Nhập email của bạn"
-                placeholderTextColor="#9ca3af"
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-              />
-            </View>
+            <View style={styles.card}>
+              {/* Registration Form */}
+              <View style={styles.form}>
+                {/* Username Field */}
+                <View style={styles.fieldContainer}>
+                  <Text style={styles.label}>Tên</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Nhập tên của bạn"
+                    placeholderTextColor="#9ca3af"
+                    value={username}
+                    onChangeText={setUsername}
+                    autoCapitalize="words"
+                  />
+                </View>
 
-            {/* Password Field */}
-            <View style={styles.fieldContainer}>
-              <Text style={styles.label}>Mật khẩu</Text>
-              <View style={styles.passwordContainer}>
-                <TextInput
-                  style={styles.passwordInput}
-                  placeholder="Nhập mật khẩu của bạn"
-                  placeholderTextColor="#9ca3af"
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry={!showPassword}
-                  autoCapitalize="none"
-                />
+                {/* Email Field */}
+                <View style={styles.fieldContainer}>
+                  <Text style={styles.label}>Email</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Nhập email của bạn"
+                    placeholderTextColor="#9ca3af"
+                    value={email}
+                    onChangeText={setEmail}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                  />
+                </View>
+
+                {/* Password Field */}
+                <View style={styles.fieldContainer}>
+                  <Text style={styles.label}>Mật khẩu</Text>
+                  <View style={styles.passwordContainer}>
+                    <TextInput
+                      style={styles.passwordInput}
+                      placeholder="Nhập mật khẩu của bạn"
+                      placeholderTextColor="#9ca3af"
+                      value={password}
+                      onChangeText={setPassword}
+                      secureTextEntry={!showPassword}
+                      autoCapitalize="none"
+                    />
+                    <TouchableOpacity
+                      style={styles.eyeButton}
+                      onPress={() => setShowPassword(!showPassword)}
+                      hitSlop={10}
+                    >
+                      {showPassword ? (
+                        <EyeOff size={22} color="#6b7280" />
+                      ) : (
+                        <Eye size={22} color="#6b7280" />
+                      )}
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                {/* Confirm Password Field */}
+                <View style={styles.fieldContainer}>
+                  <Text style={styles.label}>Xác nhận mật khẩu</Text>
+                  <View style={styles.passwordContainer}>
+                    <TextInput
+                      style={styles.passwordInput}
+                      placeholder="Nhập lại mật khẩu"
+                      placeholderTextColor="#9ca3af"
+                      value={confirmPassword}
+                      onChangeText={setConfirmPassword}
+                      secureTextEntry={!showConfirmPassword}
+                      autoCapitalize="none"
+                    />
+                    <TouchableOpacity
+                      style={styles.eyeButton}
+                      onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                      hitSlop={10}
+                    >
+                      {showConfirmPassword ? (
+                        <EyeOff size={22} color="#6b7280" />
+                      ) : (
+                        <Eye size={22} color="#6b7280" />
+                      )}
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                {/* Register Button */}
                 <TouchableOpacity
-                  style={styles.eyeButton}
-                  onPress={() => setShowPassword(!showPassword)}
+                  style={styles.primaryButton}
+                  onPress={handleRegister}
+                  disabled={loading}
+                  activeOpacity={0.85}
                 >
-                  {showPassword ? (
-                    <EyeOff size={24} color="#9ca3af" />
+                  {loading ? (
+                    <ActivityIndicator color="#ffffff" />
                   ) : (
-                    <Eye size={24} color="#9ca3af" />
+                    <Text style={styles.primaryButtonText}>Đăng ký</Text>
                   )}
                 </TouchableOpacity>
               </View>
             </View>
 
-            {/* Confirm Password Field */}
-            <View style={styles.fieldContainer}>
-              <Text style={styles.label}>Xác nhận mật khẩu</Text>
-              <View style={styles.passwordContainer}>
-                <TextInput
-                  style={styles.passwordInput}
-                  placeholder="Nhập mật khẩu của bạn"
-                  placeholderTextColor="#9ca3af"
-                  value={confirmPassword}
-                  onChangeText={setConfirmPassword}
-                  secureTextEntry={!showConfirmPassword}
-                  autoCapitalize="none"
-                />
-                <TouchableOpacity
-                  style={styles.eyeButton}
-                  onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                >
-                  {showConfirmPassword ? (
-                    <EyeOff size={24} color="#9ca3af" />
-                  ) : (
-                    <Eye size={24} color="#9ca3af" />
-                  )}
-                </TouchableOpacity>
-              </View>
+            {/* Login Link */}
+            <View style={styles.loginLinkContainer}>
+              <Text style={styles.loginText}>Đã có tài khoản? </Text>
+              <TouchableOpacity onPress={() => navigation.navigate("Login")}>
+                <Text style={styles.loginLink}>Đăng nhập</Text>
+              </TouchableOpacity>
             </View>
-
-            {/* Register Button */}
-            <TouchableOpacity
-              style={styles.registerButton}
-              onPress={handleRegister}
-              disabled={loading}
-            >
-              {loading ? (
-                <ActivityIndicator color="#1f2937" />
-              ) : (
-                <Text style={styles.registerButtonText}>Đăng ký</Text>
-              )}
-            </TouchableOpacity>
-
-            {/* Cập nhật phần này để tạo hiệu ứng đường kẻ ngang */}
-            <View style={styles.dividerContainer}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>hoặc</Text>
-              <View style={styles.dividerLine} />
-            </View>
-
-            {/* Guest Login Button */}
-            <TouchableOpacity style={styles.guestButton}>
-              <Text style={styles.guestButtonText}>
-                Đăng nhập với chế độ khách
-              </Text>
-            </TouchableOpacity>
           </View>
-
-          {/* Login Link */}
-          <View style={styles.loginLinkContainer}>
-            <Text style={styles.loginText}>Đã có tài khoản? </Text>
-            <TouchableOpacity onPress={() => navigation.navigate("Login")}>
-              <Text style={styles.loginLink}>Đăng Nhập</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  flex: { flex: 1 },
   container: {
     flex: 1,
-    backgroundColor: "#f8f9fa",
+    backgroundColor: COLORS.bg,
   },
   scrollContainer: {
     flexGrow: 1,
     justifyContent: "center",
-    padding: 16,
+    paddingHorizontal: 20,
+    paddingTop: 28,
+    backgroundColor: COLORS.bg,
   },
-  formContainer: {
-    padding: 16,
-  },
+  page: { flex: 1, justifyContent: "center" },
   header: {
     alignItems: "center",
-    marginBottom: 32,
+    marginBottom: 18,
   },
   title: {
-    fontFamily: "Agbalumo",
-    fontSize: 48,
-    color: "#e56e8a",
-    marginBottom: 16,
+    fontFamily: "MavenPro",
+    fontWeight: "800",
+    fontSize: 44,
+    color: COLORS.primary,
+    marginBottom: 8,
   },
   subtitle: {
     fontFamily: "Montserrat-Medium",
     fontSize: 16,
-    color: "#6b7280",
+    color: "rgb(179, 119, 134)",
     textAlign: "center",
     lineHeight: 24,
+    paddingHorizontal: 10,
+  },
+  card: {
+    backgroundColor: COLORS.card,
+    borderRadius: 18,
+    padding: 16,
+    borderWidth: 0,
+    borderColor: "rgba(255, 90, 122, 0.16)",
   },
   form: {
     gap: 12,
@@ -280,18 +293,18 @@ const styles = StyleSheet.create({
     fontFamily: "Montserrat-Medium",
     fontSize: 16,
     fontWeight: "500",
-    color: "#1f2937",
+    color: COLORS.text,
   },
   input: {
     fontFamily: "Montserrat-Medium",
     height: 50,
     borderWidth: 1,
-    borderColor: "#e5e7eb",
-    borderRadius: 8,
+    borderColor: COLORS.border,
+    borderRadius: 12,
     paddingHorizontal: 16,
     fontSize: 16,
-    color: "#6b7280",
-    backgroundColor: "#ffffff",
+    color: COLORS.text,
+    backgroundColor: COLORS.card,
   },
   passwordContainer: {
     position: "relative",
@@ -300,13 +313,13 @@ const styles = StyleSheet.create({
     fontFamily: "Montserrat-Medium",
     height: 50,
     borderWidth: 1,
-    borderColor: "#e5e7eb",
-    borderRadius: 8,
+    borderColor: COLORS.border,
+    borderRadius: 12,
     paddingHorizontal: 16,
     paddingRight: 60,
     fontSize: 16,
-    color: "#6b7280",
-    backgroundColor: "#ffffff",
+    color: COLORS.text,
+    backgroundColor: COLORS.card,
   },
   eyeButton: {
     position: "absolute",
@@ -314,25 +327,25 @@ const styles = StyleSheet.create({
     top: 13,
     padding: 4,
   },
-  registerButton: {
+  primaryButton: {
     height: 50,
-    backgroundColor: "#f9cbd6",
-    borderRadius: 8,
+    backgroundColor: COLORS.primary,
+    borderRadius: 14,
     justifyContent: "center",
     alignItems: "center",
     marginTop: 8,
   },
-  registerButtonText: {
+  primaryButtonText: {
     fontFamily: "Montserrat-Medium",
     fontSize: 18,
-    fontWeight: "500",
-    color: "#1f2937",
+    fontWeight: "700",
+    color: "#ffffff",
   },
   // Style mới cho đường kẻ và chữ "hoặc"
   dividerContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginVertical: 8,
+    marginVertical: 14,
   },
   dividerLine: {
     flex: 1,
@@ -349,7 +362,7 @@ const styles = StyleSheet.create({
     height: 50,
     borderWidth: 1,
     borderColor: "#e5e7eb",
-    borderRadius: 8,
+    borderRadius: 14,
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "transparent",
@@ -361,7 +374,7 @@ const styles = StyleSheet.create({
     color: "#1f2937",
   },
   loginLinkContainer: {
-    marginTop: 24,
+    marginTop: 16,
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
@@ -369,12 +382,14 @@ const styles = StyleSheet.create({
   loginText: {
     fontFamily: "Montserrat-Medium",
     fontSize: 14,
-    color: "#6b7280",
+    color: COLORS.muted,
   },
   loginLink: {
     fontFamily: "Montserrat-Medium",
     fontSize: 14,
-    color: "#e56e8a",
+    color: COLORS.primary,
     fontWeight: "500",
   },
+
+  // removed: divider + guest login styles
 });

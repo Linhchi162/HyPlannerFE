@@ -7,18 +7,45 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_BASE_URL": "https://hy-planner-be.vercel.app",
+        "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyCdDqU42qMDZdYFX1u4wqspYvtI95LpqwM",
+        "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "hyplanner-9366d.firebaseapp.com",
+        "EXPO_PUBLIC_FIREBASE_PROJECT_ID": "hyplanner-9366d",
+        "EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET": "hyplanner-9366d.firebasestorage.app",
+        "EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID": "1027527445853",
+        "EXPO_PUBLIC_FIREBASE_APP_ID": "1:1027527445853:android:7ee9f911c5af74684decb4"
+      },
       "android": {
         "buildType": "apk"
       }
     },
     "preview": {
       "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_BASE_URL": "https://hy-planner-be.vercel.app",
+        "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyCdDqU42qMDZdYFX1u4wqspYvtI95LpqwM",
+        "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "hyplanner-9366d.firebaseapp.com",
+        "EXPO_PUBLIC_FIREBASE_PROJECT_ID": "hyplanner-9366d",
+        "EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET": "hyplanner-9366d.firebasestorage.app",
+        "EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID": "1027527445853",
+        "EXPO_PUBLIC_FIREBASE_APP_ID": "1:1027527445853:android:7ee9f911c5af74684decb4"
+      },
       "android": {
         "buildType": "apk"
       }
     },
     "production": {
       "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_BASE_URL": "https://hy-planner-be.vercel.app",
+        "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyCdDqU42qMDZdYFX1u4wqspYvtI95LpqwM",
+        "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "hyplanner-9366d.firebaseapp.com",
+        "EXPO_PUBLIC_FIREBASE_PROJECT_ID": "hyplanner-9366d",
+        "EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET": "hyplanner-9366d.firebasestorage.app",
+        "EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID": "1027527445853",
+        "EXPO_PUBLIC_FIREBASE_APP_ID": "1:1027527445853:android:7ee9f911c5af74684decb4"
+      },
       "android": {
         "buildType": "app-bundle"
       }

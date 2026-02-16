@@ -36,8 +36,8 @@ const COLORS = {
   card: "#FFFFFF",
   textPrimary: "#1F2024",
   textSecondary: "#6D6D6D",
-  primary: "#F2C4CE",
-  iconColor: "#D8707E",
+  primary: "#ff5a7a",
+  iconColor: "#ff5a7a",
   white: "#FFFFFF",
 };
 
@@ -425,7 +425,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   saveButtonDisabled: {
-    backgroundColor: "#FAD1D8",
+    backgroundColor: "#f7b2bf",
   },
   datePickerButton: {
     flexDirection: "row",

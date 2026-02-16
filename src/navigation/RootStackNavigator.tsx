@@ -37,12 +37,21 @@ import * as notificationService from "../service/notificationService";
 import { RootStackParamList } from "./types";
 import { linking } from "./linking";
 import { MainTabNavigator } from "./MainTabNavigator";
+import { VendorTabNavigator } from "./VendorTabNavigator";
+import * as Notifications from "expo-notifications";
+import {
+  addNotificationResponseListener,
+  removeNotificationSubscription,
+} from "../utils/pushNotification";
+import { showNotification } from "../utils/pushNotification";
+import { subscribeChatsByParticipant, type ChatSummary } from "../service/chatService";
 
 // Redux
 import { selectCurrentUser, selectRememberMe } from "../store/authSlice";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { fetchUserInvitation } from "../store/invitationSlice";
 import { RootState } from "../store";
+import { useRef } from "react";
 
 // Import tất cả các màn hình
 import BeginScreen from "../screens/auth/BeginScreen";
@@ -98,6 +107,17 @@ import GroomSuitScreen from "../screens/groom/GroomSuitScreen";
 import GroomMaterialScreen from "../screens/groom/GroomMaterialScreen";
 import GroomColorScreen from "../screens/groom/GroomColorScreen";
 import GroomAccessoriesLapelScreen from "../screens/groom/GroomAccessoriesLapelScreen";
+import VendorListScreen from "../screens/vendor/VendorListScreen";
+import VendorDetailScreen from "../screens/vendor/VendorDetailScreen";
+import VendorDashboardScreen from "../screens/vendor/VendorDashboardScreen";
+import VendorAuthScreen from "../screens/vendor/VendorAuthScreen";
+import VendorOnboardingScreen from "../screens/vendor/VendorOnboardingScreen";
+import VendorProfileEditScreen from "../screens/vendor/VendorProfileEditScreen";
+import VendorChangePasswordScreen from "../screens/vendor/VendorChangePasswordScreen";
+import VendorServicesScreen from "../screens/vendor/VendorServicesScreen";
+import VendorRequestsScreen from "../screens/vendor/VendorRequestsScreen";
+import ChatListScreen from "../screens/chat/ChatListScreen";
+import ChatDetailScreen from "../screens/chat/ChatDetailScreen";
 import GroomAccessoriesPocketSquareScreen from "../screens/groom/GroomAccessoriesPocketSquareScreen";
 import GroomAccessoriesDecorScreen from "../screens/groom/GroomAccessoriesDecorScreen";
 import BrideAoDaiStyleScreen from "../screens/bride/BrideAoDaiStyleScreen";
@@ -111,8 +131,6 @@ import WhoIsNextMarriedScreen from "../screens/shared/WhoIsNextMarriedScreen";
 import CommunityScreen from "../screens/community/CommunityScreen";
 import PostDetailScreen from "../screens/community/PostDetailScreen";
 import CreatePostScreen from "../screens/community/CreatePostScreen";
-import { TopicGroupsScreen } from "../screens/community/TopicGroupsScreen";
-import { TopicGroupDetailScreen } from "../screens/community/TopicGroupDetailScreen";
 import { InspireBoardScreen } from "../screens/community/InspireBoardScreen";
 import CommunityAlbumsScreen from "../screens/community/CommunityAlbumsScreen";
 import SavedPostsScreen from "../screens/community/SavedPostsScreen";
@@ -139,6 +157,8 @@ const RootStackNavigator = () => {
   const rememberMe = useAppSelector(selectRememberMe);
   const dispatch = useAppDispatch();
   const navigationRef = useNavigationContainerRef<RootStackParamList>();
+  const chatUnreadRef = useRef<Map<string, number>>(new Map());
+  const chatInitRef = useRef(false);
 
   // Get wedding event for notifications
   const weddingEvent = useAppSelector(
@@ -152,9 +172,11 @@ const RootStackNavigator = () => {
 
   // Xác định màn hình khởi đầu dựa trên auth state
   const getInitialRouteName = (): keyof RootStackParamList => {
+    const role = `${user?.role || user?.userType || ""}`.toUpperCase();
+    const isVendor = user?.isVendor === true || role === "VENDOR";
     // Nếu user đã login và có rememberMe, auto-navigate đến Main
     if (user && rememberMe) {
-      return "Main";
+      return isVendor ? "VendorMain" : "Main";
     }
     // Ngược lại, hiển thị BeginScreen
     return "BeginScreen";
@@ -176,10 +198,92 @@ const RootStackNavigator = () => {
   }, [navigationRef]);
 
   useEffect(() => {
+    const handleNotification = (response: Notifications.NotificationResponse) => {
+      const data = response.notification.request.content.data as any;
+      if (!data?.chatId) return;
+      navigationRef.navigate("ChatDetail", {
+        chatId: data.chatId,
+        userId: data.userId,
+        userName: data.userName,
+        userImageUrl: data.userImageUrl,
+        vendorId: data.vendorId,
+        vendorName: data.vendorName,
+        vendorImageUrl: data.vendorImageUrl,
+        role: data.role,
+      });
+    };
+
+    const subscription = addNotificationResponseListener(handleNotification);
+    Notifications.getLastNotificationResponseAsync().then((response) => {
+      if (response) handleNotification(response);
+    });
+
+    return () => {
+      if (subscription) removeNotificationSubscription(subscription);
+    };
+  }, [navigationRef]);
+
+
+  useEffect(() => {
     if (user) {
       dispatch(fetchUserInvitation());
     }
   }, [user, dispatch]);
+
+  // Local notification for new vendor messages (when app is running)
+  useEffect(() => {
+    const userId =
+      (user as any)?.id || (user as any)?._id || (user as any)?.uid || null;
+    if (!userId) {
+      chatUnreadRef.current = new Map();
+      chatInitRef.current = false;
+      return;
+    }
+
+    const unsub = subscribeChatsByParticipant(userId, (chats: ChatSummary[]) => {
+      // Skip the first snapshot to avoid notifying old unread messages
+      if (!chatInitRef.current) {
+        const next = new Map<string, number>();
+        for (const c of chats) next.set(c.id, c.userUnread || 0);
+        chatUnreadRef.current = next;
+        chatInitRef.current = true;
+        return;
+      }
+
+      const next = new Map(chatUnreadRef.current);
+      for (const c of chats) {
+        const prev = next.get(c.id) ?? 0;
+        const current = c.userUnread || 0;
+        if (
+          current > prev &&
+          `${(c as any).lastSenderRole || ""}`.toLowerCase() === "vendor"
+        ) {
+          showNotification(
+            c.vendorName || "Tin nhắn mới",
+            c.lastMessage || "Bạn có tin nhắn mới",
+            {
+              chatId: c.id,
+              userId: c.userId,
+              userName: c.userName,
+              userImageUrl: c.userImageUrl,
+              vendorId: c.vendorId,
+              vendorName: c.vendorName,
+              vendorImageUrl: c.vendorImageUrl,
+              role: "user",
+            }
+          ).catch(() => {});
+        }
+        next.set(c.id, current);
+      }
+      chatUnreadRef.current = next;
+    });
+
+    return () => {
+      unsub?.();
+      chatUnreadRef.current = new Map();
+      chatInitRef.current = false;
+    };
+  }, [user]);
 
   // Fetch notifications when modal opens
   useEffect(() => {
@@ -268,6 +372,11 @@ const RootStackNavigator = () => {
           <Stack.Screen
             name="Main"
             component={MainTabNavigator}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="VendorMain"
+            component={VendorTabNavigator}
             options={{ headerShown: false }}
           />
 
@@ -537,6 +646,61 @@ const RootStackNavigator = () => {
             options={{ headerShown: false }}
           />
           <Stack.Screen
+            name="VendorList"
+            component={VendorListScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="VendorDetail"
+            component={VendorDetailScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="VendorDashboard"
+            component={VendorDashboardScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="VendorAuth"
+            component={VendorAuthScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="VendorOnboarding"
+            component={VendorOnboardingScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="VendorProfileEdit"
+            component={VendorProfileEditScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="VendorChangePassword"
+            component={VendorChangePasswordScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="VendorServices"
+            component={VendorServicesScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="VendorRequests"
+            component={VendorRequestsScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="ChatList"
+            component={ChatListScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="ChatDetail"
+            component={ChatDetailScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
             name="PostDetailScreen"
             component={PostDetailScreen}
             options={{ headerShown: false }}
@@ -544,16 +708,6 @@ const RootStackNavigator = () => {
           <Stack.Screen
             name="CreatePostScreen"
             component={CreatePostScreen}
-            options={{ headerShown: false }}
-          />
-          <Stack.Screen
-            name="TopicGroupsScreen"
-            component={TopicGroupsScreen}
-            options={{ headerShown: false }}
-          />
-          <Stack.Screen
-            name="TopicGroupDetailScreen"
-            component={TopicGroupDetailScreen}
             options={{ headerShown: false }}
           />
           <Stack.Screen
@@ -695,7 +849,7 @@ const RootStackNavigator = () => {
 const headerStyles = StyleSheet.create({
   title: {
     fontSize: responsiveFont(20),
-    fontFamily: "Agbalumo",
+    fontFamily: "MavenPro-Bold",
     color: "#ff6b9d",
   },
   notificationButton: {

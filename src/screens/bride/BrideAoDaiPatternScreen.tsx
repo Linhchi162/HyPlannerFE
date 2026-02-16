@@ -116,7 +116,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: responsiveFont(16), // Theo yêu cầu
-    fontFamily: "Agbalumo",
+    fontFamily: "MavenPro-Bold",
     color: "#1f2937",
     textAlign: "center",
   },

@@ -868,8 +868,7 @@ const AlbumDetailScreen = () => {
     );
   };
 
-  const topPad =
-    Platform.OS === "android" ? (StatusBar.currentHeight || 0) + 8 : 0;
+  const topPad = 0;
 
   const filteredItems = useMemo(() => {
     // Empty array means show all
@@ -1404,7 +1403,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   filterButtonActive: {
-    backgroundColor: "#ffa9ba",
+    backgroundColor: "#ff5a7a",
   },
   filterButtonText: {
     fontFamily: fonts.montserratMedium,
@@ -1413,6 +1412,7 @@ const styles = StyleSheet.create({
   },
   filterButtonTextActive: {
     fontFamily: fonts.montserratSemiBold,
+    color: "#fff",
   },
   modalOverlay: {
     flex: 1,

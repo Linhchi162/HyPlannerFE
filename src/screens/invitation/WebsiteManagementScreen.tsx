@@ -45,9 +45,9 @@ import {
   fetchUserInvitation,
   selectUserInvitation,
 } from "../../store/invitationSlice";
-import apiClient from "../../api/client";
+import invitationClient from "../../api/invitationClient";
 import QRCode from "react-native-qrcode-svg"; // --- THÊM
-import Clipboard from "@react-native-clipboard/clipboard"; // --- THÊM
+import * as Clipboard from "expo-clipboard"; // --- SỬA (Expo Go friendly)
 import {
   responsiveWidth,
   responsiveHeight,
@@ -71,8 +71,8 @@ export default function WebsiteManagementScreen() {
   const invitation = useAppSelector(selectUserInvitation);
 
   // --- THÊM HÀM SAO CHÉP ---
-  const copyToClipboard = (url: string) => {
-    Clipboard.setString(url);
+  const copyToClipboard = async (url: string) => {
+    await Clipboard.setStringAsync(url);
     Alert.alert("Đã sao chép", "Đã sao chép đường dẫn website vào bộ nhớ.");
   };
 
@@ -102,7 +102,13 @@ export default function WebsiteManagementScreen() {
     );
   }
 
-  const websiteUrl = `https://hy-planner-be.vercel.app/inviletter/${invitation.slug}`;
+  const invitationBaseUrl =
+    process.env.EXPO_PUBLIC_INVITATION_BASE_URL ||
+    process.env.EXPO_PUBLIC_BASE_URL ||
+    "https://hy-planner-be.vercel.app";
+  const websiteUrl = `${invitationBaseUrl.replace(/\\/+$/, "")}/inviletter/${
+    invitation.slug
+  }`;
 
   const handleDeleteWebsite = () => {
     Alert.alert(
@@ -115,7 +121,7 @@ export default function WebsiteManagementScreen() {
           style: "destructive",
           onPress: async () => {
             try {
-              const response = await apiClient.delete(
+              const response = await invitationClient.delete(
                 "/invitation/my-invitation"
               );
 
@@ -398,7 +404,7 @@ export default function WebsiteManagementScreen() {
             <Text style={styles.modalTitle}>Lời Chúc Từ Khách Mời</Text>
 
             {!invitation.guestbookMessages ||
-            invitation.guestbookMessages.length === 0 ? (
+              invitation.guestbookMessages.length === 0 ? (
               <Text
                 style={{
                   fontSize: responsiveFont(14),

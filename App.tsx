@@ -16,15 +16,18 @@ import {
   addNotificationReceivedListener,
   addNotificationResponseListener,
   removeNotificationSubscription,
+  getFcmTokenAsync,
 } from "./src/utils/pushNotification";
 import { updatePushToken } from "./src/service/authService";
-import { selectCurrentToken } from "./src/store/authSlice";
+import { selectCurrentToken, selectCurrentUser } from "./src/store/authSlice";
+import { updateUserFcmToken } from "./src/service/userPushService";
 import { useAppInitialization } from "./src/hooks/useAppInitialization";
 import ErrorBoundary from "./src/components/ErrorBoundary";
 
 // Component to handle push token registration after auth
 function PushTokenRegistrar() {
   const token = useSelector(selectCurrentToken);
+  const user = useSelector(selectCurrentUser);
   const [tokenRegistered, setTokenRegistered] = useState(false);
 
   useEffect(() => {
@@ -34,8 +37,16 @@ function PushTokenRegistrar() {
         .then(async (pushToken) => {
           if (pushToken) {
             await updatePushToken(pushToken);
-            setTokenRegistered(true);
           }
+
+          // Store FCM token in Firestore for Firebase Functions (chat notifications when app is closed)
+          const userId = (user as any)?.id || (user as any)?._id || (user as any)?.uid;
+          const fcm = await getFcmTokenAsync();
+          if (userId && fcm) {
+            await updateUserFcmToken(String(userId), fcm);
+          }
+
+          setTokenRegistered(true);
         })
         .catch((error) => {
           console.warn("Push token registration failed:", error.message);
@@ -46,7 +57,7 @@ function PushTokenRegistrar() {
     if (!token && tokenRegistered) {
       setTokenRegistered(false);
     }
-  }, [token]);
+  }, [token, user]);
 
   return null;
 }

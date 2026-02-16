@@ -24,7 +24,7 @@ import {
 } from "@react-navigation/native";
 import { RootStackParamList } from "../../navigation/types";
 import slugify from "slugify";
-import apiClient from "../../api/client";
+import invitationClient from "../../api/invitationClient";
 import { useAppDispatch } from "../../store/hooks";
 import { fetchUserInvitation } from "../../store/invitationSlice";
 
@@ -45,6 +45,14 @@ export default function CreateWeddingSiteScreen() {
   const [slug, setSlug] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
+  const invitationBaseUrl =
+    process.env.EXPO_PUBLIC_INVITATION_BASE_URL ||
+    process.env.EXPO_PUBLIC_BASE_URL ||
+    "https://hy-planner-be.vercel.app";
+  const invitationHost = invitationBaseUrl
+    .replace(/^https?:\/\//, "")
+    .replace(/\/+$/, "");
+
   // Tự động tạo slug khi tên cô dâu, chú rể thay đổi
   useEffect(() => {
     if (groomName && brideName) {
@@ -63,7 +71,7 @@ export default function CreateWeddingSiteScreen() {
     setIsLoading(true);
 
     try {
-      const response = await apiClient.post("/invitation/invitation-letters", {
+      const response = await invitationClient.post("/invitation/invitation-letters", {
         templateId: template.id,
         groomName,
         brideName,
@@ -75,7 +83,14 @@ export default function CreateWeddingSiteScreen() {
 
       navigation.navigate("WebsiteManagement", { invitation: result.data });
     } catch (error: any) {
-      Alert.alert("Đã có lỗi xảy ra", error.message || "Không thể tạo website");
+      const message =
+        typeof error === "object" && error !== null && "message" in error
+          ? String((error as any).message)
+          : "Không thể tạo website";
+      Alert.alert(
+        "Không thể tạo thiệp online",
+        `${message}\n\nNếu BE deploy đang tắt tính năng tạo thiệp, bạn có thể trỏ sang BE khác bằng cách set EXPO_PUBLIC_INVITATION_BASE_URL trong HyPlannerFE/.env rồi chạy lại Expo.`
+      );
     } finally {
       setIsLoading(false); // <-- Thêm dòng này để dừng loading sau khi navigate
     }
@@ -132,7 +147,9 @@ export default function CreateWeddingSiteScreen() {
 
         <Text style={styles.label}>Địa chỉ website*</Text>
         <View style={styles.slugInputContainer}>
-          <Text style={styles.slugPrefix}>hy-planner-be.vercel.app/</Text>
+          <Text style={styles.slugPrefix}>
+            {invitationHost}/inviletter/
+          </Text>
           <TextInput
             style={styles.slugInput}
             value={slug}
@@ -172,7 +189,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   headerTitle: {
-    fontFamily: "Agbalumo",
+    fontFamily: "MavenPro-Bold",
     fontSize: 18,
     fontWeight: "600",
     color: "#e07181",

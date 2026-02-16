@@ -99,7 +99,7 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   title: {
-    fontFamily: "Agbalumo",
+    fontFamily: "MavenPro-Bold",
     fontSize: 24,
     fontWeight: "500",
     color: "#e56e8a",

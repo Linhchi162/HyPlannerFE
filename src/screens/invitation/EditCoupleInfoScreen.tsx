@@ -813,7 +813,7 @@ const styles = StyleSheet.create({
     borderBottomColor: "#f0d4d9",
   },
   headerTitle: {
-    fontFamily: "Agbalumo",
+    fontFamily: "MavenPro-Bold",
     fontSize: 18,
     fontWeight: "600",
     color: "#e07181",

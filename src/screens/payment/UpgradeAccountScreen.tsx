@@ -314,7 +314,7 @@ export default function UpgradeAccountScreen() {
         <View
           style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
         >
-          <ActivityIndicator size="large" color="#e07181" />
+          <ActivityIndicator size="large" color="#ff5a7a" />
         </View>
       </SafeAreaView>
     );
@@ -324,7 +324,7 @@ export default function UpgradeAccountScreen() {
     <SafeAreaView style={styles.safeArea}>
       <StatusBar
         barStyle="light-content"
-        backgroundColor="#e07181"
+        backgroundColor="#ff5a7a"
         translucent={false}
       />
       <View style={styles.header}>
@@ -499,14 +499,14 @@ const styles = StyleSheet.create({
     backgroundColor: "#f7f7f7",
   },
   header: {
-    backgroundColor: "#e07181",
+    backgroundColor: "#ff5a7a",
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
   headerTitle: {
-    fontFamily: "Agbalumo",
+    fontFamily: "MavenPro-Bold",
     fontSize: 20,
     color: "#fff",
     textAlign: "center",
@@ -534,8 +534,8 @@ const styles = StyleSheet.create({
     borderColor: "#eee",
   },
   activeUpgradeTabButton: {
-    backgroundColor: "#e07181",
-    borderColor: "#e07181",
+    backgroundColor: "#ff5a7a",
+    borderColor: "#ff5a7a",
   },
   upgradeTabButtonText: {
     fontFamily: "Montserrat-SemiBold",
@@ -622,7 +622,7 @@ const styles = StyleSheet.create({
     fontFamily: "Montserrat-Medium",
     fontSize: 14,
     fontWeight: "bold",
-    color: "#e07181",
+    color: "#ff5a7a",
   },
   verticalSeparator: {
     width: 1,
@@ -639,7 +639,7 @@ const styles = StyleSheet.create({
     borderTopColor: "#eee",
   },
   upgradeButton: {
-    backgroundColor: "#e07181",
+    backgroundColor: "#ff5a7a",
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: "center",

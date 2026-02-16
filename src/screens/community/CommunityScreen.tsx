@@ -22,7 +22,6 @@ import {
   Search,
   MoreHorizontal,
   Sparkles,
-  Users,
   Image as ImageIcon,
   Bookmark,
   ChevronLeft,
@@ -101,10 +100,6 @@ const CommunityScreen = () => {
 
   const handleCreatePost = () => {
     navigation.navigate("CreatePostScreen", {});
-  };
-
-  const handleNavigateToTopicGroups = () => {
-    navigation.navigate("TopicGroupsScreen");
   };
 
   const handleNavigateToInspireBoard = () => {
@@ -235,13 +230,6 @@ const CommunityScreen = () => {
         >
           <Sparkles size={20} color="#ffc107" />
           <Text style={styles.quickAccessText}>Cảm hứng</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.quickAccessButton}
-          onPress={handleNavigateToTopicGroups}
-        >
-          <Users size={20} color="#ff6b9d" />
-          <Text style={styles.quickAccessText}>Nhóm</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.quickAccessButton}

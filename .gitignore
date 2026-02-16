@@ -37,7 +37,6 @@ yarn-error.*
 # Sensitive files
 #google-services.json
 hyplanner.json
-package-lock.json
 
 # typescript
 *.tsbuildinfo

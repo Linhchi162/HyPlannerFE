@@ -1,100 +1,165 @@
+import React, { useMemo, useState } from "react";
 import {
   View,
-  Text,
   TouchableOpacity,
   StyleSheet,
-  SafeAreaView,
   StatusBar,
   Platform,
+  Image,
+  useWindowDimensions,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useState } from "react";
-import { LogIn, UserPlus } from "lucide-react-native";
-import { useNavigation, type NavigationProp } from "@react-navigation/native";
-import { type RootStackParamList } from "../../navigation/types";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { useNavigation } from "@react-navigation/native";
+import type { RootStackParamList } from "../../navigation/types";
 import { StackNavigationProp } from "@react-navigation/stack";
 import {
-  responsiveFont,
   responsiveWidth,
   responsiveHeight,
-  spacing,
-  borderRadius,
 } from "../../../assets/styles/utils/responsive";
 
 export default function BeginScreen() {
   const insets = useSafeAreaInsets();
-  const [isLoginPressed, setIsLoginPressed] = useState(false);
-  const [isRegisterPressed, setIsRegisterPressed] = useState(false);
+  const [isPressed, setIsPressed] = useState(false);
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
 
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
 
-  const handleLoginPress = () => {
+  const handleStartPress = () => {
     navigation.navigate("Login");
   };
 
-  const handleRegisterPress = () => {
-    navigation.navigate("Register");
-  };
+  const patternImg = useMemo(
+    () => require("../../../assets/images/pattern.png"),
+    []
+  );
+  const coupleImg = useMemo(
+    () => require("../../../assets/images/couple.png"),
+    []
+  );
+  const phraseImg = useMemo(
+    () => require("../../../assets/images/phrase.png"),
+    []
+  );
+  const startBtnImg = useMemo(
+    () => require("../../../assets/images/startButton.png"),
+    []
+  );
+
+  const sizes = useMemo(() => {
+    // Aspect ratios based on your assets:
+    // pattern: 1024x512 (2:1), couple: 768x1035, phrase: 1024x237, button: ~1200x214
+    const patternAspect = 1024 / 512;
+    const coupleAspect = 768 / 1035;
+    const phraseAspect = 1024 / 237;
+    const buttonAspect = 1200 / 214;
+
+    const contentMaxWidth = Math.min(windowWidth, responsiveWidth(520));
+    const baseWidth = Math.min(contentMaxWidth * 1, windowWidth * 1.5);
+
+    const patternHeight = windowWidth / patternAspect; // full-bleed across screen
+
+    const coupleWidth = Math.min(baseWidth, responsiveWidth(460));
+    const coupleHeight = Math.min(
+      coupleWidth / coupleAspect,
+      windowHeight * 0.59
+    );
+
+    const phraseWidth = Math.min(baseWidth, responsiveWidth(440));
+    const phraseHeight = Math.min(
+      phraseWidth / phraseAspect,
+      windowHeight * 0.14
+    );
+
+    const buttonWidth = Math.min(baseWidth, responsiveWidth(460));
+    const buttonHeight = Math.min(
+      buttonWidth / buttonAspect,
+      windowHeight * 0.12
+    );
+
+    return {
+      patternHeight,
+      coupleWidth,
+      coupleHeight,
+      phraseWidth,
+      phraseHeight,
+      buttonWidth,
+      buttonHeight,
+      contentMaxWidth,
+    };
+  }, [windowWidth, windowHeight]);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={["bottom"]}>
       <StatusBar
         barStyle="dark-content"
-        backgroundColor="#f9f9f9"
+        backgroundColor="#fedef0"
         translucent={false}
       />
-      <View
-        style={[
-          styles.content,
-          {
-            paddingBottom:
-              Platform.OS === "android"
-                ? responsiveHeight(32) + insets.bottom
-                : responsiveHeight(32),
-          },
-        ]}
-      >
-        <View style={styles.mainArea}>
-          <Text style={styles.title}>Hỷ Planner</Text>
-          <Text style={styles.subtitle}>Chào mừng đến với ứng dụng</Text>
-          <Text style={styles.description}>
-            Thiết kế đám cưới hoàn hảo của bạn. Bắt đầu hành trình tuyệt vời
-            ngay hôm nay!
-          </Text>
+      <View style={styles.content} pointerEvents="box-none">
+        <Image
+          source={patternImg}
+          style={[styles.pattern, { height: sizes.patternHeight }]}
+          resizeMode="stretch"
+        />
 
-          {/* Login Button with onPress handler */}
-          <TouchableOpacity
-            style={[
-              styles.loginButton,
-              { transform: [{ scale: isLoginPressed ? 0.98 : 1 }] },
-            ]}
-            activeOpacity={1}
-            onPress={handleLoginPress}
-            onPressIn={() => setIsLoginPressed(true)}
-            onPressOut={() => setIsLoginPressed(false)}
+        <View
+          style={[
+            styles.main,
+            { paddingTop: Math.max(insets.top, responsiveHeight(16)) },
+          ]}
+          pointerEvents="box-none"
+        >
+          <View
+            style={[styles.centerArea, { maxWidth: sizes.contentMaxWidth }]}
+            pointerEvents="box-none"
           >
-            <LogIn size={24} color="#1f2937" style={styles.buttonIcon} />
-            <Text style={styles.loginButtonText}>Đăng nhập</Text>
-          </TouchableOpacity>
+            <Image
+              source={coupleImg}
+              style={{
+                width: sizes.coupleWidth,
+                height: sizes.coupleHeight,
+              }}
+              resizeMode="contain"
+            />
+            <Image
+              source={phraseImg}
+              style={{
+                width: sizes.phraseWidth,
+                height: sizes.phraseHeight,
+                marginTop: responsiveHeight(20),
+              }}
+              resizeMode="contain"
+            />
+          </View>
 
-          {/* Register Button */}
           <TouchableOpacity
-            style={[
-              styles.registerButton,
-              { transform: [{ scale: isRegisterPressed ? 0.98 : 1 }] },
-            ]}
             activeOpacity={1}
-            onPress={handleRegisterPress}
-            onPressIn={() => setIsRegisterPressed(true)}
-            onPressOut={() => setIsRegisterPressed(false)}
+            onPress={handleStartPress}
+            onPressIn={() => setIsPressed(true)}
+            onPressOut={() => setIsPressed(false)}
+            style={[
+              styles.startButtonWrap,
+              {
+                paddingBottom:
+                  Platform.OS === "android"
+                    ? Math.max(insets.bottom, responsiveHeight(12))
+                    : Math.max(insets.bottom, responsiveHeight(12)),
+                marginTop: responsiveHeight(8),
+                marginBottom: responsiveHeight(75),
+                transform: [{ scale: isPressed ? 0.98 : 1 }],
+              },
+            ]}
           >
-            <UserPlus size={24} color="#1f2937" style={styles.buttonIcon} />
-            <Text style={styles.registerButtonText}>Đăng ký</Text>
+            <Image
+              source={startBtnImg}
+              style={{
+                width: sizes.buttonWidth,
+                height: sizes.buttonHeight,
+              }}
+              resizeMode="contain"
+            />
           </TouchableOpacity>
         </View>
-        <Text style={styles.footer}>
-          © 2025 Hỷ Planner. Tất cả quyền được bảo lưu.
-        </Text>
       </View>
     </SafeAreaView>
   );
@@ -103,88 +168,34 @@ export default function BeginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f9f9f9",
+    backgroundColor: "#fedef0",
   },
   content: {
     flex: 1,
+    backgroundColor: "#fedef0",
+  },
+  pattern: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    width: "100%",
+    opacity: 1,
+  },
+  main: {
+    flex: 1,
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: responsiveWidth(48),
-    paddingVertical: responsiveHeight(32),
-  },
-  mainArea: {
-    width: "100%",
-    maxWidth: responsiveWidth(500),
-    alignItems: "center",
-    justifyContent: "center",
-    flexGrow: 1,
-  },
-  title: {
-    fontFamily: "Agbalumo",
-    fontSize: responsiveFont(48),
-    color: "#9e182b",
-    marginBottom: responsiveHeight(12),
-    textAlign: "center",
-  },
-  subtitle: {
-    fontFamily: "Montserrat-SemiBold",
-    fontSize: responsiveFont(24),
-    fontWeight: "600",
-    color: "#1f2937",
-    marginBottom: responsiveHeight(28),
-    textAlign: "center",
-  },
-  description: {
-    fontFamily: "Montserrat-Medium",
-    fontSize: responsiveFont(18),
-    color: "#6b7280",
-    lineHeight: responsiveHeight(28),
-    marginBottom: responsiveHeight(64),
-    textAlign: "center",
     paddingHorizontal: responsiveWidth(16),
   },
-  loginButton: {
+  centerArea: {
+    flex: 1,
     width: "100%",
-    backgroundColor: "#f9cbd6",
-    paddingVertical: responsiveHeight(20),
-    paddingHorizontal: responsiveWidth(32),
-    borderRadius: borderRadius.lg,
-    marginBottom: responsiveHeight(20),
-    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
   },
-  loginButtonText: {
-    fontFamily: "Montserrat-Medium",
-    color: "#1f2937",
-    fontSize: responsiveFont(20),
-    fontWeight: "600",
-  },
-  registerButton: {
+  startButtonWrap: {
     width: "100%",
-    backgroundColor: "#ffffff",
-    paddingVertical: responsiveHeight(20),
-    paddingHorizontal: responsiveWidth(32),
-    borderRadius: borderRadius.lg,
-    borderColor: "#e5e7eb",
-    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-  },
-  registerButtonText: {
-    fontFamily: "Montserrat-Medium",
-    color: "#1f2937",
-    fontSize: responsiveFont(20),
-    fontWeight: "600",
-  },
-  buttonIcon: {
-    marginRight: responsiveWidth(12),
-  },
-  footer: {
-    paddingHorizontal: responsiveWidth(48),
-    fontFamily: "Montserrat-Medium",
-    color: "#9ca3af",
-    fontSize: responsiveFont(15),
-    textAlign: "center",
   },
 });
