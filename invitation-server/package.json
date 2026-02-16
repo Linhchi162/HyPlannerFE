@@ -4,7 +4,9 @@
   "private": true,
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "sync-templates": "node scripts/sync-templates.js",
+    "postinstall": "node scripts/sync-templates.js"
   },
   "dependencies": {
     "@vercel/kv": "^3.0.0",

@@ -1,5 +1,6 @@
 const express = require("express");
 const path = require("path");
+const fs = require("fs");
 const cors = require("cors");
 const crypto = require("crypto");
 
@@ -58,6 +59,30 @@ app.get("/", (req, res) => {
     status: "✅ Invitation server running",
     storage: storage.kind,
   });
+});
+
+app.get("/_debug/views", (req, res) => {
+  try {
+    const viewsDir = path.join(__dirname, "views");
+    const files = fs.existsSync(viewsDir) ? fs.readdirSync(viewsDir) : [];
+    const templates = files
+      .filter((f) => /^template-\d+\.ejs$/.test(f))
+      .sort((a, b) => {
+        const ai = Number(a.match(/^template-(\d+)\.ejs$/)?.[1] || 0);
+        const bi = Number(b.match(/^template-(\d+)\.ejs$/)?.[1] || 0);
+        return ai - bi;
+      });
+
+    res.json({
+      viewsDir,
+      totalFiles: files.length,
+      templates,
+      hasFallbackInvitation: files.includes("invitation.ejs"),
+      has404: files.includes("404.ejs"),
+    });
+  } catch (e) {
+    res.status(500).json({ message: "Failed to list views" });
+  }
 });
 
 app.get("/templates", (req, res) => {
