@@ -79,14 +79,13 @@ export const InspireBoardScreen = ({ navigation }: any) => {
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
-      {/* Header - Thread Style */}
-      <View style={styles.header}>
-        <View style={styles.headerTop}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <ChevronLeft size={24} color="#374151" />
-          </TouchableOpacity>
-          <Text style={styles.logo}>Cảm hứng</Text>
-        </View>
+      {/* Header - Pink Style */}
+      <View style={styles.pinkHeader}>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <ChevronLeft size={24} color="#fff" />
+        </TouchableOpacity>
+        <Text style={styles.pinkHeaderTitle}>Cảm hứng</Text>
+        <View style={{ width: 24 }} />
       </View>
 
       {/* Search Bar */}
@@ -183,25 +182,22 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#f8f9fa",
   },
-  header: {
-    backgroundColor: "#ffffff",
+  pinkHeader: {
+    backgroundColor: "#ff5a7a",
     paddingHorizontal: responsiveWidth(16),
-    paddingTop: responsiveHeight(8),
-    paddingBottom: responsiveHeight(12),
-    borderBottomWidth: 0.5,
-    borderBottomColor: "#e5e7eb",
-  },
-  headerTop: {
+    paddingVertical: responsiveHeight(12),
+    height: responsiveHeight(56),
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
+    justifyContent: "space-between",
   },
-  logo: {
-    fontFamily: "MavenPro-Bold",
-    fontSize: responsiveFont(24),
-    color: "#1f2937",
-    flex: 1,
+  pinkHeaderTitle: {
+    fontFamily: "MavenPro",
+    fontSize: responsiveFont(18),
+    fontWeight: "700",
+    color: "#ffffff",
     textAlign: "center",
+    flex: 1,
   },
   searchContainer: {
     flexDirection: "row",

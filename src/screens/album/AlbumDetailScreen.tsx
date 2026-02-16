@@ -921,29 +921,31 @@ const AlbumDetailScreen = () => {
   }
 
   return (
-    <SafeAreaView style={[styles.container, { paddingTop: topPad }]}>
-      {/* Header */}
+    <SafeAreaView style={[styles.container, { paddingTop: topPad }]}> 
+      {/* Custom header restored (no PinkHeader) */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <ChevronLeft size={24} color="#1f2937" />
+          <ChevronLeft size={24} color="#fff" />
         </TouchableOpacity>
         <View style={styles.headerTitleContainer}>
           {source === "my" && isEditingName ? (
             <View style={styles.editNameContainer}>
               <TextInput
-                style={styles.nameInput}
+                style={[styles.nameInput, { color: "#fff", borderBottomColor: "#fff" }]}
                 value={editedName}
                 onChangeText={setEditedName}
                 autoFocus
                 onBlur={handleSaveName}
                 onSubmitEditing={handleSaveName}
+                placeholder="Nhập tên album"
+                placeholderTextColor="#fff9"
               />
             </View>
           ) : source === "my" ? (
             <TouchableOpacity onPress={() => setIsEditingName(true)}>
               <View style={styles.nameDisplayContainer}>
                 <Text style={styles.headerTitle}>{album.name}</Text>
-                <Edit2 size={16} color="#6b7280" style={{ marginLeft: 8 }} />
+                <Edit2 size={16} color="#fff" style={{ marginLeft: 8 }} />
               </View>
             </TouchableOpacity>
           ) : (
@@ -962,9 +964,9 @@ const AlbumDetailScreen = () => {
                 style={styles.headerIconButton}
               >
                 {isGeneratingCode ? (
-                  <ActivityIndicator size="small" color="#1f2937" />
+                  <ActivityIndicator size="small" color="#fff" />
                 ) : (
-                  <Share size={24} color="#1f2937" />
+                  <Share size={24} color="#fff" />
                 )}
               </TouchableOpacity>
               <TouchableOpacity
@@ -972,10 +974,10 @@ const AlbumDetailScreen = () => {
                 disabled={isUploading}
                 style={styles.headerIconButton}
               >
-                <Camera size={24} color="#1f2937" />
+                <Camera size={24} color="#fff" />
               </TouchableOpacity>
               <TouchableOpacity onPress={handleDeleteAlbum}>
-                <Trash2 size={24} color="#ef4444" />
+                <Trash2 size={24} color="#fff" />
               </TouchableOpacity>
             </>
           ) : (
@@ -987,8 +989,8 @@ const AlbumDetailScreen = () => {
               >
                 <Heart
                   size={24}
-                  color={isLiked ? "#ffa9ba" : "#6b7280"}
-                  fill={isLiked ? "#ffa9ba" : "none"}
+                  color={isLiked ? "#fff" : "#fff9"}
+                  fill={isLiked ? "#fff" : "none"}
                 />
               </TouchableOpacity>
               <TouchableOpacity
@@ -997,12 +999,12 @@ const AlbumDetailScreen = () => {
               >
                 <Bookmark
                   size={24}
-                  color={isSaved ? "#ffc107" : "#6b7280"}
+                  color={isSaved ? "#ffc107" : "#fff9"}
                   fill={isSaved ? "#ffc107" : "none"}
                 />
               </TouchableOpacity>
               <TouchableOpacity onPress={handleUnpublishAlbum}>
-                <Trash2 size={24} color="#ef4444" />
+                <Trash2 size={24} color="#fff" />
               </TouchableOpacity>
             </>
           )}
@@ -1034,9 +1036,10 @@ const AlbumDetailScreen = () => {
             ))}
           </ScrollView>
           <TouchableOpacity
-            style={styles.confirmButton}
+            style={[styles.confirmButton, { backgroundColor: '#ff5a7a' }]}
             onPress={handleConfirmUpload}
             disabled={isUploading}
+            activeOpacity={0.85}
           >
             {isUploading ? (
               <ActivityIndicator size="small" color="#fff" />
@@ -1058,6 +1061,7 @@ const AlbumDetailScreen = () => {
               categoryFilter.length === 0 && styles.filterButtonActive,
             ]}
             onPress={() => setCategoryFilter([])}
+            activeOpacity={0.85}
           >
             <Text
               style={[
@@ -1075,6 +1079,7 @@ const AlbumDetailScreen = () => {
               categoryFilter.length > 0 && styles.filterButtonActive,
             ]}
             onPress={handleOpenFilterModal}
+            activeOpacity={0.85}
           >
             <Text
               style={[
@@ -1082,8 +1087,7 @@ const AlbumDetailScreen = () => {
                 categoryFilter.length > 0 && styles.filterButtonTextActive,
               ]}
             >
-              Lọc{" "}
-              {categoryFilter.length > 0 ? `(${categoryFilter.length})` : ""}
+              Lọc {categoryFilter.length > 0 ? `(${categoryFilter.length})` : ""}
             </Text>
           </TouchableOpacity>
         </View>
@@ -1229,8 +1233,8 @@ const AlbumDetailScreen = () => {
           {
             paddingBottom:
               Platform.OS === "android"
-                ? responsiveHeight(24) + insets.bottom
-                : responsiveHeight(24),
+                ? responsiveHeight(32) + insets.bottom
+                : responsiveHeight(32),
           },
         ]}
         removeClippedSubviews
@@ -1262,11 +1266,18 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
   },
   header: {
+    backgroundColor: "#ff5a7a",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: responsiveWidth(16),
     height: responsiveHeight(64),
+    shadowColor: "#e91e63",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 4,
+    marginBottom: 2,
   },
   headerTitleContainer: {
     flex: 1,
@@ -1276,7 +1287,9 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: responsiveFont(20),
     fontFamily: "MavenPro",
-    color: "#1f2937",
+    color: "#fff",
+    fontWeight: "700",
+    letterSpacing: 0.2,
   },
   headerSubtitle: {
     fontSize: responsiveFont(14),

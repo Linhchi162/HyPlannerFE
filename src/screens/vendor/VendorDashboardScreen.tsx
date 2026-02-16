@@ -83,10 +83,11 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   headerTitle: {
-    fontFamily: "MavenPro",
-    fontSize: responsiveFont(18),
-    fontWeight: "700",
     color: "#ffffff",
+    fontFamily: "MavenPro",
+    fontSize: responsiveFont(16),
+    fontWeight: "700",
+    textAlign: "center",
   },
   content: {
     padding: responsiveWidth(16),
