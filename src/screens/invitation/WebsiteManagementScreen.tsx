@@ -106,7 +106,7 @@ export default function WebsiteManagementScreen() {
     process.env.EXPO_PUBLIC_INVITATION_BASE_URL ||
     process.env.EXPO_PUBLIC_BASE_URL ||
     "https://hy-planner-be.vercel.app";
-  const websiteUrl = `${invitationBaseUrl.replace(/\\/+$/, "")}/inviletter/${
+  const websiteUrl = `${invitationBaseUrl.replace(/\/+$/, "")}/inviletter/${
     invitation.slug
   }`;
 
