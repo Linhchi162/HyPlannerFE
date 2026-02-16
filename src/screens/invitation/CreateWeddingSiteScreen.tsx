@@ -15,6 +15,25 @@ import {
   Linking,
   Platform,
 } from "react-native";
+
+// shared color palette
+const COLORS = {
+  background: "#F9F9F9",
+  card: "#FFFFFF",
+  textPrimary: "#374151",
+  textSecondary: "#6D6D6D",
+  primary: "#ff5a7a",
+  accent: "#e07181",
+  white: "#FFFFFF",
+  error: "#e74c3c",
+};
+
+import {
+  responsiveWidth,
+  responsiveHeight,
+  responsiveFont,
+} from "../../../assets/styles/utils/responsive";
+
 import { ChevronLeft } from "lucide-react-native";
 import {
   useNavigation,
@@ -99,8 +118,8 @@ export default function CreateWeddingSiteScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar
-        barStyle="dark-content"
-        backgroundColor="#ffffff"
+        barStyle="light-content"
+        backgroundColor={COLORS.primary}
         translucent={false}
       />
       {/* Header */}
@@ -108,10 +127,10 @@ export default function CreateWeddingSiteScreen() {
         <TouchableOpacity
           onPress={() => navigation.navigate("Main", { screen: "Home" })}
         >
-          <ChevronLeft size={24} color="#374151" />
+          <ChevronLeft size={24} color={COLORS.white} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Tạo Mới Website Đám Cưới</Text>
-        <View style={{ width: 24 }} />
+        <View style={{ width: responsiveWidth(24) }} />
       </View>
 
       <ScrollView contentContainerStyle={styles.container}>
@@ -178,83 +197,83 @@ export default function CreateWeddingSiteScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#FEF7F8",
+    backgroundColor: COLORS.background,
   },
   header: {
-    backgroundColor: "#f4d7ddff",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: responsiveWidth(16),
+    paddingVertical: responsiveHeight(12),
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
   },
   headerTitle: {
     fontFamily: "MavenPro-Bold",
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#e07181",
+    fontSize: responsiveFont(20),
+    fontWeight: "700",
+    color: COLORS.white,
   },
-  container: { padding: 20 },
+  container: { padding: responsiveWidth(20) },
   previewContainer: {
-    marginBottom: 24,
-    borderRadius: 16,
+    marginBottom: responsiveHeight(24),
+    borderRadius: responsiveWidth(16),
     overflow: "hidden",
-    borderColor: "#E07181",
+    borderColor: COLORS.accent,
     borderWidth: 2,
   },
-  previewImage: { width: "100%", height: 200, resizeMode: "cover" },
+  previewImage: { width: "100%", height: responsiveHeight(200), resizeMode: "cover" },
   label: {
     fontFamily: "Montserrat-SemiBold",
-    fontSize: 16,
-    color: "#374151",
-    marginBottom: 8,
+    fontSize: responsiveFont(16),
+    color: COLORS.textPrimary,
+    marginBottom: responsiveHeight(8),
   },
   input: {
     fontFamily: "Montserrat-Medium",
-    backgroundColor: "#FFFFFF",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 8,
-    fontSize: 16,
-    marginBottom: 16,
+    backgroundColor: COLORS.card,
+    paddingHorizontal: responsiveWidth(16),
+    paddingVertical: responsiveHeight(12),
+    borderRadius: responsiveWidth(8),
+    fontSize: responsiveFont(16),
+    marginBottom: responsiveHeight(16),
     borderWidth: 1,
     borderColor: "#D1D5DB",
   },
   slugInputContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 8,
+    backgroundColor: COLORS.card,
+    borderRadius: responsiveWidth(8),
     borderWidth: 1,
     borderColor: "#D1D5DB",
   },
   slugPrefix: {
     fontFamily: "Montserrat-Medium",
-    paddingLeft: 16,
-    fontSize: 16,
+    paddingLeft: responsiveWidth(16),
+    fontSize: responsiveFont(16),
     color: "#6B7280",
   },
   slugInput: {
     fontFamily: "Montserrat-Medium",
     flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    fontSize: 16,
+    paddingVertical: responsiveHeight(12),
+    paddingHorizontal: responsiveWidth(8),
+    fontSize: responsiveFont(16),
   },
   button: {
-    backgroundColor: "#e07181",
-    paddingVertical: 16,
-    borderRadius: 8,
+    backgroundColor: COLORS.primary,
+    paddingVertical: responsiveHeight(16),
+    borderRadius: responsiveWidth(8),
     alignItems: "center",
-    marginTop: 24,
+    marginTop: responsiveHeight(24),
   },
   buttonDisabled: {
     backgroundColor: "#F9A8B4",
   },
   buttonText: {
     fontFamily: "Montserrat-SemiBold",
-    color: "#FFFFFF",
-    fontSize: 18,
+    color: COLORS.white,
+    fontSize: responsiveFont(18),
     fontWeight: "600",
   },
 });

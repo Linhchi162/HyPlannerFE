@@ -27,17 +27,37 @@ import {
   ImagePlus,
 } from "lucide-react-native";
 import * as ImagePicker from "expo-image-picker";
+import {
+  responsiveWidth,
+  responsiveHeight,
+  responsiveFont,
+} from "../../../assets/styles/utils/responsive";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import {
   RootStackParamList,
   LoveStoryItem,
   WeddingEvent,
 } from "../../navigation/types";
+// API client for invitation service
+import invitationClient from "../../api/invitationClient";
+// general API client (used for uploads)
 import apiClient from "../../api/client";
 import { useAppDispatch } from "../../store/hooks";
 import { fetchUserInvitation } from "../../store/invitationSlice";
 import logger from "../../utils/logger";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+// shared color palette used across most screens
+const COLORS = {
+  background: "#F9F9F9",
+  card: "#FFFFFF",
+  textPrimary: "#374151",
+  textSecondary: "#6D6D6D",
+  primary: "#ff5a7a",      // main brand pink
+  accent: "#e07181",       // secondary/action color
+  white: "#FFFFFF",
+  error: "#e74c3c",
+};
 
 type EditCoupleInfoRouteProp = RouteProp<RootStackParamList, "EditCoupleInfo">;
 
@@ -202,7 +222,7 @@ export default function EditCoupleInfo() {
     logger.log("Payload to send:", JSON.stringify(payload, null, 2));
 
     try {
-      const response = await apiClient.put(
+      const response = await invitationClient.put(
         "/invitation/my-invitation",
         payload
       );
@@ -547,8 +567,8 @@ export default function EditCoupleInfo() {
                   {uploadingImage
                     ? "Đang tải..."
                     : currentItem.url
-                    ? "Thay đổi ảnh"
-                    : "Chọn ảnh từ thiết bị"}
+                      ? "Thay đổi ảnh"
+                      : "Chọn ảnh từ thiết bị"}
                 </Text>
               </TouchableOpacity>
 
@@ -631,8 +651,8 @@ export default function EditCoupleInfo() {
                   {uploadingImage
                     ? "Đang tải..."
                     : currentItem.image
-                    ? "Thay đổi ảnh"
-                    : "Chọn ảnh minh họa"}
+                      ? "Thay đổi ảnh"
+                      : "Chọn ảnh minh họa"}
                 </Text>
               </TouchableOpacity>
 
@@ -757,21 +777,21 @@ export default function EditCoupleInfo() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar
-        barStyle="dark-content"
-        backgroundColor="#fbe2e7"
+        barStyle="light-content"
+        backgroundColor={COLORS.primary}
         translucent={false}
       />
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top }] }>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <ChevronLeft size={24} color="#374151" />
+          <ChevronLeft size={24} color={COLORS.white} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{title}</Text>
         {["album", "loveStory", "events"].includes(sectionType) ? (
           <TouchableOpacity onPress={openModalToAdd}>
-            <Plus size={24} color="#374151" />
+            <Plus size={24} color={COLORS.white} />
           </TouchableOpacity>
         ) : (
-          <View style={{ width: 24 }} />
+          <View style={{ width: responsiveWidth(24) }} />
         )}
       </View>
 
@@ -800,61 +820,61 @@ export default function EditCoupleInfo() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: "#fff" },
+  safeArea: { flex: 1, backgroundColor: COLORS.background },
   header: {
-    paddingTop: StatusBar.currentHeight || 0,
-    backgroundColor: "#fbe2e7",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: responsiveWidth(16),
+    paddingVertical: responsiveHeight(12),
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    // keep subtle bottom border for separation
     borderBottomWidth: 1,
-    borderBottomColor: "#f0d4d9",
+    borderBottomColor: COLORS.card,
   },
   headerTitle: {
     fontFamily: "MavenPro-Bold",
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#e07181",
+    fontSize: responsiveFont(20),
+    fontWeight: "700",
+    color: COLORS.white,
   },
-  formContainer: { padding: 20 },
-  label: { fontSize: 16, fontWeight: "600", color: "#333", marginBottom: 8 },
+  formContainer: { padding: responsiveWidth(20) },
+  label: { fontSize: responsiveFont(16), fontWeight: "600", color: COLORS.textPrimary, marginBottom: 8 },
   input: {
     borderWidth: 1,
     borderColor: "#ddd",
-    padding: 10,
-    borderRadius: 5,
-    marginBottom: 15,
-    fontSize: 16,
-    backgroundColor: "#fff", // Đảm bảo input có nền trắng
+    padding: responsiveWidth(10),
+    borderRadius: responsiveWidth(5),
+    marginBottom: responsiveHeight(15),
+    fontSize: responsiveFont(16),
+    backgroundColor: COLORS.card, // Đảm bảo input có nền trắng
   },
   hintText: {
-    fontSize: 14,
-    color: "#666",
+    fontSize: responsiveFont(14),
+    color: COLORS.textSecondary,
     marginTop: -5,
     fontStyle: "italic",
   },
   saveButton: {
-    backgroundColor: "#e07181",
-    padding: 16,
-    margin: 20,
-    borderRadius: 8,
+    backgroundColor: COLORS.primary,
+    padding: responsiveWidth(16),
+    margin: responsiveWidth(20),
+    borderRadius: responsiveWidth(8),
     alignItems: "center",
   },
-  saveButtonText: { color: "#fff", fontSize: 16, fontWeight: "bold" },
-  emptyText: { textAlign: "center", marginTop: 50, color: "#888" },
+  saveButtonText: { color: COLORS.white, fontSize: responsiveFont(16), fontWeight: "bold" },
+  emptyText: { textAlign: "center", marginTop: responsiveHeight(50), color: COLORS.textSecondary },
   itemContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: 15,
+    padding: responsiveWidth(15),
     backgroundColor: "#f9f9f9",
-    borderRadius: 8,
-    marginBottom: 10,
+    borderRadius: responsiveWidth(8),
+    marginBottom: responsiveHeight(10),
   },
-  itemTitle: { fontWeight: "bold", marginBottom: 5 },
-  itemText: { flex: 1, marginRight: 10 },
+  itemTitle: { fontWeight: "bold", marginBottom: responsiveHeight(5) },
+  itemText: { flex: 1, marginRight: responsiveWidth(10) },
   modalContainer: {
     flex: 1,
     justifyContent: "center",
@@ -864,37 +884,37 @@ const styles = StyleSheet.create({
   modalContent: {
     width: "90%",
     maxHeight: "80%",
-    backgroundColor: "white",
-    borderRadius: 10,
-    padding: 20,
+    backgroundColor: COLORS.card,
+    borderRadius: responsiveWidth(10),
+    padding: responsiveWidth(20),
   },
   modalTitle: {
-    fontSize: 18,
+    fontSize: responsiveFont(18),
     fontWeight: "bold",
-    marginBottom: 15,
+    marginBottom: responsiveHeight(15),
     textAlign: "center",
   },
   modalButtonContainer: {
     flexDirection: "row",
     justifyContent: "flex-end",
-    marginTop: 10,
-    marginBottom: 20,
+    marginTop: responsiveWidth(10),
+    marginBottom: responsiveWidth(20),
   },
   modalButton: {
-    padding: 10,
-    paddingHorizontal: 20,
-    borderRadius: 5,
-    marginLeft: 10,
+    padding: responsiveWidth(10),
+    paddingHorizontal: responsiveWidth(20),
+    borderRadius: responsiveWidth(5),
+    marginLeft: responsiveWidth(10),
   },
-  confirmButton: { backgroundColor: "#e07181" },
+  confirmButton: { backgroundColor: COLORS.primary },
   imagePreviewContainer: {
-    marginVertical: 15,
+    marginVertical: responsiveHeight(15),
     alignItems: "center",
   },
   imagePreview: {
-    width: 200,
-    height: 200,
-    borderRadius: 10,
+    width: responsiveWidth(200),
+    height: responsiveWidth(200),
+    borderRadius: responsiveWidth(10),
     backgroundColor: "#f3f4f6",
   },
   pickImageButton: {
@@ -902,31 +922,31 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#fff1f5",
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    marginBottom: 15,
+    paddingVertical: responsiveHeight(12),
+    paddingHorizontal: responsiveWidth(16),
+    borderRadius: responsiveWidth(8),
+    marginBottom: responsiveHeight(15),
     borderWidth: 1,
-    borderColor: "#ff6b9d",
-    gap: 8,
+    borderColor: COLORS.accent,
+    gap: responsiveWidth(8),
   },
   pickImageText: {
     fontFamily: "Montserrat-SemiBold",
-    fontSize: 14,
-    color: "#ff6b9d",
+    fontSize: responsiveFont(14),
+    color: COLORS.accent,
   },
 
   // 6. THÊM STYLES CHO PICKER
   pickerContainer: {
     borderWidth: 1,
     borderColor: "#ddd",
-    borderRadius: 5,
-    marginBottom: 15,
-    backgroundColor: "#FFFFFF", // Quan trọng trên iOS
+    borderRadius: responsiveWidth(5),
+    marginBottom: responsiveHeight(15),
+    backgroundColor: COLORS.card, // Quan trọng trên iOS
     justifyContent: "center",
   },
   picker: {
-    height: 60, // Cần thiết cho Android
+    height: responsiveHeight(60), // Cần thiết cho Android
     width: "100%",
   },
 });

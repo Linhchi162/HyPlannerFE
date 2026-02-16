@@ -19,6 +19,22 @@ import { NavigationProp, useNavigation } from "@react-navigation/core";
 import { useSelector } from "react-redux";
 import { selectCurrentUser } from "../../store/authSlice";
 import invitationClient from "../../api/invitationClient";
+import {
+  responsiveWidth,
+  responsiveHeight,
+  responsiveFont,
+} from "../../../assets/styles/utils/responsive";
+
+// shared color palette used across app
+const COLORS = {
+  background: "#F9F9F9",
+  card: "#FFFFFF",
+  textPrimary: "#374151",
+  textSecondary: "#6D6D6D",
+  primary: "#ff5a7a",
+  accent: "#e07181",
+  white: "#FFFFFF",
+};
 
 // Lấy base URL từ apiClient hoặc định nghĩa hằng số
 // Đảm bảo rằng process.env.EXPO_PUBLIC_BASE_URL đã được định nghĩa trong file .env của bạn
@@ -159,8 +175,8 @@ const TemplateCard = ({
             styles.button,
             styles.primaryButton,
             templateType === "VIP" &&
-              userAccountType === "FREE" &&
-              styles.lockedButton,
+            userAccountType === "FREE" &&
+            styles.lockedButton,
             !isTemplateAvailable && styles.disabledButton,
           ]}
           onPress={handleUseTemplate}
@@ -289,7 +305,7 @@ export default function InvitationLetterScreen() {
   if (isLoading) {
     return (
       <SafeAreaView style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#e07181" />
+        <ActivityIndicator size="large" color={COLORS.primary} />
         <Text style={{ marginTop: 10, color: "#666" }}>
           Đang tải danh sách mẫu...
         </Text>
@@ -309,18 +325,17 @@ export default function InvitationLetterScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar
-        barStyle="dark-content"
-        backgroundColor="#f4d7ddff"
+        barStyle="light-content"
+        backgroundColor={COLORS.primary}
         translucent={false}
       />
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <ChevronLeft size={24} color="#374151" />
+          <ChevronLeft size={24} color={COLORS.white} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Chọn Mẫu Thiệp Cưới</Text>
-        <View style={{ width: 24 }} />
+        <View style={{ width: responsiveWidth(24) }} />
       </View>
-
       <FlatList
         data={filteredTemplates}
         keyExtractor={(item) => item.id.toString()}
@@ -343,29 +358,30 @@ export default function InvitationLetterScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#ffffff",
+    backgroundColor: COLORS.background,
   },
   centerContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#ffffff",
+    backgroundColor: COLORS.background,
   },
   header: {
-    backgroundColor: "#f4d7ddff",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: responsiveWidth(16),
+    paddingVertical: responsiveHeight(12),
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     borderBottomWidth: 1,
-    borderBottomColor: "#f3f4f6",
+    borderBottomColor: COLORS.card,
+    height: responsiveHeight(56),
   },
   headerTitle: {
     fontFamily: "MavenPro-Bold",
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#e07181",
+    fontSize: responsiveFont(20),
+    fontWeight: "700",
+    color: COLORS.white,
   },
   filterTabsContainer: {
     backgroundColor: "#ffffff",
@@ -382,7 +398,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   activeTab: {
-    backgroundColor: "#e07181",
+    backgroundColor: COLORS.primary,
   },
   inactiveTab: {
     backgroundColor: "transparent",
@@ -461,7 +477,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   vipBadge: {
-    backgroundColor: "#e07181",
+    backgroundColor: COLORS.primary,
   },
   freeBadge: {
     backgroundColor: "#366d4a",
@@ -482,7 +498,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#f3f4f6",
   },
   primaryButton: {
-    backgroundColor: "#e07181",
+    backgroundColor: COLORS.primary,
     flexDirection: "row",
     alignItems: "center",
   },
@@ -501,6 +517,6 @@ const styles = StyleSheet.create({
     color: "#4b5563",
   },
   primaryButtonText: {
-    color: "#ffffff",
+    color: COLORS.white,
   },
 });

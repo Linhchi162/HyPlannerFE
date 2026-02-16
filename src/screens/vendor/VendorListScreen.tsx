@@ -19,6 +19,7 @@ import {
   MapPin,
   ChevronDown,
   MessageCircle,
+  Filter,
 } from "lucide-react-native";
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
@@ -49,8 +50,12 @@ export default function VendorListScreen() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [categoryModalVisible, setCategoryModalVisible] = useState(false);
   const [locationModalVisible, setLocationModalVisible] = useState(false);
+  const [sortModalVisible, setSortModalVisible] = useState(false);
   const [categoryQuery, setCategoryQuery] = useState("");
   const [locationQuery, setLocationQuery] = useState("");
+  const [sortOption, setSortOption] = useState<
+    "" | "rating-asc" | "rating-desc" | "services-asc" | "services-desc"
+  >("");
 
   useEffect(() => {
     let isMounted = true;
@@ -139,6 +144,30 @@ export default function VendorListScreen() {
     });
   }, [activeCategory, activeLocation, query, vendors]);
 
+  // apply sorting after filtering
+  const displayed = useMemo(() => {
+    const arr = [...filtered];
+    switch (sortOption) {
+      case "rating-asc":
+        arr.sort((a, b) => (a.rating || 0) - (b.rating || 0));
+        break;
+      case "rating-desc":
+        arr.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+        break;
+      case "services-asc":
+        arr.sort((a, b) =>
+          (a.services?.length || 0) - (b.services?.length || 0)
+        );
+        break;
+      case "services-desc":
+        arr.sort((a, b) =>
+          (b.services?.length || 0) - (a.services?.length || 0)
+        );
+        break;
+    }
+    return arr;
+  }, [filtered, sortOption]);
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
@@ -172,7 +201,11 @@ export default function VendorListScreen() {
         />
       </View>
 
-      <View style={styles.filterRow}>
+<ScrollView
+        style={styles.filterRow}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+      >
         <TouchableOpacity
           style={styles.filterSelect}
           onPress={() => setCategoryModalVisible(true)}
@@ -191,7 +224,25 @@ export default function VendorListScreen() {
           </Text>
           <ChevronDown size={18} color="#9ca3af" />
         </TouchableOpacity>
-      </View>
+        <TouchableOpacity
+          style={styles.filterSelect}
+          onPress={() => setSortModalVisible(true)}
+        >
+          <Filter size={16} color="#9ca3af" style={{ marginRight: 4 }} />
+          <Text style={styles.filterLabel} numberOfLines={1}>
+            {sortOption === ""
+              ? "Sắp xếp"
+              : sortOption === "rating-asc"
+              ? "Sao ↑"
+              : sortOption === "rating-desc"
+              ? "Sao ↓"
+              : sortOption === "services-asc"
+              ? "Dịch vụ ↑"
+              : "Dịch vụ ↓"}
+          </Text>
+          <ChevronDown size={18} color="#9ca3af" />
+        </TouchableOpacity>
+      </ScrollView>
 
       <ScrollView contentContainerStyle={styles.list}>
         {loading ? (
@@ -199,10 +250,10 @@ export default function VendorListScreen() {
             <ActivityIndicator size="small" color="#ff5a7a" />
             <Text style={styles.loadingText}>Đang tải nhà cung cấp...</Text>
           </View>
-        ) : filtered.length === 0 ? (
+        ) : displayed.length === 0 ? (
           <Text style={styles.emptyText}>Chưa có nhà cung cấp.</Text>
         ) : (
-          filtered.map((v) => (
+          displayed.map((v) => (
             <TouchableOpacity
               key={v.id}
               style={styles.card}
@@ -339,6 +390,46 @@ export default function VendorListScreen() {
           />
         </SafeAreaView>
       </Modal>
+
+      {/* sort modal */}
+      <Modal visible={sortModalVisible} animationType="slide">
+        <SafeAreaView style={styles.modalSafeArea}>
+          <View style={styles.modalHeader}>
+            <TouchableOpacity onPress={() => setSortModalVisible(false)}>
+              <ChevronLeft size={24} color="#111827" />
+            </TouchableOpacity>
+            <Text style={styles.modalTitle}>Sắp xếp</Text>
+            <View style={{ width: 24 }} />
+          </View>
+          <FlatList
+            data={
+              [
+                { label: "Mặc định", value: "" },
+                { label: "Sao tăng dần", value: "rating-asc" },
+                { label: "Sao giảm dần", value: "rating-desc" },
+                { label: "Dịch vụ tăng dần", value: "services-asc" },
+                { label: "Dịch vụ giảm dần", value: "services-desc" },
+              ]
+            }
+            keyExtractor={(item) => item.value}
+            contentContainerStyle={styles.modalList}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={styles.modalItem}
+                onPress={() => {
+                  setSortOption(item.value as any);
+                  setSortModalVisible(false);
+                }}
+              >
+                <Text style={styles.modalItemText}>{item.label}</Text>
+              </TouchableOpacity>
+            )}
+            ListEmptyComponent={
+              <Text style={styles.modalEmptyText}>Không có tùy chọn.</Text>
+            }
+          />
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -408,11 +499,10 @@ const styles = StyleSheet.create({
     color: "#111827",
   },
   filterRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: responsiveWidth(6),
     paddingHorizontal: responsiveWidth(16),
     marginTop: responsiveHeight(12),
+    height: responsiveHeight(48),
+    flexGrow: 0, // ensure scrollview doesn't expand
   },
   filterSelect: {
     alignSelf: "flex-start",
@@ -424,6 +514,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: responsiveWidth(4),
+    marginRight: responsiveWidth(6),
   },
   filterLabel: {
     fontFamily: "Montserrat-Medium",

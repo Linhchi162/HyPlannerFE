@@ -55,6 +55,21 @@ import {
 } from "../../../assets/styles/utils/responsive";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+// shared color palette
+const COLORS = {
+  background: "#F9F9F9",
+  card: "#FFFFFF",
+  textPrimary: "#374151",
+  textSecondary: "#6D6D6D",
+  primary: "#ff5a7a",
+  accent: "#e07181",
+  white: "#FFFFFF",
+  success: "#2ecc71",
+  info: "#3498db",
+  danger: "#e74c3c",
+  neutral: "#95a5a6",
+};
+
 export default function WebsiteManagementScreen() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const dispatch = useAppDispatch();
@@ -106,9 +121,8 @@ export default function WebsiteManagementScreen() {
     process.env.EXPO_PUBLIC_INVITATION_BASE_URL ||
     process.env.EXPO_PUBLIC_BASE_URL ||
     "https://hy-planner-be.vercel.app";
-  const websiteUrl = `${invitationBaseUrl.replace(/\/+$/, "")}/inviletter/${
-    invitation.slug
-  }`;
+  const websiteUrl = `${invitationBaseUrl.replace(/\/+$/, "")}/inviletter/${invitation.slug
+    }`;
 
   const handleDeleteWebsite = () => {
     Alert.alert(
@@ -232,6 +246,11 @@ export default function WebsiteManagementScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <StatusBar
+        barStyle="light-content"
+        backgroundColor={COLORS.primary}
+        translucent={false}
+      />
       <View style={styles.header}>
         <TouchableOpacity
           onPress={() => navigation.navigate("Main", { screen: "Home" })}
@@ -449,10 +468,10 @@ export default function WebsiteManagementScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#f7f7f7",
+    backgroundColor: COLORS.background,
   },
   header: {
-    backgroundColor: "#ff5a7a",
+    backgroundColor: COLORS.primary,
     paddingHorizontal: responsiveWidth(16),
     paddingVertical: responsiveHeight(12),
     height: responsiveHeight(56),
@@ -464,7 +483,7 @@ const styles = StyleSheet.create({
     fontFamily: "MavenPro",
     fontSize: responsiveFont(20),
     fontWeight: "700",
-    color: "#ffffff",
+    color: COLORS.white,
   },
   container: {
     padding: responsiveWidth(16),
@@ -484,17 +503,17 @@ const styles = StyleSheet.create({
   },
   gridButtonText: {
     fontFamily: "Montserrat-SemiBold",
-    color: "#fff",
+    color: COLORS.white,
     fontSize: responsiveFont(14),
     fontWeight: "bold",
   },
   gridButtonSubText: {
     fontFamily: "Montserrat-SemiBold",
-    color: "#fff",
+    color: COLORS.white,
     fontSize: responsiveFont(12),
   },
   menuList: {
-    backgroundColor: "#fff",
+    backgroundColor: COLORS.card,
     borderRadius: responsiveWidth(12),
     overflow: "hidden",
   },
@@ -510,10 +529,10 @@ const styles = StyleSheet.create({
     fontFamily: "Montserrat-Medium",
     fontSize: responsiveFont(16),
     marginLeft: responsiveWidth(16),
-    color: "#333",
+    color: COLORS.textPrimary,
   },
   deleteText: {
-    color: "#e74c3c",
+    color: COLORS.error,
     textAlign: "center",
     width: "100%",
     fontFamily: "Montserrat-SemiBold",

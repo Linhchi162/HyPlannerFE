@@ -11,6 +11,13 @@ import {
   Alert,
   Platform,
 } from "react-native";
+
+// shared color palette
+const COLORS = {
+  primary: "#ff5a7a",
+  accent: "#ec4899", // used in some pink gradients
+  white: "#FFFFFF",
+};
 import { Heart, Plus, Key } from "lucide-react-native";
 import { useNavigation, type NavigationProp } from "@react-navigation/native";
 import type { RootStackParamList } from "../../navigation/types";
@@ -269,11 +276,11 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#fdf2f8",
+    backgroundColor: COLORS.white,
   },
   loadingText: {
     marginTop: 10,
     fontSize: 16,
-    color: "#ec4899",
+    color: COLORS.primary,
   },
 });
