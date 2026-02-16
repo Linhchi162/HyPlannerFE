@@ -39,6 +39,66 @@ function getUserKeyHash(req) {
   return crypto.createHash("sha256").update(raw).digest("hex");
 }
 
+function firstNameFromFullName(fullName) {
+  const s = String(fullName || "").trim();
+  if (!s) return "";
+  const parts = s.split(/\s+/);
+  // VN names: given name is often the last token
+  return parts[parts.length - 1] || s;
+}
+
+function adaptWeddingData(input) {
+  // Some copied BE templates expect nested fields:
+  // - weddingData.groom.firstName / weddingData.bride.firstName
+  // While our API uses flat groomName/brideName.
+  const groomName = input?.groomName || input?.groom?.fullName || "";
+  const brideName = input?.brideName || input?.bride?.fullName || "";
+
+  const groom = input?.groom || {
+    firstName: firstNameFromFullName(groomName),
+    fullName: groomName,
+  };
+  const bride = input?.bride || {
+    firstName: firstNameFromFullName(brideName),
+    fullName: brideName,
+  };
+
+  return {
+    ...input,
+    groomName,
+    brideName,
+    groom,
+    bride,
+    language: input?.language || "vi",
+    aboutCouple: input?.aboutCouple || "",
+    youtubeUrl: input?.youtubeUrl || "",
+    bankAccount: input?.bankAccount || null,
+    guestRsvpCount: input?.guestRsvpCount || 0,
+    guestbookMessages: Array.isArray(input?.guestbookMessages)
+      ? input.guestbookMessages
+      : [],
+    loveStory: Array.isArray(input?.loveStory) ? input.loveStory : [],
+    album: Array.isArray(input?.album) ? input.album : [],
+    events: Array.isArray(input?.events) ? input.events : [],
+  };
+}
+
+function renderTemplateOrFallback(res, templateName, weddingData, baseUrl) {
+  res.render(templateName, { weddingData }, (err, html) => {
+    if (err) {
+      // Helpful debug headers; safe because it doesn't include secrets.
+      res.setHeader("X-Invitation-Template", "fallback");
+      res.setHeader(
+        "X-Invitation-Template-Error",
+        String(err.message || "render_error").slice(0, 180)
+      );
+      return res.render("invitation", { weddingData, baseUrl });
+    }
+    res.setHeader("X-Invitation-Template", templateName);
+    return res.send(html);
+  });
+}
+
 const templateImages = {
   1: "https://res.cloudinary.com/dqtemoeoz/image/upload/v1766667417/download_d10emq.jpg",
   2: "https://res.cloudinary.com/dqtemoeoz/image/upload/v1766667399/ee9138c3161766d811f401484930f2ad_xdtlxv.jpg",
@@ -102,7 +162,7 @@ app.get("/templates", (req, res) => {
 
 app.get("/inviletter/preview/:templateId", (req, res) => {
   const templateId = Number(req.params.templateId);
-  const weddingData = {
+  const weddingData = adaptWeddingData({
     templateId,
     groomName: "Nguyễn Văn A",
     brideName: "Trần Thị B",
@@ -135,8 +195,36 @@ app.get("/inviletter/preview/:templateId", (req, res) => {
     guestRsvpCount: 10,
     guestbookMessages: [{ name: "Khách mời", message: "Chúc mừng hạnh phúc!" }],
     slug: "sample-slug",
-  };
-  res.render("invitation", { weddingData, baseUrl: getBaseUrl(req) });
+  });
+
+  const templateName = `template-${templateId}`;
+  return renderTemplateOrFallback(res, templateName, weddingData, getBaseUrl(req));
+});
+
+app.get("/_debug/render/:templateId", (req, res) => {
+  const templateId = Number(req.params.templateId);
+  const templateName = `template-${templateId}`;
+  const weddingData = adaptWeddingData({
+    templateId,
+    groomName: "Nguyễn Văn A",
+    brideName: "Trần Thị B",
+    weddingDate: "2026-05-31",
+    aboutCouple: "debug",
+    guestRsvpCount: 10,
+    guestbookMessages: [],
+    slug: "sample-slug",
+  });
+
+  res.render(templateName, { weddingData }, (err, html) => {
+    if (err) {
+      return res.status(200).json({
+        ok: false,
+        templateName,
+        error: String(err.message || err),
+      });
+    }
+    return res.status(200).json({ ok: true, templateName, htmlChars: html.length });
+  });
 });
 
 app.post("/invitation/invitation-letters", async (req, res) => {
@@ -245,7 +333,7 @@ app.delete("/invitation/my-invitation", async (req, res) => {
   res.status(200).json({ message: "Đã xóa website thành công." });
 });
 
-app.post("/invitation/:slug/rsvp", async (req, res) => {
+const rsvpHandler = async (req, res) => {
   const slug = safeSlug(req.params.slug);
   const inv = await storage.getBySlug(slug);
   if (!inv) return res.status(404).json({ message: "Không tìm thấy thiệp mời" });
@@ -257,9 +345,13 @@ app.post("/invitation/:slug/rsvp", async (req, res) => {
   return res
     .status(200)
     .json({ message: "Xác nhận tham dự thành công!", count: inv.guestRsvpCount });
-});
+};
 
-app.post("/invitation/:slug/add-wish", async (req, res) => {
+app.post("/invitation/:slug/rsvp", rsvpHandler);
+// Alias used by copied BE templates
+app.post("/inviletter/invitation/:slug/rsvp", rsvpHandler);
+
+const addWishHandler = async (req, res) => {
   const slug = safeSlug(req.params.slug);
   const { name, message } = req.body || {};
   if (!name || !message) {
@@ -283,31 +375,35 @@ app.post("/invitation/:slug/add-wish", async (req, res) => {
   await storage.putInvitation(inv);
 
   return res.status(201).json({ message: "Gửi lời chúc thành công!" });
-});
+};
+
+app.post("/invitation/:slug/add-wish", addWishHandler);
+// Alias used by copied BE templates
+app.post("/inviletter/invitation/:slug/add-wish", addWishHandler);
 
 app.get("/inviletter/:slug", async (req, res) => {
   const slug = safeSlug(req.params.slug);
   const inv = await storage.getBySlug(slug);
   if (!inv) return res.status(404).send("Not found");
 
-  res.render("invitation", {
-    weddingData: {
-      templateId: inv.templateId,
-      groomName: inv.groomName,
-      brideName: inv.brideName,
-      weddingDate: inv.weddingDate,
-      aboutCouple: inv.aboutCouple,
-      youtubeUrl: inv.youtubeUrl,
-      loveStory: inv.loveStory,
-      album: inv.album,
-      events: inv.events,
-      bankAccount: inv.bankAccount,
-      guestRsvpCount: inv.guestRsvpCount,
-      guestbookMessages: inv.guestbookMessages,
-      slug: inv.slug,
-    },
-    baseUrl: getBaseUrl(req),
+  const weddingData = adaptWeddingData({
+    templateId: inv.templateId,
+    groomName: inv.groomName,
+    brideName: inv.brideName,
+    weddingDate: inv.weddingDate,
+    aboutCouple: inv.aboutCouple,
+    youtubeUrl: inv.youtubeUrl,
+    loveStory: inv.loveStory,
+    album: inv.album,
+    events: inv.events,
+    bankAccount: inv.bankAccount,
+    guestRsvpCount: inv.guestRsvpCount,
+    guestbookMessages: inv.guestbookMessages,
+    slug: inv.slug,
   });
+
+  const templateName = `template-${inv.templateId}`;
+  return renderTemplateOrFallback(res, templateName, weddingData, getBaseUrl(req));
 });
 
 module.exports = app;
