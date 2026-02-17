@@ -17,6 +17,7 @@ import {
   responsiveHeight,
   responsiveWidth,
 } from "../../../assets/styles/utils/responsive";
+import { pinkHeaderStyles } from "../../styles/pinkHeader";
 import {
   subscribeVendorRequests,
   VendorRequest,
@@ -55,7 +56,11 @@ export default function VendorRequestsScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <ChevronLeft size={24} color="#ffffff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Yêu cầu liên hệ</Text>
+        <View style={pinkHeaderStyles.titleContainer}>
+          <Text style={[styles.headerTitle, pinkHeaderStyles.title]}>
+            Yêu cầu liên hệ
+          </Text>
+        </View>
         <View style={{ width: 24 }} />
       </View>
 
@@ -83,14 +88,14 @@ export default function VendorRequestsScreen() {
                   ) : legacyService ? (
                     <Text style={styles.cardSub}>{legacyService}</Text>
                   ) : null}
-                {r.note ? (
-                  <Text style={styles.cardSub}>Ghi chú: {r.note}</Text>
-                ) : null}
-                {r.createdAt ? (
-                  <Text style={styles.cardSub}>
-                    Ngày: {formatDate(r.createdAt)}
-                  </Text>
-                ) : null}
+                  {r.note ? (
+                    <Text style={styles.cardSub}>Ghi chú: {r.note}</Text>
+                  ) : null}
+                  {r.createdAt ? (
+                    <Text style={styles.cardSub}>
+                      Ngày: {formatDate(r.createdAt)}
+                    </Text>
+                  ) : null}
                 </View>
                 <TouchableOpacity style={styles.callBtn}>
                   <Phone size={16} color="#ff5a7a" />

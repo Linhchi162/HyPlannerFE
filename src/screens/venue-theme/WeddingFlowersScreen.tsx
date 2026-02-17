@@ -23,6 +23,7 @@ import {
   responsiveWidth,
   responsiveHeight,
 } from "../../../assets/styles/utils/responsive";
+import { pinkHeaderStyles } from "../../styles/pinkHeader";
 import {
   useAlbumCreation,
   AlbumWizardStep,
@@ -84,7 +85,9 @@ const WeddingFlowersScreen = () => {
         >
           <ChevronLeft size={24} color="#1f2937" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Hoa cưới - Kiểu dáng</Text>
+        <Text style={[styles.headerTitle, pinkHeaderStyles.title]}>
+          Hoa cưới - Kiểu dáng
+        </Text>
       </View>
 
       {/* Flowers Grid */}

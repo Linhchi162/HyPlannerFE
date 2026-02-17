@@ -32,6 +32,7 @@ import {
   responsiveHeight,
   responsiveFont,
 } from "../../../assets/styles/utils/responsive";
+import { pinkHeaderStyles } from "../../styles/pinkHeader";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import {
   RootStackParamList,
@@ -781,11 +782,15 @@ export default function EditCoupleInfo() {
         backgroundColor={COLORS.primary}
         translucent={false}
       />
-      <View style={[styles.header, { paddingTop: insets.top }] }>
+      <View style={[styles.header, { paddingTop: insets.top }]}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <ChevronLeft size={24} color={COLORS.white} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{title}</Text>
+        <View style={pinkHeaderStyles.titleContainer}>
+          <Text style={[styles.headerTitle, pinkHeaderStyles.title]}>
+            {title}
+          </Text>
+        </View>
         {["album", "loveStory", "events"].includes(sectionType) ? (
           <TouchableOpacity onPress={openModalToAdd}>
             <Plus size={24} color={COLORS.white} />

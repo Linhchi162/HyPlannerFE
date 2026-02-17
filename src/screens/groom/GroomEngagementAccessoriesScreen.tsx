@@ -23,6 +23,7 @@ import {
   responsiveWidth,
   responsiveHeight,
 } from "../../../assets/styles/utils/responsive";
+import { pinkHeaderStyles } from "../../styles/pinkHeader";
 import { useSelection } from "../../contexts/SelectionContext";
 import {
   useAlbumCreation,
@@ -84,7 +85,9 @@ export default function GroomEngagementAccessoriesScreen() {
         >
           <ChevronLeft size={24} color="#1f2937" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Lễ ăn hỏi - Phụ kiện</Text>
+        <Text style={[styles.headerTitle, pinkHeaderStyles.title]}>
+          Lễ ăn hỏi - Phụ kiện
+        </Text>
       </View>
 
       <ScrollView

@@ -22,6 +22,7 @@ import {
   responsiveWidth,
   responsiveHeight,
 } from "../../../assets/styles/utils/responsive";
+import { pinkHeaderStyles } from "../../styles/pinkHeader";
 import { useSelection } from "../../contexts/SelectionContext";
 
 const { width } = Dimensions.get("window");
@@ -41,7 +42,7 @@ const BrideAoDaiStyleScreen = () => {
       .then((response) => {
         setDressStyles(response.data);
       })
-      .catch((error) => {});
+      .catch((error) => { });
   }, []);
 
   const topPad =
@@ -56,7 +57,9 @@ const BrideAoDaiStyleScreen = () => {
         >
           <ChevronLeft size={24} color="#1f2937" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Áo dài - Kiểu dáng</Text>
+        <Text style={[styles.headerTitle, pinkHeaderStyles.title]}>
+          Áo dài - Kiểu dáng
+        </Text>
       </View>
 
       <ScrollView

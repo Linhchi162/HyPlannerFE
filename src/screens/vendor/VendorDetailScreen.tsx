@@ -21,6 +21,7 @@ import {
   responsiveHeight,
   responsiveWidth,
 } from "../../../assets/styles/utils/responsive";
+import { pinkHeaderStyles } from "../../styles/pinkHeader";
 import {
   getCachedVendors,
   getVendorDetail,
@@ -90,7 +91,11 @@ export default function VendorDetailScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <ChevronLeft size={24} color="#ffffff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Chi tiết nhà cung cấp</Text>
+        <View style={pinkHeaderStyles.titleContainer}>
+          <Text style={[styles.headerTitle, pinkHeaderStyles.title]}>
+            Chi tiết nhà cung cấp
+          </Text>
+        </View>
         <View style={{ width: 24 }} />
       </View>
 
@@ -187,8 +192,8 @@ export default function VendorDetailScreen() {
                 {hasRated
                   ? "Bạn đã đánh giá"
                   : ratingSubmitting
-                  ? "Đang gửi..."
-                  : "Gửi đánh giá"}
+                    ? "Đang gửi..."
+                    : "Gửi đánh giá"}
               </Text>
             </TouchableOpacity>
             <Text style={styles.sectionTitle}>Danh mục</Text>
@@ -208,7 +213,7 @@ export default function VendorDetailScreen() {
                 : "Nhà cung cấp chưa cập nhật mô tả."}
             </Text>
 
-           
+
             {Array.isArray(vendor.galleryUrls) && vendor.galleryUrls.length > 0 ? (
               <ScrollView
                 horizontal

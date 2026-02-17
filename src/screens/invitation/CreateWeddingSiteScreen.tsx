@@ -33,6 +33,7 @@ import {
   responsiveHeight,
   responsiveFont,
 } from "../../../assets/styles/utils/responsive";
+import { pinkHeaderStyles } from "../../styles/pinkHeader";
 
 import { ChevronLeft } from "lucide-react-native";
 import {
@@ -100,7 +101,17 @@ export default function CreateWeddingSiteScreen() {
       const result = response.data;
       dispatch(fetchUserInvitation());
 
-      navigation.navigate("WebsiteManagement", { invitation: result.data });
+      navigation.reset({
+        index: 0,
+        routes: [
+          {
+            name: "Main",
+            params: {
+              screen: "WebsiteTab",
+            },
+          },
+        ],
+      });
     } catch (error: any) {
       const message =
         typeof error === "object" && error !== null && "message" in error
@@ -129,7 +140,11 @@ export default function CreateWeddingSiteScreen() {
         >
           <ChevronLeft size={24} color={COLORS.white} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Tạo Mới Website Đám Cưới</Text>
+        <View style={pinkHeaderStyles.titleContainer}>
+          <Text style={[styles.headerTitle, pinkHeaderStyles.title]}>
+            Tạo Mới Website Đám Cưới
+          </Text>
+        </View>
         <View style={{ width: responsiveWidth(24) }} />
       </View>
 

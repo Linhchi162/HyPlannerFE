@@ -24,6 +24,7 @@ import {
   responsiveHeight,
   responsiveFont,
 } from "../../../assets/styles/utils/responsive";
+import { pinkHeaderStyles } from "../../styles/pinkHeader";
 
 // shared color palette used across app
 const COLORS = {
@@ -333,7 +334,11 @@ export default function InvitationLetterScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <ChevronLeft size={24} color={COLORS.white} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Chọn Mẫu Thiệp Cưới</Text>
+        <View style={pinkHeaderStyles.titleContainer}>
+          <Text style={[styles.headerTitle, pinkHeaderStyles.title]}>
+            Chọn Mẫu Thiệp Cưới
+          </Text>
+        </View>
         <View style={{ width: responsiveWidth(24) }} />
       </View>
       <FlatList

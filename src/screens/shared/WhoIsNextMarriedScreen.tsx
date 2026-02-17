@@ -28,6 +28,7 @@ import {
   responsiveHeight,
   responsiveWidth,
 } from "../../../assets/styles/utils/responsive";
+import { pinkHeaderStyles } from "../../styles/pinkHeader";
 import {
   useNavigation,
   useRoute,
@@ -58,7 +59,7 @@ const AppBar = ({ onBack }: AppBarWINMProps) => (
       <Text
         numberOfLines={1}
         ellipsizeMode="tail"
-        style={styles.appbarTitle}
+        style={[styles.appbarTitle, pinkHeaderStyles.title]}
       >
         Ai là người tiếp theo sẽ kết hôn
       </Text>
@@ -100,6 +101,7 @@ export default function WhoIsNextMarriedScreen() {
   const [members, setMembers] = useState<any[]>(
     member.filter((m: any) => m._id !== creatorId)
   );
+  const [hasStarted, setHasStarted] = useState(false);
   const [winner, setWinner] = useState<any>(null);
   const [dialogVisible, setDialogVisible] = useState(false);
   const [spinning, setSpinning] = useState(false);
@@ -129,8 +131,19 @@ export default function WhoIsNextMarriedScreen() {
 
   const { width } = Dimensions.get("window");
 
+  const getMemberId = (m: any, index?: number) => {
+    if (m?._id) return m._id;
+    if (m?.id) return m.id;
+    if (m?.email) return `email:${m.email}`;
+    if (m?.fullName) return `name:${m.fullName}`;
+    if (m?.name) return `name:${m.name}`;
+    if (typeof index === "number") return `index:${index}`;
+    return "unknown";
+  };
+
   // (spinWheel, shuffleMembers, resetWheel, removeMember, getSlicePath không đổi)
   const spinWheel = () => {
+    setHasStarted(true);
     if (spinning || !members || members.length === 0) return;
     setSpinning(true);
     const randomIndex = Math.floor(Math.random() * members.length);
@@ -168,10 +181,12 @@ export default function WhoIsNextMarriedScreen() {
   };
 
   const shuffleMembers = () => {
+    setHasStarted(true);
     setMembers((prev) => [...prev].sort(() => Math.random() - 0.5));
   };
 
   const resetWheel = () => {
+    setHasStarted(true);
     setMembers(member.filter((m: any) => m._id !== creatorId));
     rotation.setValue(0);
     setWinner(null);
@@ -180,12 +195,15 @@ export default function WhoIsNextMarriedScreen() {
 
   const removeMember = (idToRemove: string) => {
     if (spinning) return;
-    setMembers((prev) => prev.filter((m) => m._id !== idToRemove));
+    setMembers((prev) =>
+      prev.filter((m, index) => getMemberId(m, index) !== idToRemove)
+    );
   };
 
   // ✅ MỚI: Hàm thêm thành viên
   const addMember = () => {
     if (newName.trim() === "" || spinning) return;
+    setHasStarted(true);
 
     const newMember = {
       _id: Date.now().toString(), // Tạo ID tạm thời duy nhất
@@ -212,6 +230,8 @@ export default function WhoIsNextMarriedScreen() {
     return `M0,0 L${x1},${y1} A${radius},${radius} 0 ${largeArcFlag} 1 ${x2},${y2} Z`;
   };
 
+  const visibleMembers = hasStarted ? members : [];
+
   return (
     <View style={{ flex: 1, backgroundColor: "#FFF" }}>
       <AppBar onBack={() => navigation.goBack()} />
@@ -236,7 +256,7 @@ export default function WhoIsNextMarriedScreen() {
           keyboardShouldPersistTaps="handled"
         >
           {/* Vòng quay hoặc Thông báo Chúc mừng */}
-          {members && members.length > 0 ? (
+          {visibleMembers && visibleMembers.length > 0 ? (
             <View style={styles.wheelContainer}>
               {/* Bánh xe */}
               <Animated.View
@@ -257,30 +277,30 @@ export default function WhoIsNextMarriedScreen() {
                   viewBox={`-${radius} -${radius} ${radius * 2} ${radius * 2}`}
                 >
                   <G>
-                    {members.map((m, i) => (
+                    {visibleMembers.map((m, i) => (
                       <Path
-                        key={`path-${i}-${m._id}`}
+                        key={`path-${i}-${getMemberId(m, i)}`}
                         d={getSlicePath(i)}
                         fill={colors[i % colors.length]}
                         stroke="#fff"
                         strokeWidth={1}
                       />
                     ))}
-                    {members.map((m, i) => {
-                      const sliceAngleDeg = 360 / members.length;
+                    {visibleMembers.map((m, i) => {
+                      const sliceAngleDeg = 360 / visibleMembers.length;
                       const angleRad =
-                        ((i + 0.5) * 2 * Math.PI) / members.length;
+                        ((i + 0.5) * 2 * Math.PI) / visibleMembers.length;
                       const angleDeg = (angleRad * 180) / Math.PI;
                       const textX = radius * 0.6 * Math.cos(angleRad);
                       const textY = radius * 0.6 * Math.sin(angleRad);
-                      const displayName = m.fullName || m.name || "Unknown";
+                      const displayName = m.fullName || m.name || "";
 
                       // Xoay text để luôn đọc được từ ngoài vào trong
                       const rotation = angleDeg + 90;
 
                       return (
                         <SvgText
-                          key={`text-${i}-${m._id}`}
+                          key={`text-${i}-${getMemberId(m, i)}`}
                           x={textX}
                           y={textY}
                           fontSize={responsiveFont(12)}
@@ -372,12 +392,15 @@ export default function WhoIsNextMarriedScreen() {
           </View>
 
           {/* Danh sách thành viên có thể xóa - dùng map thay FlatList để tránh lỗi nested VirtualizedList trong ScrollView */}
-          {members && members.length > 0 && (
+          {visibleMembers && visibleMembers.length > 0 && (
             <View style={styles.memberListContainer}>
               <Text style={styles.listTitle}>Thành viên đang tham gia:</Text>
               <View style={styles.list}>
-                {members.map((item, index) => (
-                  <View key={item._id} style={styles.memberItem}>
+                {visibleMembers.map((item, index) => (
+                  <View
+                    key={getMemberId(item, index)}
+                    style={styles.memberItem}
+                  >
                     <View
                       style={[
                         styles.memberColorChip,
@@ -385,10 +408,10 @@ export default function WhoIsNextMarriedScreen() {
                       ]}
                     />
                     <Text style={styles.memberName}>
-                      {item.fullName || item.name || "Unknown"}
+                      {item.fullName || item.name || ""}
                     </Text>
                     <TouchableOpacity
-                      onPress={() => removeMember(item._id)}
+                      onPress={() => removeMember(getMemberId(item, index))}
                       style={styles.deleteButton}
                       disabled={spinning}
                     >
@@ -481,7 +504,9 @@ export default function WhoIsNextMarriedScreen() {
               color="#fff"
               style={styles.dialogIcon}
             />
-            <Text style={styles.dialogText}>{winner?.fullName}</Text>
+            <Text style={styles.dialogText}>
+              {winner?.fullName || winner?.name || ""}
+            </Text>
             <Text style={styles.dialogSubText}>
               <Heart color="#ff5a7a" /> là người tiếp theo sẽ kết hôn!{" "}
               <Heart color="#ff5a7a" />

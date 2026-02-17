@@ -23,6 +23,7 @@ import {
   responsiveWidth,
   responsiveHeight,
 } from "../../../assets/styles/utils/responsive";
+import { pinkHeaderStyles } from "../../styles/pinkHeader";
 
 const { width } = Dimensions.get("window");
 const GAP = getGridGap();
@@ -43,7 +44,7 @@ const GroomMaterialScreen = () => {
       try {
         const r = await groomSuitService.getVestMaterials();
         setItems(r.data || []);
-      } catch (e) {}
+      } catch (e) { }
     };
     fetch();
   }, []);
@@ -60,7 +61,9 @@ const GroomMaterialScreen = () => {
         >
           <ChevronLeft size={24} color="#1f2937" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Vest chú rể - Chất liệu</Text>
+        <Text style={[styles.headerTitle, pinkHeaderStyles.title]}>
+          Vest chú rể - Chất liệu
+        </Text>
       </View>
 
       <ScrollView

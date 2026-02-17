@@ -19,6 +19,7 @@ import {
   responsiveHeight,
   responsiveWidth,
 } from "../../../assets/styles/utils/responsive";
+import { pinkHeaderStyles } from "../../styles/pinkHeader";
 import {
   loginVendor,
   registerVendor,
@@ -124,9 +125,11 @@ export default function VendorAuthScreen() {
         <TouchableOpacity onPress={handleBack}>
           <ChevronLeft size={24} color="#ffffff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>
-          {mode === "login" ? "Đăng nhập Vendor" : "Đăng ký Vendor"}
-        </Text>
+        <View style={pinkHeaderStyles.titleContainer}>
+          <Text style={[styles.headerTitle, pinkHeaderStyles.title]}>
+            {mode === "login" ? "Đăng nhập Vendor" : "Đăng ký Vendor"}
+          </Text>
+        </View>
         <View style={{ width: 24 }} />
       </View>
 

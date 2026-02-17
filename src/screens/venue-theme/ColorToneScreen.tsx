@@ -32,6 +32,7 @@ import {
   responsiveHeight,
   spacing,
 } from "../../../assets/styles/utils/responsive";
+import { pinkHeaderStyles } from "../../styles/pinkHeader";
 
 const { width } = Dimensions.get("window");
 
@@ -158,7 +159,11 @@ const ColorToneScreen = () => {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <ChevronLeft size={24} color="#1f2937" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Tone màu</Text>
+        <View style={pinkHeaderStyles.titleContainer}>
+          <Text style={[styles.headerTitle, pinkHeaderStyles.title]}>
+            Tone màu
+          </Text>
+        </View>
         <TouchableOpacity
           onPress={() => {
             if (!menuVisible) {

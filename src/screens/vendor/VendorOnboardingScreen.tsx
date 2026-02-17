@@ -20,6 +20,7 @@ import {
   responsiveHeight,
   responsiveWidth,
 } from "../../../assets/styles/utils/responsive";
+import { pinkHeaderStyles } from "../../styles/pinkHeader";
 import { submitVendorApplication } from "../../service/vendorService";
 
 export default function VendorOnboardingScreen() {
@@ -62,7 +63,11 @@ export default function VendorOnboardingScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <ChevronLeft size={24} color="#ffffff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Đăng ký nhà cung cấp</Text>
+        <View style={pinkHeaderStyles.titleContainer}>
+          <Text style={[styles.headerTitle, pinkHeaderStyles.title]}>
+            Đăng ký nhà cung cấp
+          </Text>
+        </View>
         <View style={{ width: 24 }} />
       </View>
 

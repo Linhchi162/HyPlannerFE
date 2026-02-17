@@ -27,6 +27,7 @@ import {
 } from "../../../assets/styles/utils/responsive";
 import logger from "../../utils/logger";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { pinkHeaderStyles } from "../../styles/pinkHeader";
 
 const COLORS = {
   background: "#F9F9F9",
@@ -144,7 +145,11 @@ const EditWeddingInfoScreen = () => {
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <ArrowLeft size={responsiveWidth(24)} color={COLORS.textPrimary} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Thông tin kế hoạch cưới</Text>
+          <View style={pinkHeaderStyles.titleContainer}>
+            <Text style={[styles.headerTitle, pinkHeaderStyles.title]}>
+              Thông tin kế hoạch cưới
+            </Text>
+          </View>
           <View style={{ width: responsiveWidth(24) }} />
         </View>
 

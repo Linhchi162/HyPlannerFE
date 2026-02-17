@@ -28,6 +28,7 @@ import {
   responsiveWidth,
   responsiveHeight,
 } from "../../../assets/styles/utils/responsive";
+import { pinkHeaderStyles } from "../../styles/pinkHeader";
 
 const { width } = Dimensions.get("window");
 const GAP = getGridGap();
@@ -61,7 +62,7 @@ const WeddingDetailScreen = () => {
       .then((response) => {
         setDetails(response.data);
       })
-      .catch((error) => {});
+      .catch((error) => { });
   }, []);
 
   return (
@@ -74,7 +75,9 @@ const WeddingDetailScreen = () => {
         >
           <ChevronLeft size={24} color="#1f2937" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Váy cưới - Chi tiết</Text>
+        <Text style={[styles.headerTitle, pinkHeaderStyles.title]}>
+          Váy cưới - Chi tiết
+        </Text>
       </View>
 
       {/* Detail Grid */}

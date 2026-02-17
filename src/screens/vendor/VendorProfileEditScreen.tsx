@@ -23,6 +23,7 @@ import {
   responsiveHeight,
   responsiveWidth,
 } from "../../../assets/styles/utils/responsive";
+import { pinkHeaderStyles } from "../../styles/pinkHeader";
 import {
   getVendorProfileByUid,
   updateVendorProfile,
@@ -342,7 +343,11 @@ export default function VendorProfileEditScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <ChevronLeft size={24} color="#ffffff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Chỉnh sửa hồ sơ</Text>
+        <View style={pinkHeaderStyles.titleContainer}>
+          <Text style={[styles.headerTitle, pinkHeaderStyles.title]}>
+            Chỉnh sửa hồ sơ
+          </Text>
+        </View>
         <View style={{ width: 24 }} />
       </View>
 

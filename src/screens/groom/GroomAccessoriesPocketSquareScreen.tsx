@@ -23,6 +23,7 @@ import {
   responsiveWidth,
   responsiveHeight,
 } from "../../../assets/styles/utils/responsive";
+import { pinkHeaderStyles } from "../../styles/pinkHeader";
 
 const { width } = Dimensions.get("window");
 const GAP = getGridGap();
@@ -40,7 +41,7 @@ const GroomAccessoriesPocketSquareScreen = () => {
       try {
         const r = await groomSuitService.getVestPockets();
         setItems(r.data || []);
-      } catch (e) {}
+      } catch (e) { }
     };
     fetch();
   }, []);
@@ -57,7 +58,9 @@ const GroomAccessoriesPocketSquareScreen = () => {
         >
           <ChevronLeft size={24} color="#1f2937" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Phụ kiện - Túi áo</Text>
+        <Text style={[styles.headerTitle, pinkHeaderStyles.title]}>
+          Phụ kiện - Túi áo
+        </Text>
       </View>
 
       <ScrollView

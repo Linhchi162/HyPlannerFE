@@ -25,6 +25,7 @@ import {
   responsiveHeight,
   responsiveWidth,
 } from "../../../assets/styles/utils/responsive";
+import { pinkHeaderStyles } from "../../styles/pinkHeader";
 import {
   NavigationProp,
   RouteProp,
@@ -55,7 +56,7 @@ const CreateTaskAppbar = React.memo(
       </TouchableOpacity>
       <Appbar.Content
         title="Tạo công việc mới"
-        titleStyle={styles.appbarTitle}
+        titleStyle={[styles.appbarTitle, pinkHeaderStyles.title]}
       />
       <TouchableOpacity
         onPress={onCheck}

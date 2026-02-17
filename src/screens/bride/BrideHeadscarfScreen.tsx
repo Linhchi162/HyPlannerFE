@@ -22,6 +22,7 @@ import {
   responsiveWidth,
   responsiveHeight,
 } from "../../../assets/styles/utils/responsive";
+import { pinkHeaderStyles } from "../../styles/pinkHeader";
 import { useSelection } from "../../contexts/SelectionContext";
 import CustomPopup from "../../components/CustomPopup";
 import {
@@ -88,7 +89,9 @@ export default function BrideHeadscarfScreen() {
         >
           <ChevronLeft size={24} color="#1f2937" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Áo dài - Khăn đội đầu</Text>
+        <Text style={[styles.headerTitle, pinkHeaderStyles.title]}>
+          Áo dài - Khăn đội đầu
+        </Text>
       </View>
 
       <ScrollView

@@ -33,6 +33,10 @@ export type VendorPayload = {
   services?: VendorServiceItem[];
   imageUrl?: string;
   galleryUrls?: string[];
+  isFeatured?: boolean;
+  featuredPlan?: "priority";
+  featuredSince?: any;
+  featuredPrice?: number;
 };
 
 export type Vendor = VendorPayload & {
@@ -172,6 +176,31 @@ export const updateVendorProfile = async (
     id: uid,
     ...(cached || {}),
     ...payload,
+  });
+};
+
+export const activateVendorPriority = async (
+  uid: string,
+  price: number
+) => {
+  await setDoc(
+    doc(db, "vendors", uid),
+    {
+      isFeatured: true,
+      featuredPlan: "priority",
+      featuredPrice: price,
+      featuredSince: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    },
+    { merge: true }
+  );
+  const cached = await getCachedVendorProfile(uid);
+  await setCachedVendorProfile(uid, {
+    id: uid,
+    ...(cached || {}),
+    isFeatured: true,
+    featuredPlan: "priority",
+    featuredPrice: price,
   });
 };
 

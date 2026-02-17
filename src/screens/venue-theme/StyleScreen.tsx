@@ -26,6 +26,7 @@ import {
   responsiveHeight,
   spacing,
 } from "../../../assets/styles/utils/responsive";
+import { pinkHeaderStyles } from "../../styles/pinkHeader";
 
 const { width } = Dimensions.get("window");
 
@@ -64,7 +65,7 @@ const StyleScreen = () => {
         setOptions(
           res.data.map((v) => ({ id: v._id, name: v.name, image: v.image }))
         );
-      } catch {}
+      } catch { }
     })();
   }, []);
 
@@ -80,7 +81,11 @@ const StyleScreen = () => {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <ChevronLeft size={24} color="#1f2937" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Phong cách</Text>
+        <View style={pinkHeaderStyles.titleContainer}>
+          <Text style={[styles.headerTitle, pinkHeaderStyles.title]}>
+            Phong cách
+          </Text>
+        </View>
         <View style={{ width: 24 }} />
       </View>
 

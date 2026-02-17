@@ -53,6 +53,7 @@ import {
   responsiveHeight,
   responsiveFont,
 } from "../../../assets/styles/utils/responsive";
+import { pinkHeaderStyles } from "../../styles/pinkHeader";
 import logger from "../../utils/logger";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 // ------------------------------------
@@ -336,7 +337,9 @@ const ProfileScreen = () => {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <ArrowLeft size={responsiveWidth(24)} color="#ffffff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Hồ sơ</Text>
+        <View style={pinkHeaderStyles.titleContainer}>
+          <Text style={[styles.headerTitle, pinkHeaderStyles.title]}>Hồ sơ</Text>
+        </View>
         <View style={{ width: responsiveWidth(24) }} />
       </View>
 

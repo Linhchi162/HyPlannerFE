@@ -30,6 +30,7 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import logger from "../../utils/logger";
 import { getWeddingEvent } from "../../service/weddingEventService";
 import type { AppDispatch } from "../../store";
+import { pinkHeaderStyles } from "../../styles/pinkHeader";
 
 const COLORS = {
   background: "#F9F9F9",
@@ -220,7 +221,11 @@ const EditProfileScreen = () => {
       <TouchableOpacity onPress={() => navigation.goBack()}>
         <ArrowLeft size={24} color={COLORS.textPrimary} />
       </TouchableOpacity>
-      <Text style={styles.headerTitle}>{label}</Text>
+      <View style={pinkHeaderStyles.titleContainer}>
+        <Text style={[styles.headerTitle, pinkHeaderStyles.title]}>
+          {label}
+        </Text>
+      </View>
       <View style={{ width: 24 }} />
     </View>
   );
@@ -361,8 +366,8 @@ const EditProfileScreen = () => {
         {field === "password"
           ? renderChangePasswordForm()
           : field === "weddingDate"
-          ? renderWeddingDateForm()
-          : renderEditInfoForm()}
+            ? renderWeddingDateForm()
+            : renderEditInfoForm()}
       </ScrollView>
     </SafeAreaView>
   );

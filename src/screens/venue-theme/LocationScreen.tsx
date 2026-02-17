@@ -27,6 +27,7 @@ import {
   responsiveHeight,
   spacing,
 } from "../../../assets/styles/utils/responsive";
+import { pinkHeaderStyles } from "../../styles/pinkHeader";
 
 const { width } = Dimensions.get("window");
 
@@ -66,7 +67,7 @@ const LocationScreen = () => {
         setLocationOptions(
           res.data.map((v) => ({ id: v._id, name: v.name, image: v.image }))
         );
-      } catch {}
+      } catch { }
     })();
   }, []);
 
@@ -110,7 +111,11 @@ const LocationScreen = () => {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <ChevronLeft size={24} color="#1f2937" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Địa điểm</Text>
+        <View style={pinkHeaderStyles.titleContainer}>
+          <Text style={[styles.headerTitle, pinkHeaderStyles.title]}>
+            Địa điểm
+          </Text>
+        </View>
         <View style={{ width: 24 }} />
       </View>
 

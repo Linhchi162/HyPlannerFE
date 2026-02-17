@@ -28,6 +28,7 @@ import { updateUserField } from "../../store/authSlice";
 import { RootStackParamList } from "../../navigation/types";
 import { MixpanelService } from "../../service/mixpanelService";
 import logger from "../../utils/logger";
+import { pinkHeaderStyles } from "../../styles/pinkHeader";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function UpgradeAccountScreen() {
@@ -331,7 +332,12 @@ export default function UpgradeAccountScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <ArrowLeft size={24} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Nâng cấp Tài Khoản</Text>
+        <View style={pinkHeaderStyles.titleContainer}>
+          <Text style={[styles.headerTitle, pinkHeaderStyles.title]}>
+            Nâng cấp Tài Khoản
+          </Text>
+        </View>
+        <View style={{ width: 24 }} />
       </View>
 
       <View style={styles.upgradeTabsContainer}>
@@ -506,13 +512,8 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   headerTitle: {
-    fontFamily: "MavenPro-Bold",
-    fontSize: 20,
     color: "#fff",
     textAlign: "center",
-    position: "absolute",
-    left: 40,
-    right: 40,
   },
   upgradeTabsContainer: {
     flexDirection: "row",

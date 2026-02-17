@@ -30,6 +30,7 @@ import {
   responsiveHeight,
   responsiveWidth,
 } from "../../../assets/styles/utils/responsive";
+import { pinkHeaderStyles } from "../../styles/pinkHeader";
 import { NavigationProp, useNavigation } from "@react-navigation/native";
 import { RootStackParamList } from "../../navigation/types";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -705,11 +706,13 @@ export default function TaskListScreen() {
         >
           <Entypo name="chevron-left" size={24} color="#ffffff" />
         </TouchableOpacity>
-        <View style={styles.appbarTitleContainer}>
+        <View
+          style={[styles.appbarTitleContainer, pinkHeaderStyles.titleContainer]}
+        >
           <Text
             numberOfLines={1}
             ellipsizeMode="tail"
-            style={styles.appbarTitle}
+            style={[styles.appbarTitle, pinkHeaderStyles.title]}
           >
             Danh sách công việc
           </Text>

@@ -30,6 +30,7 @@ import {
   responsiveHeight,
   responsiveFont,
 } from "../../../assets/styles/utils/responsive";
+import { pinkHeaderStyles } from "../../styles/pinkHeader";
 import * as notificationService from "../../service/notificationService";
 
 interface NotificationData {
@@ -147,8 +148,8 @@ const NotificationListScreen = () => {
       priority === "high"
         ? "#ef4444"
         : priority === "medium"
-        ? "#f59e0b"
-        : "#6b7280";
+          ? "#f59e0b"
+          : "#6b7280";
 
     switch (type) {
       case "guest_confirmed":
@@ -243,7 +244,11 @@ const NotificationListScreen = () => {
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <ChevronLeft size={24} color="#1f2937" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Thông báo</Text>
+          <View style={pinkHeaderStyles.titleContainer}>
+            <Text style={[styles.headerTitle, pinkHeaderStyles.title]}>
+              Thông báo
+            </Text>
+          </View>
           <View style={{ width: 24 }} />
         </View>
         <View style={styles.loadingContainer}>
@@ -271,8 +276,13 @@ const NotificationListScreen = () => {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <ChevronLeft size={24} color="#ffffff" />
         </TouchableOpacity>
-        <View style={{ flex: 1, paddingHorizontal: responsiveWidth(12) }}>
-          <Text style={styles.headerTitle}>
+        <View
+          style={[
+            pinkHeaderStyles.titleContainer,
+            { paddingHorizontal: responsiveWidth(12) },
+          ]}
+        >
+          <Text style={[styles.headerTitle, pinkHeaderStyles.title]}>
             Thông báo {unreadCount > 0 && `(${unreadCount})`}
           </Text>
         </View>

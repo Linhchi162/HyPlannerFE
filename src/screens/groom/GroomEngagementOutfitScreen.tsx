@@ -22,6 +22,7 @@ import {
   responsiveWidth,
   responsiveHeight,
 } from "../../../assets/styles/utils/responsive";
+import { pinkHeaderStyles } from "../../styles/pinkHeader";
 import { useSelection } from "../../contexts/SelectionContext";
 
 const { width } = Dimensions.get("window");
@@ -42,7 +43,7 @@ export default function GroomEngagementOutfitScreen() {
     groomEngageService
       .getAllGroomEngageOutfits()
       .then((r) => setItems(r.data))
-      .catch((error) => {});
+      .catch((error) => { });
   }, []);
 
   const renderDressItem = (item: Style) => {
@@ -72,7 +73,9 @@ export default function GroomEngagementOutfitScreen() {
           <ChevronLeft size={24} color="#1f2937" />
         </TouchableOpacity>
 
-        <Text style={styles.headerTitle}>Lễ ăn hỏi - Trang phục</Text>
+        <Text style={[styles.headerTitle, pinkHeaderStyles.title]}>
+          Lễ ăn hỏi - Trang phục
+        </Text>
       </View>
 
       <ScrollView

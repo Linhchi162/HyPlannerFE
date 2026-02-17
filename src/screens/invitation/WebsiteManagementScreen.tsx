@@ -54,6 +54,7 @@ import {
   responsiveFont,
 } from "../../../assets/styles/utils/responsive";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { pinkHeaderStyles } from "../../styles/pinkHeader";
 
 // shared color palette
 const COLORS = {
@@ -257,7 +258,9 @@ export default function WebsiteManagementScreen() {
         >
           <ChevronLeft size={24} color="#ffffff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Quản lý</Text>
+        <View style={pinkHeaderStyles.titleContainer}>
+          <Text style={[styles.headerTitle, pinkHeaderStyles.title]}>Quản lý</Text>
+        </View>
         <View style={{ width: 24 }} />
       </View>
       <ScrollView

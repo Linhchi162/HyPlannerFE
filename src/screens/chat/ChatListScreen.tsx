@@ -18,6 +18,7 @@ import {
   responsiveHeight,
   responsiveWidth,
 } from "../../../assets/styles/utils/responsive";
+import { pinkHeaderStyles } from "../../styles/pinkHeader";
 import { useSelector } from "react-redux";
 import { selectCurrentUser } from "../../store/authSlice";
 import { auth } from "../../service/firebase";
@@ -100,7 +101,11 @@ export default function ChatListScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <ChevronLeft size={24} color="#ffffff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Tin nhắn</Text>
+        <View style={pinkHeaderStyles.titleContainer}>
+          <Text style={[styles.headerTitle, pinkHeaderStyles.title]}>
+            Tin nhắn
+          </Text>
+        </View>
         <View style={{ width: 24 }} />
       </View>
 

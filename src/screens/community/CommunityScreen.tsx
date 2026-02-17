@@ -41,6 +41,7 @@ import {
   responsiveFont,
 } from "../../../assets/styles/utils/responsive";
 import { MixpanelService } from "../../service/mixpanelService";
+import { pinkHeaderStyles } from "../../styles/pinkHeader";
 
 type CommunityScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -70,7 +71,7 @@ const CommunityScreen = () => {
       StatusBar.setBackgroundColor("#ff5a7a");
       StatusBar.setBarStyle("light-content");
       if (Platform.OS === "android") StatusBar.setTranslucent(false);
-      return () => {};
+      return () => { };
     }, [])
   );
 
@@ -177,120 +178,124 @@ const CommunityScreen = () => {
           >
             <ChevronLeft size={24} color="#ffffff" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Trang Cộng đồng</Text>
+          <View style={pinkHeaderStyles.titleContainer}>
+            <Text style={[styles.headerTitle, pinkHeaderStyles.title]}>
+              Trang Cộng đồng
+            </Text>
+          </View>
           <View style={{ width: 24 }} />
         </View>
       </View>
 
       {/* Nội dung */}
       <View style={styles.content}>
-      {/* Search Bar with Bookmark Button */}
-      <View style={styles.searchRow}>
-        <View style={styles.searchContainer}>
-          <Search size={20} color="#9ca3af" style={styles.searchIcon} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Tìm kiếm..."
-            placeholderTextColor="#9ca3af"
-          />
-        </View>
-        <TouchableOpacity
-          style={styles.bookmarkButton}
-          onPress={() => setShowSavedMenu(!showSavedMenu)}
-        >
-          <Bookmark size={24} color="#374151" />
-        </TouchableOpacity>
-
-        {/* Saved Menu Popup */}
-        {showSavedMenu && (
-          <View style={styles.savedMenu}>
-            <TouchableOpacity
-              style={styles.savedMenuItem}
-              onPress={handleNavigateToSavedPosts}
-            >
-              <Bookmark size={18} color="#1f2937" />
-              <Text style={styles.savedMenuText}>Bài viết đã lưu</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.savedMenuItem}
-              onPress={handleNavigateToSavedAlbums}
-            >
-              <ImageIcon size={18} color="#1f2937" />
-              <Text style={styles.savedMenuText}>Album đã lưu</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-      </View>
-
-      {/* Quick Access Buttons */}
-      <View style={styles.quickAccessContainer}>
-        <TouchableOpacity
-          style={styles.quickAccessButton}
-          onPress={handleNavigateToInspireBoard}
-        >
-          <Sparkles size={20} color="#ffc107" />
-          <Text style={styles.quickAccessText}>Cảm hứng</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.quickAccessButton}
-          onPress={handleNavigateToCommunityAlbums}
-        >
-          <ImageIcon size={20} color="#9333ea" />
-          <Text style={styles.quickAccessText}>Albums</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Posts List */}
-      {isLoading && !refreshing && posts.length === 0 ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#1f2937" />
-        </View>
-      ) : (
-        <FlatList
-          data={posts}
-          renderItem={renderPost}
-          keyExtractor={(item) => item._id}
-          contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={false}
-          // ✅ OPTIMIZED: Performance improvements for large lists
-          windowSize={10}
-          maxToRenderPerBatch={5}
-          updateCellsBatchingPeriod={50}
-          removeClippedSubviews={true}
-          initialNumToRender={10}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={handleRefresh}
-              colors={["#1f2937"]}
-              tintColor="#1f2937"
+        {/* Search Bar with Bookmark Button */}
+        <View style={styles.searchRow}>
+          <View style={styles.searchContainer}>
+            <Search size={20} color="#9ca3af" style={styles.searchIcon} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Tìm kiếm..."
+              placeholderTextColor="#9ca3af"
             />
-          }
-          // ✅ Add infinite scroll
-          onEndReached={handleLoadMore}
-          onEndReachedThreshold={0.5}
-          ListFooterComponent={
-            isLoadingMore ? (
-              <View style={styles.loadMoreContainer}>
-                <ActivityIndicator size="small" color="#1f2937" />
-              </View>
-            ) : null
-          }
-          ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyTitle}>Chào mừng đến cộng đồng!</Text>
-              <Text style={styles.emptyText}>
-                Chưa có bài viết nào. Hãy là người đầu tiên chia sẻ!
-              </Text>
-            </View>
-          }
-        />
-      )}
+          </View>
+          <TouchableOpacity
+            style={styles.bookmarkButton}
+            onPress={() => setShowSavedMenu(!showSavedMenu)}
+          >
+            <Bookmark size={24} color="#374151" />
+          </TouchableOpacity>
 
-      {/* Floating Action Button */}
-      <TouchableOpacity style={styles.fab} onPress={handleCreatePost}>
-        <Plus size={28} color="#ffffff" strokeWidth={2.5} />
-      </TouchableOpacity>
+          {/* Saved Menu Popup */}
+          {showSavedMenu && (
+            <View style={styles.savedMenu}>
+              <TouchableOpacity
+                style={styles.savedMenuItem}
+                onPress={handleNavigateToSavedPosts}
+              >
+                <Bookmark size={18} color="#1f2937" />
+                <Text style={styles.savedMenuText}>Bài viết đã lưu</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.savedMenuItem}
+                onPress={handleNavigateToSavedAlbums}
+              >
+                <ImageIcon size={18} color="#1f2937" />
+                <Text style={styles.savedMenuText}>Album đã lưu</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+
+        {/* Quick Access Buttons */}
+        <View style={styles.quickAccessContainer}>
+          <TouchableOpacity
+            style={styles.quickAccessButton}
+            onPress={handleNavigateToInspireBoard}
+          >
+            <Sparkles size={20} color="#ffc107" />
+            <Text style={styles.quickAccessText}>Cảm hứng</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.quickAccessButton}
+            onPress={handleNavigateToCommunityAlbums}
+          >
+            <ImageIcon size={20} color="#9333ea" />
+            <Text style={styles.quickAccessText}>Albums</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Posts List */}
+        {isLoading && !refreshing && posts.length === 0 ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#1f2937" />
+          </View>
+        ) : (
+          <FlatList
+            data={posts}
+            renderItem={renderPost}
+            keyExtractor={(item) => item._id}
+            contentContainerStyle={styles.listContent}
+            showsVerticalScrollIndicator={false}
+            // ✅ OPTIMIZED: Performance improvements for large lists
+            windowSize={10}
+            maxToRenderPerBatch={5}
+            updateCellsBatchingPeriod={50}
+            removeClippedSubviews={true}
+            initialNumToRender={10}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={handleRefresh}
+                colors={["#1f2937"]}
+                tintColor="#1f2937"
+              />
+            }
+            // ✅ Add infinite scroll
+            onEndReached={handleLoadMore}
+            onEndReachedThreshold={0.5}
+            ListFooterComponent={
+              isLoadingMore ? (
+                <View style={styles.loadMoreContainer}>
+                  <ActivityIndicator size="small" color="#1f2937" />
+                </View>
+              ) : null
+            }
+            ListEmptyComponent={
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyTitle}>Chào mừng đến cộng đồng!</Text>
+                <Text style={styles.emptyText}>
+                  Chưa có bài viết nào. Hãy là người đầu tiên chia sẻ!
+                </Text>
+              </View>
+            }
+          />
+        )}
+
+        {/* Floating Action Button */}
+        <TouchableOpacity style={styles.fab} onPress={handleCreatePost}>
+          <Plus size={28} color="#ffffff" strokeWidth={2.5} />
+        </TouchableOpacity>
       </View>
     </SafeAreaView>
   );

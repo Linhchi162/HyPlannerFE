@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -6,8 +6,9 @@ import {
   SafeAreaView,
   TouchableOpacity,
   ScrollView,
+  Alert,
 } from "react-native";
-import { ChevronLeft, Package, User, LogOut } from "lucide-react-native";
+import { ChevronLeft, Package, User, LogOut, Crown } from "lucide-react-native";
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../../navigation/types";
@@ -16,11 +17,55 @@ import {
   responsiveHeight,
   responsiveWidth,
 } from "../../../assets/styles/utils/responsive";
+import { pinkHeaderStyles } from "../../styles/pinkHeader";
 import { logoutVendor } from "../../service/vendorAuthService";
+import { useSelector } from "react-redux";
+import { selectCurrentUser } from "../../store/authSlice";
+import { auth } from "../../service/firebase";
+import {
+  activateVendorPriority,
+  subscribeVendorProfile,
+  Vendor,
+} from "../../service/vendorService";
 
 export default function VendorDashboardScreen() {
   const navigation =
     useNavigation<StackNavigationProp<RootStackParamList>>();
+  const currentUser = useSelector(selectCurrentUser);
+  const vendorId =
+    auth.currentUser?.uid ||
+    currentUser?.id ||
+    currentUser?._id ||
+    currentUser?.uid || "";
+  const [vendorProfile, setVendorProfile] = useState<Vendor | null>(null);
+
+  useEffect(() => {
+    if (!vendorId) return;
+    const unsub = subscribeVendorProfile(vendorId, setVendorProfile);
+    return () => unsub();
+  }, [vendorId]);
+
+  const isFeatured = vendorProfile?.isFeatured === true;
+
+  const handleRegisterPriority = async () => {
+    if (!vendorId) {
+      Alert.alert("Lỗi", "Không tìm thấy thông tin nhà cung cấp.");
+      return;
+    }
+    if (!vendorProfile) {
+      Alert.alert(
+        "Lỗi",
+        "Chưa có hồ sơ nhà cung cấp. Vui lòng cập nhật hồ sơ trước."
+      );
+      return;
+    }
+    try {
+      await activateVendorPriority(vendorId, 50000);
+      Alert.alert("Đăng ký thành công", "Bạn đã đăng ký gói ưu tiên hiển thị.");
+    } catch {
+      Alert.alert("Lỗi", "Không thể đăng ký gói ưu tiên. Vui lòng thử lại.");
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -28,7 +73,11 @@ export default function VendorDashboardScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <ChevronLeft size={24} color="#ffffff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Kênh nhà cung cấp</Text>
+        <View style={pinkHeaderStyles.titleContainer}>
+          <Text style={[styles.headerTitle, pinkHeaderStyles.title]}>
+            Kênh nhà cung cấp
+          </Text>
+        </View>
         <TouchableOpacity onPress={logoutVendor}>
           <LogOut size={22} color="#ffffff" />
         </TouchableOpacity>
@@ -60,6 +109,29 @@ export default function VendorDashboardScreen() {
           >
             <Package size={18} color="#ff5a7a" />
             <Text style={styles.outlineBtnText}>Quản lý dịch vụ</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={[styles.card, styles.featuredCard]}>
+          <View style={styles.featuredHeader}>
+            <Text style={styles.featuredPrice}>50.000 VND / tháng</Text>
+          </View>
+          <Text style={styles.cardTitle}>Ưu tiên hiển thị</Text>
+          <Text style={styles.cardSub}>
+            Nhà cung cấp được đẩy lên đầu danh sách và gắn nhãn đề xuất.
+          </Text>
+          <TouchableOpacity
+            style={[
+              styles.primaryBtn,
+              isFeatured && styles.primaryBtnDisabled,
+            ]}
+            onPress={handleRegisterPriority}
+            disabled={isFeatured}
+          >
+            <Crown size={18} color="#ffffff" />
+            <Text style={styles.primaryBtnText}>
+              {isFeatured ? "Đã đăng ký" : "Đăng ký gói ưu tiên"}
+            </Text>
           </TouchableOpacity>
         </View>
 
@@ -101,6 +173,21 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#f3f4f6",
   },
+  featuredCard: {
+    borderColor: "#ffd1da",
+    backgroundColor: "#fff5f7",
+  },
+  featuredHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: responsiveHeight(8),
+  },
+  featuredPrice: {
+    fontFamily: "Montserrat-SemiBold",
+    fontSize: responsiveFont(12),
+    color: "#be123c",
+  },
   cardTitle: {
     fontFamily: "Montserrat-SemiBold",
     fontSize: responsiveFont(15),
@@ -120,6 +207,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: responsiveWidth(6),
+  },
+  primaryBtnDisabled: {
+    backgroundColor: "#fda4af",
   },
   primaryBtnText: {
     color: "#ffffff",

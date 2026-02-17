@@ -22,6 +22,7 @@ import {
   responsiveHeight,
   responsiveWidth,
 } from "../../../../assets/styles/utils/responsive";
+import { pinkHeaderStyles } from "../../../styles/pinkHeader";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "../../../store";
 import {
@@ -57,7 +58,7 @@ const EditPhaseAppBar = ({ onBack, onDeleteAll }: EditPhaseAppBarProps) => {
       </TouchableOpacity>
       <Appbar.Content
         title="Chỉnh sửa giai đoạn"
-        titleStyle={styles.appbarTitle}
+        titleStyle={[styles.appbarTitle, pinkHeaderStyles.title]}
       />
       <TouchableOpacity
         onPress={onDeleteAll}

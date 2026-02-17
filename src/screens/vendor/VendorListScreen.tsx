@@ -31,6 +31,7 @@ import {
   responsiveHeight,
   responsiveWidth,
 } from "../../../assets/styles/utils/responsive";
+import { pinkHeaderStyles } from "../../styles/pinkHeader";
 import {
   getCachedVendors,
   Vendor,
@@ -56,6 +57,7 @@ export default function VendorListScreen() {
   const [sortOption, setSortOption] = useState<
     "" | "rating-asc" | "rating-desc" | "services-asc" | "services-desc"
   >("");
+
 
   useEffect(() => {
     let isMounted = true;
@@ -86,6 +88,7 @@ export default function VendorListScreen() {
       if (cleanup) cleanup();
     };
   }, []);
+
 
   useEffect(() => {
     const userId =
@@ -144,25 +147,39 @@ export default function VendorListScreen() {
     });
   }, [activeCategory, activeLocation, query, vendors]);
 
+  const isFeatured = (vendor: Vendor) => vendor.isFeatured === true;
+
   // apply sorting after filtering
   const displayed = useMemo(() => {
     const arr = [...filtered];
+    arr.sort((a, b) => {
+      if (isFeatured(a) === isFeatured(b)) return 0;
+      return isFeatured(a) ? -1 : 1;
+    });
     switch (sortOption) {
       case "rating-asc":
-        arr.sort((a, b) => (a.rating || 0) - (b.rating || 0));
+        arr.sort((a, b) => {
+          if (isFeatured(a) !== isFeatured(b)) return isFeatured(a) ? -1 : 1;
+          return (a.rating || 0) - (b.rating || 0);
+        });
         break;
       case "rating-desc":
-        arr.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+        arr.sort((a, b) => {
+          if (isFeatured(a) !== isFeatured(b)) return isFeatured(a) ? -1 : 1;
+          return (b.rating || 0) - (a.rating || 0);
+        });
         break;
       case "services-asc":
-        arr.sort((a, b) =>
-          (a.services?.length || 0) - (b.services?.length || 0)
-        );
+        arr.sort((a, b) => {
+          if (isFeatured(a) !== isFeatured(b)) return isFeatured(a) ? -1 : 1;
+          return (a.services?.length || 0) - (b.services?.length || 0);
+        });
         break;
       case "services-desc":
-        arr.sort((a, b) =>
-          (b.services?.length || 0) - (a.services?.length || 0)
-        );
+        arr.sort((a, b) => {
+          if (isFeatured(a) !== isFeatured(b)) return isFeatured(a) ? -1 : 1;
+          return (b.services?.length || 0) - (a.services?.length || 0);
+        });
         break;
     }
     return arr;
@@ -174,7 +191,11 @@ export default function VendorListScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <ChevronLeft size={24} color="#ffffff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Kết nối dịch vụ cưới</Text>
+        <View style={pinkHeaderStyles.titleContainer}>
+          <Text style={[styles.headerTitle, pinkHeaderStyles.title]}>
+            Kết nối dịch vụ cưới
+          </Text>
+        </View>
         <TouchableOpacity
           style={styles.headerChatBtn}
           onPress={() => navigation.navigate("ChatList", { role: "user" })}
@@ -201,7 +222,7 @@ export default function VendorListScreen() {
         />
       </View>
 
-<ScrollView
+      <ScrollView
         style={styles.filterRow}
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -233,12 +254,12 @@ export default function VendorListScreen() {
             {sortOption === ""
               ? "Sắp xếp"
               : sortOption === "rating-asc"
-              ? "Sao ↑"
-              : sortOption === "rating-desc"
-              ? "Sao ↓"
-              : sortOption === "services-asc"
-              ? "Dịch vụ ↑"
-              : "Dịch vụ ↓"}
+                ? "Sao ↑"
+                : sortOption === "rating-desc"
+                  ? "Sao ↓"
+                  : sortOption === "services-asc"
+                    ? "Dịch vụ ↑"
+                    : "Dịch vụ ↓"}
           </Text>
           <ChevronDown size={18} color="#9ca3af" />
         </TouchableOpacity>
@@ -262,18 +283,32 @@ export default function VendorListScreen() {
               }
             >
               <View style={styles.cardRow}>
-                {v.imageUrl ? (
-                  <Image source={{ uri: v.imageUrl }} style={styles.cardImage} />
-                ) : (
-                  <View style={styles.cardImagePlaceholder}>
-                    <Text style={styles.cardImageText}>
-                      {(v.name || "?").slice(0, 1).toUpperCase()}
-                    </Text>
-                  </View>
-                )}
+                <View style={styles.cardImageWrapper}>
+                  {v.imageUrl ? (
+                    <Image
+                      source={{ uri: v.imageUrl }}
+                      style={styles.cardImage}
+                    />
+                  ) : (
+                    <View style={styles.cardImagePlaceholder}>
+                      <Text style={styles.cardImageText}>
+                        {(v.name || "?").slice(0, 1).toUpperCase()}
+                      </Text>
+                    </View>
+                  )}
+                </View>
                 <View style={styles.cardContent}>
                   <View style={styles.cardHeader}>
-                    <Text style={styles.cardTitle}>{v.name}</Text>
+                    <View style={styles.cardHeaderLeft}>
+                      <Text style={styles.cardTitle}>{v.name}</Text>
+                      {isFeatured(v) && (
+                        <View style={styles.recommendedBadge}>
+                          <Text style={styles.recommendedBadgeText}>
+                            Đề xuất
+                          </Text>
+                        </View>
+                      )}
+                    </View>
                     <View style={styles.ratingRow}>
                       <Star size={14} color="#f59e0b" />
                       <Text style={styles.ratingText}>
@@ -633,6 +668,9 @@ const styles = StyleSheet.create({
     fontSize: responsiveFont(18),
     color: "#ff5a7a",
   },
+  cardImageWrapper: {
+    position: "relative",
+  },
   cardContent: {
     flex: 1,
   },
@@ -640,6 +678,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+  },
+  cardHeaderLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: responsiveWidth(8),
+    flex: 1,
+    marginRight: responsiveWidth(8),
   },
   cardTitle: {
     fontFamily: "Montserrat-SemiBold",
@@ -654,6 +699,19 @@ const styles = StyleSheet.create({
   ratingText: {
     fontSize: responsiveFont(12),
     color: "#6b7280",
+  },
+  recommendedBadge: {
+    backgroundColor: "#fff1f2",
+    borderWidth: 1,
+    borderColor: "#fecdd3",
+    paddingHorizontal: responsiveWidth(8),
+    paddingVertical: responsiveHeight(2),
+    borderRadius: responsiveWidth(999),
+  },
+  recommendedBadgeText: {
+    fontFamily: "Montserrat-SemiBold",
+    fontSize: responsiveFont(10),
+    color: "#be123c",
   },
   cardCategory: {
     marginTop: responsiveHeight(6),

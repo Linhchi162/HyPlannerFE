@@ -19,6 +19,7 @@ import {
   responsiveHeight,
   responsiveFont,
 } from "../../../assets/styles/utils/responsive";
+import { pinkHeaderStyles } from "../../styles/pinkHeader";
 
 export const InspireBoardScreen = ({ navigation }: any) => {
   const [selectedTab, setSelectedTab] = useState<"posts" | "albums">("posts");
@@ -84,7 +85,9 @@ export const InspireBoardScreen = ({ navigation }: any) => {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <ChevronLeft size={24} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.pinkHeaderTitle}>Cảm hứng</Text>
+        <Text style={[styles.pinkHeaderTitle, pinkHeaderStyles.title]}>
+          Cảm hứng
+        </Text>
         <View style={{ width: 24 }} />
       </View>
 

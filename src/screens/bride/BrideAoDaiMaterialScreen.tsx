@@ -22,6 +22,7 @@ import {
   responsiveWidth,
   responsiveHeight,
 } from "../../../assets/styles/utils/responsive";
+import { pinkHeaderStyles } from "../../styles/pinkHeader";
 import { useSelection } from "../../contexts/SelectionContext";
 
 const { width } = Dimensions.get("window");
@@ -61,7 +62,9 @@ export default function BrideAoDaiMaterialScreen() {
         >
           <ChevronLeft size={24} color="#1f2937" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Áo dài - Chất liệu</Text>
+        <Text style={[styles.headerTitle, pinkHeaderStyles.title]}>
+          Áo dài - Chất liệu
+        </Text>
       </View>
 
       <ScrollView

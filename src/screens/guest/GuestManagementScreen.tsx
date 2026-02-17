@@ -67,6 +67,7 @@ import {
   responsiveHeight,
   responsiveFont,
 } from "../../../assets/styles/utils/responsive";
+import { pinkHeaderStyles } from "../../styles/pinkHeader";
 import { MixpanelService } from "../../service/mixpanelService";
 import * as guestService from "../../service/guestService";
 
@@ -368,21 +369,19 @@ const GuestManagementScreen = () => {
           `\"${guest.relationship || ""}\"`,
           `\"${guest.group === "groom" ? "Nhà trai" : "Nhà gái"}\"`,
           guest.numberOfCompanions || 0,
-          `\"${
-            guest.attendanceStatus === "confirmed"
-              ? "Xác nhận"
-              : guest.attendanceStatus === "declined"
+          `\"${guest.attendanceStatus === "confirmed"
+            ? "Xác nhận"
+            : guest.attendanceStatus === "declined"
               ? "Từ chối"
               : "Chờ"
           }\"`,
-          `\"${
-            guest.gift?.type === "money"
-              ? "Tiền mặt"
-              : guest.gift?.type === "item"
+          `\"${guest.gift?.type === "money"
+            ? "Tiền mặt"
+            : guest.gift?.type === "item"
               ? "Quà tặng"
               : guest.gift?.type === "both"
-              ? "Cả hai"
-              : "Chưa có"
+                ? "Cả hai"
+                : "Chưa có"
           }\"`,
           guest.gift?.amount || 0,
           `\"${guest.gift?.description || ""}\"`,
@@ -520,8 +519,8 @@ const GuestManagementScreen = () => {
               values[8] === "Xác nhận"
                 ? "confirmed"
                 : values[8] === "Từ chối"
-                ? "declined"
-                : "pending",
+                  ? "declined"
+                  : "pending",
             dietaryRestrictions: values[12] || "",
             notes: values[13] || "",
           };
@@ -935,8 +934,15 @@ const GuestManagementScreen = () => {
           >
             <ChevronLeft size={24} color="#ffffff" />
           </TouchableOpacity>
-          <View style={styles.headerTitleContainer}>
-            <Text style={styles.headerTitle}>Quản lý khách mời</Text>
+          <View
+            style={[
+              styles.headerTitleContainer,
+              pinkHeaderStyles.titleContainer,
+            ]}
+          >
+            <Text style={[styles.headerTitle, pinkHeaderStyles.title]}>
+              Quản lý khách mời
+            </Text>
           </View>
           <View style={styles.headerButtonsPlaceholder} />
         </View>
@@ -972,8 +978,12 @@ const GuestManagementScreen = () => {
         >
           <ChevronLeft size={24} color="#ffffff" />
         </TouchableOpacity>
-        <View style={styles.headerTitleContainer}>
-          <Text style={styles.headerTitle}>Quản lý khách mời</Text>
+        <View
+          style={[styles.headerTitleContainer, pinkHeaderStyles.titleContainer]}
+        >
+          <Text style={[styles.headerTitle, pinkHeaderStyles.title]}>
+            Quản lý khách mời
+          </Text>
         </View>
         <View style={styles.headerButtons}>
           {/* <TouchableOpacity
@@ -1196,9 +1206,8 @@ const GuestManagementScreen = () => {
                           style={[
                             styles.progressBarFill,
                             {
-                              width: `${
-                                (stats.confirmed / stats.total) * 100
-                              }%`,
+                              width: `${(stats.confirmed / stats.total) * 100
+                                }%`,
                             },
                           ]}
                         />
@@ -1289,7 +1298,7 @@ const GuestManagementScreen = () => {
                                 style={[
                                   styles.tableConfigButtonText,
                                   guestsPerTable <= 6 &&
-                                    styles.tableConfigButtonDisabled,
+                                  styles.tableConfigButtonDisabled,
                                 ]}
                               >
                                 −
@@ -1314,7 +1323,7 @@ const GuestManagementScreen = () => {
                                 style={[
                                   styles.tableConfigButtonText,
                                   guestsPerTable >= 15 &&
-                                    styles.tableConfigButtonDisabled,
+                                  styles.tableConfigButtonDisabled,
                                 ]}
                               >
                                 +
@@ -1393,8 +1402,8 @@ const GuestManagementScreen = () => {
                             ✨ Tỷ lệ xác nhận:{" "}
                             {stats && stats.total && stats.total > 0
                               ? Math.round(
-                                  (stats.confirmed / stats.total) * 100
-                                )
+                                (stats.confirmed / stats.total) * 100
+                              )
                               : 0}
                             %
                           </Text>
@@ -1511,7 +1520,7 @@ const GuestManagementScreen = () => {
                     style={[
                       styles.groupButtonText,
                       formData.group === "groom" &&
-                        styles.groupButtonTextActive,
+                      styles.groupButtonTextActive,
                     ]}
                   >
                     Nhà trai
@@ -1528,7 +1537,7 @@ const GuestManagementScreen = () => {
                     style={[
                       styles.groupButtonText,
                       formData.group === "bride" &&
-                        styles.groupButtonTextActive,
+                      styles.groupButtonTextActive,
                     ]}
                   >
                     Nhà gái
@@ -1558,7 +1567,7 @@ const GuestManagementScreen = () => {
                   style={[
                     styles.groupButton,
                     formData.relationship === "family" &&
-                      styles.groupButtonActive,
+                    styles.groupButtonActive,
                   ]}
                   onPress={() =>
                     setFormData({ ...formData, relationship: "family" })
@@ -1568,7 +1577,7 @@ const GuestManagementScreen = () => {
                     style={[
                       styles.groupButtonText,
                       formData.relationship === "family" &&
-                        styles.groupButtonTextActive,
+                      styles.groupButtonTextActive,
                     ]}
                   >
                     Gia đình
@@ -1578,7 +1587,7 @@ const GuestManagementScreen = () => {
                   style={[
                     styles.groupButton,
                     formData.relationship === "friend" &&
-                      styles.groupButtonActive,
+                    styles.groupButtonActive,
                   ]}
                   onPress={() =>
                     setFormData({ ...formData, relationship: "friend" })
@@ -1588,7 +1597,7 @@ const GuestManagementScreen = () => {
                     style={[
                       styles.groupButtonText,
                       formData.relationship === "friend" &&
-                        styles.groupButtonTextActive,
+                      styles.groupButtonTextActive,
                     ]}
                   >
                     Bạn bè
@@ -1598,7 +1607,7 @@ const GuestManagementScreen = () => {
                   style={[
                     styles.groupButton,
                     formData.relationship === "colleague" &&
-                      styles.groupButtonActive,
+                    styles.groupButtonActive,
                   ]}
                   onPress={() =>
                     setFormData({ ...formData, relationship: "colleague" })
@@ -1608,7 +1617,7 @@ const GuestManagementScreen = () => {
                     style={[
                       styles.groupButtonText,
                       formData.relationship === "colleague" &&
-                        styles.groupButtonTextActive,
+                      styles.groupButtonTextActive,
                     ]}
                   >
                     Đồng nghiệp
@@ -1741,7 +1750,7 @@ const GuestManagementScreen = () => {
                     style={[
                       styles.groupButtonText,
                       editFormData.group === "groom" &&
-                        styles.groupButtonTextActive,
+                      styles.groupButtonTextActive,
                     ]}
                   >
                     Nhà trai
@@ -1760,7 +1769,7 @@ const GuestManagementScreen = () => {
                     style={[
                       styles.groupButtonText,
                       editFormData.group === "bride" &&
-                        styles.groupButtonTextActive,
+                      styles.groupButtonTextActive,
                     ]}
                   >
                     Nhà gái
@@ -1779,7 +1788,7 @@ const GuestManagementScreen = () => {
                     style={[
                       styles.groupButtonText,
                       editFormData.group === "both" &&
-                        styles.groupButtonTextActive,
+                      styles.groupButtonTextActive,
                     ]}
                   >
                     Chung
@@ -1793,7 +1802,7 @@ const GuestManagementScreen = () => {
                   style={[
                     styles.groupButton,
                     editFormData.relationship === "family" &&
-                      styles.groupButtonActive,
+                    styles.groupButtonActive,
                   ]}
                   onPress={() =>
                     setEditFormData({ ...editFormData, relationship: "family" })
@@ -1803,7 +1812,7 @@ const GuestManagementScreen = () => {
                     style={[
                       styles.groupButtonText,
                       editFormData.relationship === "family" &&
-                        styles.groupButtonTextActive,
+                      styles.groupButtonTextActive,
                     ]}
                   >
                     Gia đình
@@ -1813,7 +1822,7 @@ const GuestManagementScreen = () => {
                   style={[
                     styles.groupButton,
                     editFormData.relationship === "friend" &&
-                      styles.groupButtonActive,
+                    styles.groupButtonActive,
                   ]}
                   onPress={() =>
                     setEditFormData({ ...editFormData, relationship: "friend" })
@@ -1823,7 +1832,7 @@ const GuestManagementScreen = () => {
                     style={[
                       styles.groupButtonText,
                       editFormData.relationship === "friend" &&
-                        styles.groupButtonTextActive,
+                      styles.groupButtonTextActive,
                     ]}
                   >
                     Bạn bè
@@ -1833,7 +1842,7 @@ const GuestManagementScreen = () => {
                   style={[
                     styles.groupButton,
                     editFormData.relationship === "colleague" &&
-                      styles.groupButtonActive,
+                    styles.groupButtonActive,
                   ]}
                   onPress={() =>
                     setEditFormData({
@@ -1846,7 +1855,7 @@ const GuestManagementScreen = () => {
                     style={[
                       styles.groupButtonText,
                       editFormData.relationship === "colleague" &&
-                        styles.groupButtonTextActive,
+                      styles.groupButtonTextActive,
                     ]}
                   >
                     Đồng nghiệp
@@ -1959,7 +1968,7 @@ const GuestManagementScreen = () => {
                     style={[
                       styles.groupButton,
                       editFormData.giftType === "none" &&
-                        styles.groupButtonActive,
+                      styles.groupButtonActive,
                     ]}
                     onPress={() =>
                       setEditFormData({ ...editFormData, giftType: "none" })
@@ -1969,7 +1978,7 @@ const GuestManagementScreen = () => {
                       style={[
                         styles.groupButtonText,
                         editFormData.giftType === "none" &&
-                          styles.groupButtonTextActive,
+                        styles.groupButtonTextActive,
                       ]}
                     >
                       Chưa có
@@ -1979,7 +1988,7 @@ const GuestManagementScreen = () => {
                     style={[
                       styles.groupButton,
                       editFormData.giftType === "money" &&
-                        styles.groupButtonActive,
+                      styles.groupButtonActive,
                     ]}
                     onPress={() =>
                       setEditFormData({ ...editFormData, giftType: "money" })
@@ -1989,7 +1998,7 @@ const GuestManagementScreen = () => {
                       style={[
                         styles.groupButtonText,
                         editFormData.giftType === "money" &&
-                          styles.groupButtonTextActive,
+                        styles.groupButtonTextActive,
                       ]}
                     >
                       Tiền mặt
@@ -1999,7 +2008,7 @@ const GuestManagementScreen = () => {
                     style={[
                       styles.groupButton,
                       editFormData.giftType === "item" &&
-                        styles.groupButtonActive,
+                      styles.groupButtonActive,
                     ]}
                     onPress={() =>
                       setEditFormData({ ...editFormData, giftType: "item" })
@@ -2009,7 +2018,7 @@ const GuestManagementScreen = () => {
                       style={[
                         styles.groupButtonText,
                         editFormData.giftType === "item" &&
-                          styles.groupButtonTextActive,
+                        styles.groupButtonTextActive,
                       ]}
                     >
                       Quà tặng
@@ -2019,7 +2028,7 @@ const GuestManagementScreen = () => {
                     style={[
                       styles.groupButton,
                       editFormData.giftType === "both" &&
-                        styles.groupButtonActive,
+                      styles.groupButtonActive,
                     ]}
                     onPress={() =>
                       setEditFormData({ ...editFormData, giftType: "both" })
@@ -2029,7 +2038,7 @@ const GuestManagementScreen = () => {
                       style={[
                         styles.groupButtonText,
                         editFormData.giftType === "both" &&
-                          styles.groupButtonTextActive,
+                        styles.groupButtonTextActive,
                       ]}
                     >
                       Cả hai
@@ -2040,32 +2049,32 @@ const GuestManagementScreen = () => {
                 {/* Gift Amount */}
                 {(editFormData.giftType === "money" ||
                   editFormData.giftType === "both") && (
-                  <>
-                    <Text style={styles.label}>Số tiền (VNĐ)</Text>
-                    <TextInput
-                      style={styles.input}
-                      placeholder="Nhập số tiền"
-                      value={formatCurrency(
-                        parseInt(editFormData.giftAmount || "0")
+                    <>
+                      <Text style={styles.label}>Số tiền (VNĐ)</Text>
+                      <TextInput
+                        style={styles.input}
+                        placeholder="Nhập số tiền"
+                        value={formatCurrency(
+                          parseInt(editFormData.giftAmount || "0")
+                        )}
+                        onChangeText={(text) =>
+                          setEditFormData({
+                            ...editFormData,
+                            giftAmount: text.replace(/[^0-9]/g, ""),
+                          })
+                        }
+                        keyboardType="numeric"
+                      />
+                      {editFormData.giftAmount && (
+                        <Text style={styles.amountPreview}>
+                          {parseInt(editFormData.giftAmount).toLocaleString(
+                            "vi-VN"
+                          )}{" "}
+                          đồng
+                        </Text>
                       )}
-                      onChangeText={(text) =>
-                        setEditFormData({
-                          ...editFormData,
-                          giftAmount: text.replace(/[^0-9]/g, ""),
-                        })
-                      }
-                      keyboardType="numeric"
-                    />
-                    {editFormData.giftAmount && (
-                      <Text style={styles.amountPreview}>
-                        {parseInt(editFormData.giftAmount).toLocaleString(
-                          "vi-VN"
-                        )}{" "}
-                        đồng
-                      </Text>
-                    )}
-                  </>
-                )}
+                    </>
+                  )}
 
                 {/* Gift Description */}
                 {editFormData.giftType !== "none" && (
@@ -2134,7 +2143,7 @@ const GuestManagementScreen = () => {
                         style={[
                           styles.methodButton,
                           editFormData.giftReceivedMethod === "at_event" &&
-                            styles.methodButtonActive,
+                          styles.methodButtonActive,
                         ]}
                         onPress={() =>
                           setEditFormData({
@@ -2147,7 +2156,7 @@ const GuestManagementScreen = () => {
                           style={[
                             styles.methodButtonText,
                             editFormData.giftReceivedMethod === "at_event" &&
-                              styles.methodButtonTextActive,
+                            styles.methodButtonTextActive,
                           ]}
                         >
                           Tại tiệc
@@ -2157,7 +2166,7 @@ const GuestManagementScreen = () => {
                         style={[
                           styles.methodButton,
                           editFormData.giftReceivedMethod === "bank_transfer" &&
-                            styles.methodButtonActive,
+                          styles.methodButtonActive,
                         ]}
                         onPress={() =>
                           setEditFormData({
@@ -2170,7 +2179,7 @@ const GuestManagementScreen = () => {
                           style={[
                             styles.methodButtonText,
                             editFormData.giftReceivedMethod ===
-                              "bank_transfer" && styles.methodButtonTextActive,
+                            "bank_transfer" && styles.methodButtonTextActive,
                           ]}
                         >
                           Chuyển khoản
@@ -2180,7 +2189,7 @@ const GuestManagementScreen = () => {
                         style={[
                           styles.methodButton,
                           editFormData.giftReceivedMethod === "before_event" &&
-                            styles.methodButtonActive,
+                          styles.methodButtonActive,
                         ]}
                         onPress={() =>
                           setEditFormData({
@@ -2193,7 +2202,7 @@ const GuestManagementScreen = () => {
                           style={[
                             styles.methodButtonText,
                             editFormData.giftReceivedMethod ===
-                              "before_event" && styles.methodButtonTextActive,
+                            "before_event" && styles.methodButtonTextActive,
                           ]}
                         >
                           Trước tiệc
@@ -2203,7 +2212,7 @@ const GuestManagementScreen = () => {
                         style={[
                           styles.methodButton,
                           editFormData.giftReceivedMethod === "after_event" &&
-                            styles.methodButtonActive,
+                          styles.methodButtonActive,
                         ]}
                         onPress={() =>
                           setEditFormData({
@@ -2216,7 +2225,7 @@ const GuestManagementScreen = () => {
                           style={[
                             styles.methodButtonText,
                             editFormData.giftReceivedMethod === "after_event" &&
-                              styles.methodButtonTextActive,
+                            styles.methodButtonTextActive,
                           ]}
                         >
                           Sau tiệc
@@ -2226,7 +2235,7 @@ const GuestManagementScreen = () => {
                         style={[
                           styles.methodButton,
                           editFormData.giftReceivedMethod === "not_received" &&
-                            styles.methodButtonActive,
+                          styles.methodButtonActive,
                         ]}
                         onPress={() =>
                           setEditFormData({
@@ -2239,7 +2248,7 @@ const GuestManagementScreen = () => {
                           style={[
                             styles.methodButtonText,
                             editFormData.giftReceivedMethod ===
-                              "not_received" && styles.methodButtonTextActive,
+                            "not_received" && styles.methodButtonTextActive,
                           ]}
                         >
                           Chưa nhận
@@ -2428,7 +2437,7 @@ const GuestManagementScreen = () => {
                     style={[
                       styles.filterButtonText,
                       filterStatus === "confirmed" &&
-                        styles.filterButtonTextActive,
+                      styles.filterButtonTextActive,
                     ]}
                   >
                     Xác nhận
@@ -2448,7 +2457,7 @@ const GuestManagementScreen = () => {
                     style={[
                       styles.filterButtonText,
                       filterStatus === "pending" &&
-                        styles.filterButtonTextActive,
+                      styles.filterButtonTextActive,
                     ]}
                   >
                     Chờ
@@ -2468,7 +2477,7 @@ const GuestManagementScreen = () => {
                     style={[
                       styles.filterButtonText,
                       filterStatus === "declined" &&
-                        styles.filterButtonTextActive,
+                      styles.filterButtonTextActive,
                     ]}
                   >
                     Từ chối

@@ -44,6 +44,7 @@ import {
   spacing,
   borderRadius,
 } from "../../../assets/styles/utils/responsive";
+import { pinkHeaderStyles } from "../../styles/pinkHeader";
 import * as userSelectionService from "../../service/userSelectionService";
 import * as albumService from "../../service/albumService";
 import * as ImagePicker from "expo-image-picker";
@@ -921,13 +922,13 @@ const AlbumDetailScreen = () => {
   }
 
   return (
-    <SafeAreaView style={[styles.container, { paddingTop: topPad }]}> 
+    <SafeAreaView style={[styles.container, { paddingTop: topPad }]}>
       {/* Custom header restored (no PinkHeader) */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <ChevronLeft size={24} color="#fff" />
         </TouchableOpacity>
-        <View style={styles.headerTitleContainer}>
+        <View style={[styles.headerTitleContainer, pinkHeaderStyles.titleContainer]}>
           {source === "my" && isEditingName ? (
             <View style={styles.editNameContainer}>
               <TextInput
@@ -944,13 +945,17 @@ const AlbumDetailScreen = () => {
           ) : source === "my" ? (
             <TouchableOpacity onPress={() => setIsEditingName(true)}>
               <View style={styles.nameDisplayContainer}>
-                <Text style={styles.headerTitle}>{album.name}</Text>
+                <Text style={[styles.headerTitle, pinkHeaderStyles.title]}>
+                  {album.name}
+                </Text>
                 <Edit2 size={16} color="#fff" style={{ marginLeft: 8 }} />
               </View>
             </TouchableOpacity>
           ) : (
             <View style={styles.nameDisplayContainer}>
-              <Text style={styles.headerTitle}>{album.name}</Text>
+              <Text style={[styles.headerTitle, pinkHeaderStyles.title]}>
+                {album.name}
+              </Text>
             </View>
           )}
         </View>

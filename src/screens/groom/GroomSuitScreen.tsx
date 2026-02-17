@@ -28,6 +28,7 @@ import {
   responsiveHeight,
   spacing,
 } from "../../../assets/styles/utils/responsive";
+import { pinkHeaderStyles } from "../../styles/pinkHeader";
 
 const { width } = Dimensions.get("window");
 const GAP = getGridGap();
@@ -75,7 +76,9 @@ const GroomSuitScreen = () => {
         >
           <ChevronLeft size={24} color="#1f2937" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Vest chú rể - Kiểu dáng</Text>
+        <Text style={[styles.headerTitle, pinkHeaderStyles.title]}>
+          Vest chú rể - Kiểu dáng
+        </Text>
       </View>
 
       <ScrollView

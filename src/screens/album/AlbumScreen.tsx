@@ -26,6 +26,7 @@ import {
   spacing,
   borderRadius,
 } from "../../../assets/styles/utils/responsive";
+import { pinkHeaderStyles } from "../../styles/pinkHeader";
 
 const { width } = Dimensions.get("window");
 const ITEM_WIDTH = (width - responsiveWidth(16) * 2 - responsiveWidth(12)) / 2;
@@ -58,7 +59,7 @@ const AlbumScreen = () => {
   useFocusEffect(
     useCallback(() => {
       fetchAlbums();
-      return () => {};
+      return () => { };
     }, [activeTab])
   );
 
@@ -68,7 +69,7 @@ const AlbumScreen = () => {
       StatusBar.setBackgroundColor("#ff5a7a");
       StatusBar.setBarStyle("light-content");
       if (Platform.OS === "android") StatusBar.setTranslucent(false);
-      return () => {};
+      return () => { };
     }, [])
   );
 
@@ -118,7 +119,11 @@ const AlbumScreen = () => {
           >
             <ChevronLeft size={24} color="#ffffff" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Tủ đồ</Text>
+          <View style={pinkHeaderStyles.titleContainer}>
+            <Text style={[styles.headerTitle, pinkHeaderStyles.title]}>
+              Tủ đồ
+            </Text>
+          </View>
           <View style={{ width: 24 }} />
         </View>
       </View>
