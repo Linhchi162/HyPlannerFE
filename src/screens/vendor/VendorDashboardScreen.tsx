@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
+  Linking,
 } from "react-native";
 import { ChevronLeft, Package, User, LogOut, Crown } from "lucide-react-native";
 import { useNavigation } from "@react-navigation/native";
@@ -23,7 +24,7 @@ import { useSelector } from "react-redux";
 import { selectCurrentUser } from "../../store/authSlice";
 import { auth } from "../../service/firebase";
 import {
-  activateVendorPriority,
+  createVendorPriorityPayment,
   subscribeVendorProfile,
   Vendor,
 } from "../../service/vendorService";
@@ -38,6 +39,7 @@ export default function VendorDashboardScreen() {
     currentUser?._id ||
     currentUser?.uid || "";
   const [vendorProfile, setVendorProfile] = useState<Vendor | null>(null);
+  const [isCreatingPayment, setIsCreatingPayment] = useState(false);
 
   useEffect(() => {
     if (!vendorId) return;
@@ -60,10 +62,17 @@ export default function VendorDashboardScreen() {
       return;
     }
     try {
-      await activateVendorPriority(vendorId, 50000);
-      Alert.alert("Đăng ký thành công", "Bạn đã đăng ký gói ưu tiên hiển thị.");
+      setIsCreatingPayment(true);
+      const result = await createVendorPriorityPayment(vendorId, 50000);
+      const checkoutUrl = result?.checkoutUrl || result?.data?.checkoutUrl;
+      if (!checkoutUrl) {
+        throw new Error("missing-checkout-url");
+      }
+      await Linking.openURL(checkoutUrl);
     } catch {
-      Alert.alert("Lỗi", "Không thể đăng ký gói ưu tiên. Vui lòng thử lại.");
+      Alert.alert("Lỗi", "Không thể tạo thanh toán. Vui lòng thử lại.");
+    } finally {
+      setIsCreatingPayment(false);
     }
   };
 
@@ -123,14 +132,18 @@ export default function VendorDashboardScreen() {
           <TouchableOpacity
             style={[
               styles.primaryBtn,
-              isFeatured && styles.primaryBtnDisabled,
+              (isFeatured || isCreatingPayment) && styles.primaryBtnDisabled,
             ]}
             onPress={handleRegisterPriority}
-            disabled={isFeatured}
+            disabled={isFeatured || isCreatingPayment}
           >
             <Crown size={18} color="#ffffff" />
             <Text style={styles.primaryBtnText}>
-              {isFeatured ? "Đã đăng ký" : "Đăng ký gói ưu tiên"}
+              {isFeatured
+                ? "Đã đăng ký"
+                : isCreatingPayment
+                  ? "Đang tạo thanh toán..."
+                  : "Đăng ký gói ưu tiên"}
             </Text>
           </TouchableOpacity>
         </View>

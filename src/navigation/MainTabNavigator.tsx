@@ -4,8 +4,7 @@ import React from "react";
 import { useNavigation } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { type StackNavigationProp } from "@react-navigation/stack";
-import { Home, User, Heart, LayoutTemplate, Users } from "lucide-react-native";
-import { Platform } from "react-native";
+import { Platform, Image } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import HomeScreen from "../screens/home/HomeScreen";
@@ -41,52 +40,65 @@ export const MainTabNavigator = () => {
     <Tab.Navigator
       screenOptions={({ route }) => ({
         tabBarIcon: ({ color, size, focused }) => {
-          const iconSize = focused ? responsiveWidth(26) : responsiveWidth(22);
+          const iconSize = focused ? responsiveWidth(50) : responsiveWidth(56);
+          let iconSource;
+
           if (route.name === "Home")
-            return <Home color={color} size={iconSize} />;
-          if (route.name === "WebsiteTab")
-            return <LayoutTemplate color={color} size={iconSize} />;
-          if (route.name === "Community")
-            return <Users color={color} size={iconSize} />;
-          if (route.name === "MoodBoard")
-            return <Heart color={color} size={iconSize} />;
-          if (route.name === "ProfileTab")
-            return <User color={color} size={iconSize} />;
-          return null;
+            iconSource = require("../../assets/images/icon trang chủ.png");
+          else if (route.name === "MoodBoard")
+            iconSource = require("../../assets/images/icon tủ đồ.png");
+          else if (route.name === "Community")
+            iconSource = require("../../assets/images/icon cộng đồng.png");
+          else if (route.name === "WebsiteTab")
+            iconSource = require("../../assets/images/icon web cưới.png");
+          else if (route.name === "ProfileTab")
+            iconSource = require("../../assets/images/icon hồ sơ.png");
+
+          return iconSource ? (
+            <Image
+              source={iconSource}
+              style={{
+                width: iconSize,
+                height: iconSize,
+                tintColor: color,
+              }}
+              resizeMode="contain"
+            />
+          ) : null;
         },
-        tabBarActiveTintColor: "#fd4166",
-        tabBarInactiveTintColor: "#9ca3af",
+        tabBarActiveTintColor: "#ffffff",
+        tabBarInactiveTintColor: "#ef456d",
         tabBarLabelStyle: {
           fontFamily: "Montserrat-Medium",
           fontSize: responsiveFont(10),
           fontWeight: "600",
           marginTop: responsiveHeight(4),
           marginBottom: responsiveHeight(4),
+          width: responsiveWidth(68),
+          textAlign: "center",
         },
         tabBarStyle: {
-          backgroundColor: "#ffffff",
+          backgroundColor: "#fbd0e1",
           borderTopWidth: 0,
-          shadowColor: "#000",
-          shadowOffset: { width: 0, height: -2 },
-          shadowOpacity: 0.05,
-          shadowRadius: 2,
-          elevation: 5,
-          height:
-            responsiveHeight(85) +
-            (Platform.OS === "android" ? insets.bottom : 0),
+          shadowColor: "transparent",
+          shadowOpacity: 0,
+          shadowRadius: 0,
+          shadowOffset: { width: 0, height: 0 },
+          elevation: 0,
+          height: responsiveHeight(85),
           paddingTop: responsiveHeight(8),
-          paddingBottom:
-            Platform.OS === "android"
-              ? Math.max(insets.bottom, responsiveHeight(8))
-              : responsiveHeight(8),
+          paddingBottom: responsiveHeight(10),
           position: "absolute",
           left: 0,
           right: 0,
-          bottom: 0,
+          bottom: Math.max(insets.bottom, responsiveHeight(12)),
+          borderRadius: responsiveWidth(14),
+          marginHorizontal: responsiveWidth(20),
         },
         tabBarItemStyle: {
-          paddingVertical: responsiveHeight(8),
-          marginHorizontal: responsiveWidth(4),
+          paddingVertical: responsiveHeight(4),
+          marginHorizontal: 0,
+          minWidth: responsiveWidth(68),
           backgroundColor: "transparent",
         },
         tabBarIconStyle: { marginBottom: responsiveHeight(2) },
@@ -112,7 +124,7 @@ export const MainTabNavigator = () => {
         <Tab.Screen
           name="WebsiteTab"
           component={WebsiteManagementScreen}
-          options={{ tabBarLabel: "Quản lí Website" }}
+          options={{ tabBarLabel: "Website" }}
           listeners={{
             tabPress: (e) => {
               if (!userInvitation) {

@@ -8,11 +8,10 @@ import {
   StatusBar,
   TouchableOpacity,
   Image,
-  Dimensions,
-  type NativeSyntheticEvent,
-  type NativeScrollEvent,
+  ImageBackground,
   ActivityIndicator,
   Animated,
+  Dimensions,
   Platform,
   Alert,
 } from "react-native";
@@ -21,30 +20,14 @@ import { selectCurrentUser, updateUserField } from "../../store/authSlice";
 import { getAccountLimits, getUpgradeMessage } from "../../utils/accountLimits";
 import apiClient from "../../api/client";
 import { StackNavigationProp } from "@react-navigation/stack";
-import { useNavigation, useFocusEffect } from "@react-navigation/native";
+import { useNavigation, useFocusEffect, useIsFocused } from "@react-navigation/native";
 import { RootStackParamList } from "../../navigation/types"; // Đảm bảo đường dẫn này đúng
-import {
-  ChevronRight,
-  List,
-  Shirt,
-  Mail,
-  Wallet,
-  LifeBuoy,
-  Users,
-  Heart,
-  MessageCircle,
-  Bell,
-  CheckSquare,
-  DollarSign,
-  Calendar,
-  Sparkles,
-  TrendingUp,
-} from "lucide-react-native";
-import { getWeddingEvent } from "../../service/weddingEventService";
 import { AppDispatch, RootState } from "../../store";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MixpanelService } from "../../service/mixpanelService";
 import * as notificationService from "../../service/notificationService";
+import { getPhases } from "../../service/phaseService";
+import { getGroupActivities } from "../../service/groupActivityService";
 
 import {
   responsiveWidth,
@@ -52,66 +35,8 @@ import {
   responsiveFont,
 } from "../../../assets/styles/utils/responsive"; // Đảm bảo đường dẫn này đúng
 
-const { width } = Dimensions.get("window");
+const { width, height } = Dimensions.get("window");
 
-const weddingImages = [
-  {
-    uri: "https://res.cloudinary.com/dqtemoeoz/image/upload/v1766667227/9_mpexd8.jpg",
-    caption: "",
-  },
-  {
-    uri: "https://res.cloudinary.com/dqtemoeoz/image/upload/v1766667221/8_twob09.jpg",
-    caption: "",
-  },
-  {
-    uri: "https://res.cloudinary.com/dqtemoeoz/image/upload/v1766667216/7_ff4esl.jpg",
-    caption: "",
-  },
-  {
-    uri: "https://res.cloudinary.com/dqtemoeoz/image/upload/v1766667210/6_vdxezp.jpg",
-    caption: "",
-  },
-  {
-    uri: "https://res.cloudinary.com/dqtemoeoz/image/upload/v1766667204/5_e5n5n2.jpg",
-    caption: "",
-  },
-  {
-    uri: "https://res.cloudinary.com/dqtemoeoz/image/upload/v1766667199/4_usqqek.jpg",
-    caption: "",
-  },
-  {
-    uri: "https://res.cloudinary.com/dqtemoeoz/image/upload/v1766667193/3_g7ynch.jpg",
-    caption: "",
-  },
-  {
-    uri: "https://res.cloudinary.com/dqtemoeoz/image/upload/v1766667188/2_shfqfm.jpg",
-    caption: "",
-  },
-  {
-    uri: "https://res.cloudinary.com/dqtemoeoz/image/upload/v1766667182/13_hfsuim.jpg",
-    caption: "",
-  },
-  {
-    uri: "https://res.cloudinary.com/dqtemoeoz/image/upload/v1766667176/12_bsrzrf.jpg",
-    caption: "",
-  },
-  {
-    uri: "https://res.cloudinary.com/dqtemoeoz/image/upload/v1766667171/10_sjvfve.jpg",
-    caption: "",
-  },
-  {
-    uri: "https://res.cloudinary.com/dqtemoeoz/image/upload/v1766667165/11_skvxvv.jpg",
-    caption: "",
-  },
-  {
-    uri: "https://res.cloudinary.com/dqtemoeoz/image/upload/v1766667160/14_z9rmd1.jpg",
-    caption: "",
-  },
-  {
-    uri: "https://res.cloudinary.com/dqtemoeoz/image/upload/v1766667154/1_j0brfb.jpg",
-    caption: "",
-  },
-];
 
 const HomeScreen = () => {
   // --- LẤY DỮ LIỆU TỪ REDUX STORE ---
@@ -120,27 +45,38 @@ const HomeScreen = () => {
   const { weddingEvent, isLoading, error } = useSelector(
     (state: RootState) => state.weddingEvent.getWeddingEvent
   );
+  const phases = useSelector(
+    (state: RootState) => state.phases.getPhases.phases
+  );
+  const groupActivities = useSelector(
+    (state: RootState) =>
+      state.groupActivities.getGroupActivities.groupActivities
+  );
   const eventId = weddingEvent?._id;
   const member = weddingEvent?.member || [];
   const [notifUnread, setNotifUnread] = useState(0);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const adScrollX = React.useRef(new Animated.Value(0)).current;
+  const adScrollRef = React.useRef<ScrollView>(null);
+  const adCardWidth = responsiveWidth(240);
+  const adGap = responsiveWidth(12);
+  const adSnap = adCardWidth + adGap;
+  const currentAdIndexRef = React.useRef(1);
+  const isAdjustingLoopRef = React.useRef(false);
+  const noteScrollX = React.useRef(new Animated.Value(0)).current;
+  const noteScrollRef = React.useRef<ScrollView>(null);
+  const noteCardWidth = Math.min(
+    responsiveWidth(220),
+    width - responsiveWidth(20) * 2 - responsiveWidth(120) - responsiveWidth(12)
+  );
+  const noteGap = responsiveWidth(12);
+  const noteSnap = noteCardWidth + noteGap;
+  const currentNoteIndexRef = React.useRef(1);
+  const isAdjustingNoteLoopRef = React.useRef(false);
 
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [randomImages, setRandomImages] = useState<typeof weddingImages>([]);
-  const scrollViewRef = React.useRef<ScrollView>(null);
-  const scrollX = React.useRef(new Animated.Value(0)).current; // Dùng để điều khiển vị trí lướt
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const dispatch = useDispatch<AppDispatch>();
-
-  // Animation cho trái tim
-  const heartScale = React.useRef(new Animated.Value(1)).current;
-
-  useEffect(() => {
-    // Đồng bộ giá trị Animated với ScrollView
-    const listenerId = scrollX.addListener(({ value }) => {
-      scrollViewRef.current?.scrollTo({ x: value, animated: false });
-    });
-    return () => scrollX.removeListener(listenerId);
-  }, []);
+  const isFocused = useIsFocused();
 
   const fetchNotifUnread = useCallback(async () => {
     if (!eventId) {
@@ -170,26 +106,8 @@ const HomeScreen = () => {
     totalSeconds: 0,
   });
 
-  // Panel hồng luôn xuất hiện trên Home; set ngay + set lại sau 1 frame để thắng cleanup từ Tủ đồ/Cộng đồng (tránh top panel bị đẩy lên)
-  useFocusEffect(
-    useCallback(() => {
-      const apply = () => {
-        StatusBar.setBackgroundColor("#ff5a7a");
-        StatusBar.setBarStyle("light-content");
-        if (Platform.OS === "android") StatusBar.setTranslucent(false);
-      };
-      apply();
-      const id = setTimeout(apply, 0);
-      return () => clearTimeout(id);
-    }, [])
-  );
-
   useEffect(() => {
     MixpanelService.track("Viewed Dashboard");
-
-    // Random chọn 7 ảnh từ weddingImages
-    const shuffled = [...weddingImages].sort(() => Math.random() - 0.5);
-    setRandomImages(shuffled.slice(0, 7));
 
     // ✅ Force refresh accountType từ backend khi vào HomeScreen
     const refreshAccountType = async () => {
@@ -210,6 +128,39 @@ const HomeScreen = () => {
 
     refreshAccountType();
   }, [dispatch]);
+
+  useFocusEffect(
+    useCallback(() => {
+      const applyHome = () => {
+        StatusBar.setBackgroundColor("transparent");
+        StatusBar.setBarStyle("light-content");
+        if (Platform.OS === "android") StatusBar.setTranslucent(true);
+      };
+      applyHome();
+
+      return () => {
+        StatusBar.setBackgroundColor("#ff5a7a");
+        StatusBar.setBarStyle("light-content");
+        if (Platform.OS === "android") StatusBar.setTranslucent(false);
+      };
+    }, [])
+  );
+
+  useEffect(() => {
+    const fetchSummaryData = async () => {
+      if (!eventId) return;
+      try {
+        await Promise.all([
+          getPhases(eventId, dispatch),
+          getGroupActivities(eventId, dispatch),
+        ]);
+      } catch {
+        // ignore
+      }
+    };
+
+    fetchSummaryData();
+  }, [dispatch, eventId]);
 
   // ❌ REMOVED: Duplicate API call - data now fetched centrally in App.tsx via useAppInitialization
   // useEffect(() => {
@@ -270,53 +221,7 @@ const HomeScreen = () => {
     return () => clearInterval(interval);
   }, [weddingEvent?.timeToMarried]);
 
-  // Hiệu ứng animation cho trái tim (nhấp nháy)
-  // ✅ OPTIMIZED: Sử dụng useRef để tránh recreation của Animated.Value
-  useEffect(() => {
-    const pulseAnimation = Animated.loop(
-      Animated.sequence([
-        Animated.timing(heartScale, {
-          toValue: 1.15,
-          duration: 1000,
-          useNativeDriver: true,
-        }),
-        Animated.timing(heartScale, {
-          toValue: 1,
-          duration: 1000,
-          useNativeDriver: true,
-        }),
-      ])
-    );
-
-    pulseAnimation.start();
-
-    return () => pulseAnimation.stop();
-  }, []); // ✅ FIXED: Empty deps array - animation chỉ start 1 lần
-
-  // Auto-scroll carousel với transition mượt mà chuẩn Native
-  useEffect(() => {
-    if (randomImages.length === 0) return;
-
-    const autoScrollInterval = setInterval(() => {
-      setCurrentImageIndex((prevIndex) => {
-        const nextIndex = (prevIndex + 1) % randomImages.length;
-        const targetX = nextIndex * width;
-
-        // Sử dụng Animated.timing để kiểm soát tốc độ lướt (1000ms = 1 giây)
-        Animated.timing(scrollX, {
-          toValue: targetX,
-          duration: 500, // --- GIẢM TỐC ĐỘ LƯỚT (1.5 giây) ---
-          useNativeDriver: false,
-        }).start();
-
-        return nextIndex;
-      });
-    }, 5000); // 5 giây đổi ảnh 1 lần
-
-    return () => clearInterval(autoScrollInterval);
-  }, [randomImages.length, width]);
-
-  // --- TÍNH TOÁN SỐ NGÀY ĐẾM NGƯỢC ĐỘNG (giữ lại cho các phần khác nếu cần) ---
+  // --- TÍNH TOÁN NGÀY CƯỚI HIỂN THỊ ---
   const weddingDateLabel = useMemo(() => {
     if (!weddingEvent?.timeToMarried) {
       return "";
@@ -324,43 +229,245 @@ const HomeScreen = () => {
     return new Date(weddingEvent.timeToMarried).toLocaleDateString("vi-VN");
   }, [weddingEvent?.timeToMarried]);
 
-  const daysLeft = useMemo(() => {
-    if (!weddingEvent?.timeToMarried) {
-      return 0;
-    }
-    const weddingDate = new Date(weddingEvent.timeToMarried);
-    const today = new Date();
-    weddingDate.setHours(0, 0, 0, 0);
-    today.setHours(0, 0, 0, 0);
+  const formatMoney = useCallback((value: number) => {
+    const safeValue = Number.isFinite(value) ? value : 0;
+    return `${Math.round(safeValue).toLocaleString("vi-VN")}đ`;
+  }, []);
 
-    const differenceInTime = weddingDate.getTime() - today.getTime();
-    if (differenceInTime < 0) {
-      return 0;
-    }
-    const differenceInDays = Math.ceil(differenceInTime / (1000 * 3600 * 24));
-    return differenceInDays;
-  }, [weddingEvent?.timeToMarried]);
+  // --- GIAO DIỆN CHÍNH KHI CÓ DỮ LIỆU ---
+  const quickActions = [
+    {
+      key: "tasks",
+      label: "Công việc",
+      icon: require("../../../assets/images/icon công việc.png"),
+      onPress: () => {
+        if (eventId) {
+          navigation.navigate("TaskList", { eventId: eventId });
+        }
+      },
+    },
+    {
+      key: "budget",
+      label: "Ngân sách",
+      icon: require("../../../assets/images/icon ngân sách.png"),
+      onPress: () => {
+        if (eventId) {
+          navigation.navigate("BudgetList");
+        }
+      },
+    },
+    {
+      key: "guests",
+      label: "Khách mời",
+      icon: require("../../../assets/images/icon khách mời.png"),
+      onPress: () => {
+        if (eventId) {
+          navigation.navigate("GuestManagementScreen");
+        }
+      },
+    },
+    {
+      key: "vendors",
+      label: "Đối tác",
+      icon: require("../../../assets/images/icon đối tác.png"),
+      onPress: () => {
+        if (eventId) {
+          navigation.navigate("VendorList");
+        }
+      },
+    },
+  ];
 
-  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const scrollPosition = event.nativeEvent.contentOffset.x;
-    const imageIndex = Math.round(scrollPosition / width);
-    setCurrentImageIndex(imageIndex);
+  const adImages = useMemo(
+    () => [
+      require("../../../assets/images/ảnh QC bella bridal.jpg"),
+      require("../../../assets/images/ảnh QC bảo tín minh châu.jpg"),
+      require("../../../assets/images/ảnh QC chung thanh phong bridal.jpg"),
+      require("../../../assets/images/ảnh QC doji.jpg"),
+      require("../../../assets/images/ảnh QC huy thanh.jpg"),
+      require("../../../assets/images/ảnh QC pnj.png"),
+      require("../../../assets/images/ảnh QC SJC.jpg"),
+      require("../../../assets/images/ảnh QC thế giới kim cương.jpg"),
+      require("../../../assets/images/ảnh QC trương thanh hải.jpg"),
+    ],
+    []
+  );
+
+  const loopedAdImages = useMemo(() => {
+    if (adImages.length <= 1) return adImages;
+    return [adImages[adImages.length - 1], ...adImages, adImages[0]];
+  }, [adImages]);
+
+  const accountType = (user?.accountType || "").toLowerCase();
+  const isPremium = accountType === "premium" || accountType === "vip";
+
+  const tasks = useMemo(
+    () => phases.flatMap((phase) => phase.tasks || []),
+    [phases]
+  );
+  const activities = useMemo(
+    () => groupActivities.flatMap((group) => group.activities || []),
+    [groupActivities]
+  );
+
+  const totalTasks = tasks.length;
+  const completedTasks = tasks.filter((task) => task.completed).length;
+  const remainingTasks = Math.max(totalTasks - completedTasks, 0);
+  const expectedTotal = activities.reduce(
+    (sum, item) => sum + (item.expectedBudget || 0),
+    0
+  );
+  const actualTotal = activities.reduce(
+    (sum, item) => sum + (item.actualBudget || 0),
+    0
+  );
+  const totalBudget = weddingEvent?.budget || 0;
+  const coupleName = weddingEvent.brideName && weddingEvent.groomName
+    ? `${weddingEvent.brideName} & ${weddingEvent.groomName}`
+    : weddingEvent.brideName || weddingEvent.groomName || "";
+
+  const splitNameLines = (name: string, mode: "first" | "last") => {
+    const words = name.trim().split(/\s+/).filter(Boolean);
+    if (words.length <= 1) return [name.trim(), ""];
+    if (mode === "first") {
+      return [words[0], words.slice(1).join(" ")];
+    }
+    return [words.slice(0, -1).join(" "), words[words.length - 1]];
   };
 
-  const handleMomentumScrollEnd = (
-    event: NativeSyntheticEvent<NativeScrollEvent>
-  ) => {
-    const scrollPosition = event.nativeEvent.contentOffset.x;
-    const imageIndex = Math.round(scrollPosition / width);
+  const noteCards = useMemo(
+    () => [
+      { key: "countdown", type: "countdown" as const },
+      {
+        key: "tasks",
+        type: "tasks" as const,
+        title: `${remainingTasks} việc cần làm`,
+        subtitle: `${completedTasks} đã hoàn thành/${totalTasks} tổng cộng`,
+      },
+      {
+        key: "budget",
+        type: "budget" as const,
+        title: "Ngân sách",
+        lines: [
+          `Tổng tiền: ${formatMoney(totalBudget)}`,
+          `Thực tế: ${formatMoney(actualTotal)}`,
+          `Dự kiến: ${formatMoney(expectedTotal)}`,
+        ],
+      },
+    ],
+    [
+      remainingTasks,
+      completedTasks,
+      totalTasks,
+      totalBudget,
+      actualTotal,
+      expectedTotal,
+      formatMoney,
+    ]
+  );
 
-    // Nếu đã đến ảnh cuối cùng, scroll về ảnh đầu tiên
-    if (imageIndex >= randomImages.length - 1) {
-      setTimeout(() => {
-        scrollViewRef.current?.scrollTo({ x: 0, animated: true });
-        setCurrentImageIndex(0);
-      }, 300);
-    }
-  };
+  const loopedNoteCards = useMemo(() => {
+    if (noteCards.length <= 1) return noteCards;
+    return [noteCards[noteCards.length - 1], ...noteCards, noteCards[0]];
+  }, [noteCards]);
+
+  useEffect(() => {
+    if (loopedAdImages.length <= 1) return;
+
+    const timeoutId = setTimeout(() => {
+      adScrollRef.current?.scrollTo({ x: adSnap, animated: false });
+      currentAdIndexRef.current = 1;
+    }, 0);
+
+    return () => clearTimeout(timeoutId);
+  }, [adSnap, loopedAdImages.length]);
+
+  useEffect(() => {
+    if (loopedAdImages.length <= 1) return;
+
+    const interval = setInterval(() => {
+      if (isAdjustingLoopRef.current) return;
+      const nextIndex = currentAdIndexRef.current + 1;
+      adScrollRef.current?.scrollTo({ x: nextIndex * adSnap, animated: true });
+    }, 3500);
+
+    return () => clearInterval(interval);
+  }, [adSnap, loopedAdImages.length]);
+
+  useEffect(() => {
+    if (loopedNoteCards.length <= 1) return;
+
+    const timeoutId = setTimeout(() => {
+      noteScrollRef.current?.scrollTo({ x: noteSnap, animated: false });
+      currentNoteIndexRef.current = 1;
+    }, 0);
+
+    return () => clearTimeout(timeoutId);
+  }, [noteSnap, loopedNoteCards.length]);
+
+  useEffect(() => {
+    if (loopedNoteCards.length <= 1) return;
+
+    const interval = setInterval(() => {
+      if (isAdjustingNoteLoopRef.current) return;
+      const nextIndex = currentNoteIndexRef.current + 1;
+      noteScrollRef.current?.scrollTo({ x: nextIndex * noteSnap, animated: true });
+    }, 3200);
+
+    return () => clearInterval(interval);
+  }, [noteSnap, loopedNoteCards.length]);
+
+  const handleAdMomentumEnd = useCallback(
+    (event: any) => {
+      if (loopedAdImages.length <= 1) return;
+
+      const offsetX = event.nativeEvent.contentOffset.x;
+      const rawIndex = Math.round(offsetX / adSnap);
+      currentAdIndexRef.current = rawIndex;
+
+      if (rawIndex === 0) {
+        isAdjustingLoopRef.current = true;
+        adScrollRef.current?.scrollTo({
+          x: adImages.length * adSnap,
+          animated: false,
+        });
+        currentAdIndexRef.current = adImages.length;
+        isAdjustingLoopRef.current = false;
+      } else if (rawIndex === adImages.length + 1) {
+        isAdjustingLoopRef.current = true;
+        adScrollRef.current?.scrollTo({ x: adSnap, animated: false });
+        currentAdIndexRef.current = 1;
+        isAdjustingLoopRef.current = false;
+      }
+    },
+    [adImages.length, adSnap, loopedAdImages.length]
+  );
+
+  const handleNoteMomentumEnd = useCallback(
+    (event: any) => {
+      if (loopedNoteCards.length <= 1) return;
+
+      const offsetX = event.nativeEvent.contentOffset.x;
+      const rawIndex = Math.round(offsetX / noteSnap);
+      currentNoteIndexRef.current = rawIndex;
+
+      if (rawIndex === 0) {
+        isAdjustingNoteLoopRef.current = true;
+        noteScrollRef.current?.scrollTo({
+          x: noteCards.length * noteSnap,
+          animated: false,
+        });
+        currentNoteIndexRef.current = noteCards.length;
+        isAdjustingNoteLoopRef.current = false;
+      } else if (rawIndex === noteCards.length + 1) {
+        isAdjustingNoteLoopRef.current = true;
+        noteScrollRef.current?.scrollTo({ x: noteSnap, animated: false });
+        currentNoteIndexRef.current = 1;
+        isAdjustingNoteLoopRef.current = false;
+      }
+    },
+    [noteCards.length, noteSnap, loopedNoteCards.length]
+  );
 
   // --- XỬ LÝ CÁC TRẠNG THÁI UI ---
   if (isLoading) {
@@ -397,374 +504,391 @@ const HomeScreen = () => {
     );
   }
 
-  // --- GIAO DIỆN CHÍNH KHI CÓ DỮ LIỆU ---
   return (
     <View style={styles.container}>
-      <StatusBar
-        barStyle="light-content"
-        backgroundColor="#ff5a7a"
-        translucent={false}
-      />
-
-      {/* Top Panel Section - Đã chuyển sang nền trong suốt và nổi lên trên */}
-      <View style={styles.topPanelContainer} pointerEvents="box-none">
-        <Image
-          source={require("../../../assets/images/top.png")}
-          style={styles.topPanelBg}
-          resizeMode="stretch"
+      {isFocused && (
+        <StatusBar
+          barStyle="light-content"
+          backgroundColor="transparent"
+          translucent
         />
-        <SafeAreaView style={styles.headerContent} pointerEvents="box-none">
-          <View style={styles.headerRow} pointerEvents="box-none">
-            <Image
-              source={require("../../../assets/images/hyLogo.png")}
-              style={styles.logo}
-              resizeMode="contain"
-            />
-            <View style={styles.headerButtons}>
-              <TouchableOpacity
-                style={styles.headerButton}
-                onPress={() => Alert.alert("Thông báo", "Tính năng Chatbot AI đang được phát triển!")}
-              >
-                <Image
-                  source={require("../../../assets/images/ai.png")}
-                  style={styles.headerIcon}
-                  resizeMode="contain"
-                />
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.headerButton}
-                onPress={() => {
-                  if (eventId) {
-                    navigation.navigate("NotificationListScreen", {
-                      weddingEventId: eventId,
-                    });
-                  } else {
-                    navigation.navigate("Notifications");
-                  }
-                }}
-              >
-                <View style={styles.notificationIconWrap}>
+      )}
+      <ImageBackground
+        source={require("../../../assets/images/ảnh nền hồng - trang chủ.jpg")}
+        style={styles.homeBackground}
+        resizeMode="cover"
+      >
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+        >
+          <SafeAreaView style={styles.headerContent}>
+            <View
+              style={[
+                styles.headerRow,
+                { paddingTop: insets.top + responsiveHeight(6) },
+              ]}
+            >
+              <Image
+                source={require("../../../assets/images/hyLogo.png")}
+                style={styles.logo}
+                resizeMode="contain"
+              />
+              <View style={styles.headerButtons}>
+                <TouchableOpacity
+                  style={styles.headerCircleButton}
+                  onPress={() => Alert.alert("Thông báo", "Tính năng Chatbot AI đang được phát triển!")}
+                >
                   <Image
-                    source={require("../../../assets/images/notification.png")}
-                    style={styles.headerIcon}
+                    source={require("../../../assets/images/icon bong bóng chat với vendors.png")}
+                    style={styles.headerCircleIconSmall}
                     resizeMode="contain"
                   />
-                  {notifUnread > 0 && (
-                    <View style={styles.notifBadge}>
-                      <Text style={styles.notifBadgeText}>
-                        {notifUnread > 99 ? "99+" : notifUnread}
-                      </Text>
-                    </View>
-                  )}
-                </View>
-              </TouchableOpacity>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.headerCircleButton}
+                  onPress={() => Alert.alert("Thông báo", "Trợ lý đang được phát triển!")}
+                >
+                  <Image
+                    source={require("../../../assets/images/icon khỉ trợ lý.png")}
+                    style={styles.headerCircleIconLarge}
+                    resizeMode="contain"
+                  />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.headerCircleButton}
+                  onPress={() => {
+                    if (eventId) {
+                      navigation.navigate("NotificationListScreen", {
+                        weddingEventId: eventId,
+                      });
+                    } else {
+                      navigation.navigate("Notifications");
+                    }
+                  }}
+                >
+                  <View style={styles.notificationIconWrap}>
+                    <Image
+                      source={require("../../../assets/images/icon thông báo.png")}
+                      style={styles.headerCircleIconSmall}
+                      resizeMode="contain"
+                    />
+                    {notifUnread > 0 && (
+                      <View style={styles.notifBadge}>
+                        <Text style={styles.notifBadgeText}>
+                          {notifUnread > 99 ? "99+" : notifUnread}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </SafeAreaView>
+
+          <View style={styles.heroRow}>
+            <View style={styles.upgradeCard}>
+              <Image
+                source={require("../../../assets/images/icon user hỷ.png")}
+                style={styles.upgradeAvatar}
+                resizeMode="contain"
+              />
+              <View style={styles.upgradeCardBody}>
+                <Text style={styles.upgradeTitle}>
+                  {isPremium ? "Khách VIP" : "Nâng cấp tài khoản"}
+                </Text>
+                <Image
+                  source={
+                    isPremium
+                      ? require("../../../assets/images/icon bạn là khách vip hihi.png")
+                      : require("../../../assets/images/icon bạn chỉ là hạng dùng free.png")
+                  }
+                  style={styles.upgradeBadge}
+                  resizeMode="contain"
+                />
+                {!isPremium && (
+                  <TouchableOpacity
+                    style={styles.upgradeButton}
+                    onPress={() => navigation.navigate("UpgradeAccountScreen")}
+                  >
+                    <Text style={styles.upgradeButtonText}>Nâng cấp</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+
+            <View style={styles.noteCarousel}>
+              <Animated.ScrollView
+                ref={noteScrollRef}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                snapToInterval={noteSnap}
+                decelerationRate="fast"
+                onMomentumScrollEnd={handleNoteMomentumEnd}
+                onScroll={Animated.event(
+                  [{ nativeEvent: { contentOffset: { x: noteScrollX } } }],
+                  { useNativeDriver: true }
+                )}
+                scrollEventThrottle={16}
+                contentContainerStyle={[
+                  styles.noteRow,
+                  {
+                    paddingLeft: 0,
+                    paddingRight: 0,
+                  },
+                ]}
+              >
+                {loopedNoteCards.map((note, index) => {
+                  return (
+                    <Animated.View
+                      key={`note-${note.key}-${index}`}
+                      style={[
+                        styles.noteCard,
+                        note.type !== "countdown" && styles.noteCardTopLeft,
+                        note.type === "countdown" && styles.noteCardCountdown,
+                        { width: noteCardWidth },
+                      ]}
+                    >
+                      {note.type === "countdown" ? (
+                        <>
+                          <View style={styles.noteNameRow}>
+                            <View style={styles.noteNameColumn}>
+                              {weddingEvent.brideName ? (
+                                <>
+                                  <Text style={styles.noteNameText}>
+                                    {splitNameLines(weddingEvent.brideName, "last")[0]}
+                                  </Text>
+                                  <Text style={styles.noteNameText}>
+                                    {splitNameLines(weddingEvent.brideName, "last")[1]}
+                                  </Text>
+                                </>
+                              ) : null}
+                            </View>
+                            <Text style={styles.noteAmpersand}>&</Text>
+                            <View style={styles.noteNameColumn}>
+                              {weddingEvent.groomName ? (
+                                <>
+                                  <Text style={styles.noteNameText}>
+                                    {splitNameLines(weddingEvent.groomName, "first")[0]}
+                                  </Text>
+                                  <Text style={styles.noteNameText}>
+                                    {splitNameLines(weddingEvent.groomName, "first")[1]}
+                                  </Text>
+                                </>
+                              ) : null}
+                            </View>
+                          </View>
+                          <View style={styles.noteCountdownRow}>
+                            <Text style={styles.noteCountdownTextSmall}>{timeLeft.days}</Text>
+                            <Text style={styles.noteCountdownSeparator}>:</Text>
+                            <Text style={styles.noteCountdownTextSmall}>
+                              {String(timeLeft.hours).padStart(2, "0")}
+                            </Text>
+                            <Text style={styles.noteCountdownSeparator}>:</Text>
+                            <Text style={styles.noteCountdownTextSmall}>
+                              {String(timeLeft.minutes).padStart(2, "0")}
+                            </Text>
+                            <Text style={styles.noteCountdownSeparator}>:</Text>
+                            <Text style={styles.noteCountdownTextSmall}>
+                              {String(timeLeft.seconds).padStart(2, "0")}
+                            </Text>
+                          </View>
+                          <View style={styles.noteCountdownLabels}>
+                            <Text style={styles.noteCountdownLabelSmall}>ngày</Text>
+                            <Text style={styles.noteCountdownLabelSmall}>giờ</Text>
+                            <Text style={styles.noteCountdownLabelSmall}>phút</Text>
+                            <Text style={styles.noteCountdownLabelSmall}>giây</Text>
+                          </View>
+                          <View style={styles.noteDateRow}>
+                            <Image
+                              source={require("../../../assets/images/icon trái tim trong trắng.png")}
+                              style={styles.noteHeartIcon}
+                              resizeMode="contain"
+                            />
+                            <Text style={styles.noteDateTextSmall}>{weddingDateLabel}</Text>
+                            <Image
+                              source={require("../../../assets/images/icon trái tim trong trắng.png")}
+                              style={styles.noteHeartIcon}
+                              resizeMode="contain"
+                            />
+                          </View>
+                        </>
+                      ) : note.type === "tasks" ? (
+                        <>
+                          <Text style={[styles.noteTitle, styles.noteTitleLeft]}>
+                            {note.title}
+                          </Text>
+                          <Text style={[styles.noteSubtitle, styles.noteSubtitleLeft]}>
+                            {note.subtitle}
+                          </Text>
+                        </>
+                      ) : (
+                        <>
+                          <Text style={[styles.noteTitle, styles.noteTitleLeft]}>
+                            {note.title}
+                          </Text>
+                          <Text
+                            style={[
+                              styles.noteSubtitle,
+                              styles.noteSubtitleLeft,
+                              styles.noteSubtitleStrong,
+                            ]}
+                          >
+                            {note.lines[0]}
+                          </Text>
+                          {note.lines.slice(1).map((line) => (
+                            <Text
+                              key={line}
+                              style={[styles.noteSubtitle, styles.noteSubtitleLeft]}
+                            >
+                              {line}
+                            </Text>
+                          ))}
+                        </>
+                      )}
+                    </Animated.View>
+                  );
+                })}
+              </Animated.ScrollView>
             </View>
           </View>
-        </SafeAreaView>
-      </View>
 
-      <ScrollView
-        style={styles.scrollView}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{
-          paddingTop: responsiveHeight(200), // Tăng lên để tránh cắt phần đáy top.png
-          paddingBottom:
-            Platform.OS === "android"
-              ? responsiveHeight(80)
-              : insets.bottom > 0
-                ? insets.bottom
-                : responsiveHeight(20),
-        }}
-      >
-        {/* Wedding Image Carousel - Đã chuyển lên đầu và tràn màn hình */}
-        <View style={styles.imageSection}>
-          <ScrollView
-            ref={scrollViewRef}
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            onScroll={handleScroll}
-            onMomentumScrollEnd={handleMomentumScrollEnd}
-            scrollEventThrottle={16}
-            style={styles.carouselContainer}
-            scrollEnabled={false}
-          >
-            {randomImages.map((image, index) => (
-              <View key={index} style={styles.imageContainer}>
-                <Image
-                  source={{ uri: image.uri }}
-                  style={styles.weddingImage}
-                  resizeMode="cover"
-                />
-              </View>
-            ))}
-          </ScrollView>
-          <Text style={styles.imageCaption}>
-            {randomImages[currentImageIndex]?.caption || ""}
-          </Text>
-        </View>
-
-        {/* Heart Countdown Widget */}
-        <View style={styles.heartCountdownContainer}>
-          <Animated.View
+          <View
             style={[
-              styles.heartBackground,
+              styles.contentCard,
               {
-                transform: [{ scale: heartScale }],
+                minHeight: height,
+                paddingBottom: Math.max(
+                  insets.bottom + responsiveHeight(84),
+                  responsiveHeight(120)
+                ),
               },
             ]}
           >
-            <Image
-              source={require("../../../assets/images/name_heart.png")}
-              style={styles.heartImage}
-              resizeMode="contain"
-            />
-          </Animated.View>
-          <Image
-            source={require("../../../assets/images/side_flowers.png")}
-            style={[styles.sideFlower, styles.sideFlowerLeft]}
-            resizeMode="contain"
-          />
-          <Image
-            source={require("../../../assets/images/side_flowers.png")}
-            style={[styles.sideFlower, styles.sideFlowerRight]}
-            resizeMode="contain"
-          />
-
-          <View style={styles.countdownContent}>
-            {(weddingEvent.brideName || weddingEvent.groomName) && (
-              <View style={styles.namesContainer}>
-                {weddingEvent.brideName && weddingEvent.groomName ? (
-                  <>
-                    <View style={styles.nameBlock}>
-                      <Text style={styles.nameText} numberOfLines={2}>
-                        {weddingEvent.brideName}
-                      </Text>
-                    </View>
-                    <Text style={styles.ampersandText}>&</Text>
-                    <View style={styles.nameBlock}>
-                      <Text style={styles.nameText} numberOfLines={2}>
-                        {weddingEvent.groomName}
-                      </Text>
-                    </View>
-                  </>
-                ) : (
-                  <View style={styles.nameBlock}>
-                    <Text style={styles.nameText} numberOfLines={2}>
-                      {weddingEvent.brideName || weddingEvent.groomName}
-                    </Text>
+            <View style={styles.quickActionsRow}>
+              {quickActions.map((action) => (
+                <TouchableOpacity
+                  key={action.key}
+                  style={styles.quickActionItem}
+                  onPress={action.onPress}
+                  disabled={!eventId}
+                >
+                  <View style={styles.quickActionIconWrap}>
+                    <Image
+                      source={action.icon}
+                      style={styles.quickActionIcon}
+                      resizeMode="contain"
+                    />
                   </View>
-                )}
+                  <Text style={styles.quickActionLabel} numberOfLines={1}>
+                    {action.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <View style={styles.dividerRow}>
+              <TouchableOpacity
+                style={styles.dividerButton}
+                onPress={() => setIsExpanded((prev) => !prev)}
+              >
+                <Image
+                  source={require("../../../assets/images/icon ẩn thông báo đi.png")}
+                  style={[
+                    styles.dividerIcon,
+                    isExpanded && styles.dividerIconExpanded,
+                  ]}
+                  resizeMode="contain"
+                />
+              </TouchableOpacity>
+              <View style={styles.dividerLine} />
+            </View>
+
+            {isExpanded && (
+              <View style={styles.miniGameSection}>
+                <Text style={styles.sectionTitle}>Minigame dùng trong đám cưới</Text>
+                <TouchableOpacity
+                  style={styles.miniGameCard}
+                  onPress={() => {
+                    const limits = getAccountLimits(user?.accountType || "FREE");
+                    if (!limits.canAccessWhoIsNext) {
+                      Alert.alert(
+                        "Nâng cấp tài khoản",
+                        getUpgradeMessage("whoIsNext"),
+                        [
+                          { text: "Hủy", style: "cancel" },
+                          {
+                            text: "Nâng cấp",
+                            onPress: () => navigation.navigate("UpgradeAccountScreen"),
+                          },
+                        ]
+                      );
+                      return;
+                    }
+
+                    navigation.navigate("WhoIsNextMarried", {
+                      member,
+                      creatorId: weddingEvent.creatorId,
+                    });
+                  }}
+                >
+                  <View style={styles.miniGameIconWrap}>
+                    <Image
+                      source={require("../../../assets/images/icon minigame.png")}
+                      style={styles.miniGameIcon}
+                      resizeMode="contain"
+                    />
+                  </View>
+                  <View style={styles.miniGameTextWrap}>
+                    <Text style={styles.miniGameTitle} numberOfLines={2}>
+                      Ai là người kết hôn tiếp theo
+                    </Text>
+                    <Text style={styles.miniGameSubtitle}>Minigame vui nhộn</Text>
+                  </View>
+                </TouchableOpacity>
               </View>
             )}
-            <View style={styles.timeUnitsContainer}>
-              <View style={styles.timeUnit}>
-                <Text style={styles.timeNumber}>{timeLeft.days}</Text>
-              </View>
-              <Text style={styles.timeSeparator}>:</Text>
-              <View style={styles.timeUnit}>
-                <Text style={styles.timeNumber}>
-                  {String(timeLeft.hours).padStart(2, "0")}
-                </Text>
-              </View>
-              <Text style={styles.timeSeparator}>:</Text>
-              <View style={styles.timeUnit}>
-                <Text style={styles.timeNumber}>
-                  {String(timeLeft.minutes).padStart(2, "0")}
-                </Text>
-              </View>
-              <Text style={styles.timeSeparator}>:</Text>
-              <View style={styles.timeUnit}>
-                <Text style={styles.timeNumber}>
-                  {String(timeLeft.seconds).padStart(2, "0")}
-                </Text>
-              </View>
-            </View>
-            {weddingDateLabel ? (
-              <Text style={styles.weddingDateText}>{weddingDateLabel}</Text>
-            ) : null}
-          </View>
-        </View>
 
-        {/* Menu Items */}
-        <View style={styles.menuSection}>
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={() => {
-              if (eventId) {
-                navigation.navigate("TaskList", { eventId: eventId });
-              }
-            }}
-            disabled={!eventId}
-          >
-            <View style={styles.menuItemLeft}>
-              <View style={styles.menuTextContainer}>
-                <Text style={styles.menuTitle}>Danh sách của bạn</Text>
-                <Text style={styles.menuSubtitle}>Danh sách công việc</Text>
-              </View>
-            </View>
-            <Image
-              source={require("../../../assets/images/forward.png")}
-              style={styles.menuArrow}
-              resizeMode="contain"
-            />
-          </TouchableOpacity>
-
-          {(user?.id || user?._id) === weddingEvent.creatorId && (
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() => navigation.navigate("BudgetList")}
+            <Animated.ScrollView
+              ref={adScrollRef}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              snapToInterval={adSnap}
+              decelerationRate="fast"
+              style={styles.adScroll}
+              onMomentumScrollEnd={handleAdMomentumEnd}
+              onScroll={Animated.event(
+                [{ nativeEvent: { contentOffset: { x: adScrollX } } }],
+                { useNativeDriver: true }
+              )}
+              scrollEventThrottle={16}
+              contentContainerStyle={styles.adRow}
             >
-              <View style={styles.menuItemLeft}>
-                <View style={styles.menuTextContainer}>
-                  <Text style={styles.menuTitle}>Ngân sách của bạn</Text>
-                  <Text style={styles.menuSubtitle}>Danh sách ngân sách</Text>
-                </View>
-              </View>
-              <Image
-                source={require("../../../assets/images/forward.png")}
-                style={styles.menuArrow}
-                resizeMode="contain"
-              />
-            </TouchableOpacity>
-          )}
-
-          {(user?.id || user?._id) === weddingEvent.creatorId && (
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() => navigation.navigate("GuestManagementScreen")}
-            >
-              <View style={styles.menuItemLeft}>
-                <View style={styles.menuTextContainer}>
-                  <Text style={styles.menuTitle}>Quản lý khách mời</Text>
-                  <Text style={styles.menuSubtitle}>
-                    Danh sách & sắp xếp bàn
-                  </Text>
-                </View>
-              </View>
-              <Image
-                source={require("../../../assets/images/forward.png")}
-                style={styles.menuArrow}
-                resizeMode="contain"
-              />
-            </TouchableOpacity>
-          )}
-
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={() => navigation.navigate("VendorList")}
-          >
-            <View style={styles.menuItemLeft}>
-              <View style={styles.menuTextContainer}>
-                <Text style={styles.menuTitle}>Kết nối dịch vụ cưới</Text>
-                <Text style={styles.menuSubtitle}>
-                  Tìm & liên hệ nhà cung cấp
-                </Text>
-              </View>
-            </View>
-            <Image
-              source={require("../../../assets/images/forward.png")}
-              style={styles.menuArrow}
-              resizeMode="contain"
-            />
-          </TouchableOpacity>
-
-          {/* <TouchableOpacity
-            style={styles.menuItem}
-            onPress={() => navigation.navigate("ChooseStyle")}
-          >
-            <View style={styles.menuItemLeft}>
-              <View style={styles.menuIcon}>
-                <Shirt size={16} color="white" />
-              </View>
-              <View style={styles.menuTextContainer}>
-                <Text style={styles.menuTitle}>Tủ đồ & Phong cách</Text>
-                <Text style={styles.menuSubtitle}>Lựa chọn trang phục</Text>
-              </View>
-            </View>
-            <ChevronRight size={20} color="#9ca3af" />
-          </TouchableOpacity> */}
-
-          {/* <TouchableOpacity
-            style={styles.menuItem}
-            onPress={() => navigation.navigate("InvitationLettersScreen")}
-          >
-            <View style={styles.menuItemLeft}>
-              <View style={styles.menuIcon}>
-                <Mail size={16} color="white" />
-              </View>
-              <View style={styles.menuTextContainer}>
-                <Text style={styles.menuTitle}>Thiệp mời Online</Text>
-                <Text style={styles.menuSubtitle}>Tạo thiệp mời điện tử</Text>
-              </View>
-            </View>
-            <ChevronRight size={20} color="#9ca3af" />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={() => navigation.navigate("CommunityScreen")}
-          >
-            <View style={styles.menuItemLeft}>
-              <View style={styles.menuIcon}>
-                <MessageCircle size={16} color="white" />
-              </View>
-              <View style={styles.menuTextContainer}>
-                <Text style={styles.menuTitle}>Trang Cộng Đồng</Text>
-                <Text style={styles.menuSubtitle}>Chia sẻ & kết nối</Text>
-              </View>
-            </View>
-            <ChevronRight size={20} color="#9ca3af" />
-          </TouchableOpacity> */}
-
-          {(user?.id || user?._id) === weddingEvent.creatorId && (
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() => {
-                const accountType = user?.accountType || "FREE";
-                const limits = getAccountLimits(accountType);
-
-                if (!limits.canAccessWhoIsNext) {
-                  Alert.alert(
-                    "Nâng cấp tài khoản",
-                    getUpgradeMessage("whoIsNext"),
-                    [
-                      { text: "Hủy", style: "cancel" },
-                      {
-                        text: "Nâng cấp",
-                        onPress: () =>
-                          navigation.navigate("UpgradeAccountScreen"),
-                      },
-                    ]
-                  );
-                  return;
-                }
-
-                navigation.navigate("WhoIsNextMarried", {
-                  member,
-                  creatorId: weddingEvent.creatorId,
+              {loopedAdImages.map((img, index) => {
+                const inputRange = [
+                  (index - 1) * adSnap,
+                  index * adSnap,
+                  (index + 1) * adSnap,
+                ];
+                const scale = adScrollX.interpolate({
+                  inputRange,
+                  outputRange: [0.88, 1.08, 0.88],
+                  extrapolate: "clamp",
                 });
-              }}
-            >
-              <View style={styles.menuItemLeft}>
-                <View style={styles.menuTextContainer}>
-                  <Text style={styles.menuTitle}>Ai là người tiếp theo?</Text>
-                  <Text style={styles.menuSubtitle}>
-                    Minigame dùng trong đám cưới
-                  </Text>
-                </View>
-              </View>
-              <Image
-                source={require("../../../assets/images/forward.png")}
-                style={styles.menuArrow}
-                resizeMode="contain"
-              />
-            </TouchableOpacity>
-          )}
-        </View>
 
-        <View style={styles.bottomPadding} />
-      </ScrollView>
+                return (
+                  <Animated.View
+                    key={`ad-${index}`}
+                    style={[styles.adCard, { transform: [{ scale }] }]}
+                  >
+                    <Image source={img} style={styles.adImage} resizeMode="cover" />
+                  </Animated.View>
+                );
+              })}
+            </Animated.ScrollView>
+          </View>
+        </ScrollView>
+      </ImageBackground>
     </View>
   );
 };
@@ -774,24 +898,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#ffffff",
   },
-  topPanelContainer: {
-    width: "100%",
-    height: responsiveHeight(110), // Panel giấy cao hơn
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 100,
-    backgroundColor: "transparent",
-  },
-  topPanelBg: {
-    position: "absolute",
-    width: "100%",
-    height: "100%",
-    backgroundColor: "transparent",
-  },
   headerContent: {
-    flex: 1,
     backgroundColor: "transparent",
   },
   headerRow: {
@@ -799,8 +906,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: responsiveWidth(20),
-    paddingTop: Platform.OS === "android" ? responsiveHeight(15) : responsiveHeight(8), // Logo và nút cao hơn trên panel
-    backgroundColor: "transparent",
+    paddingTop: 0,
   },
   logo: {
     width: responsiveWidth(64),
@@ -809,17 +915,27 @@ const styles = StyleSheet.create({
   headerButtons: {
     flexDirection: "row",
     alignItems: "center",
-    gap: responsiveWidth(15),
+    gap: responsiveWidth(12),
   },
-  headerButton: {
-    width: responsiveWidth(50),
-    height: responsiveWidth(56),
+  headerCircleButton: {
+    width: responsiveWidth(40),
+    height: responsiveWidth(40),
+    borderRadius: responsiveWidth(20),
+    backgroundColor: "rgba(255, 255, 255, 0.5)",
     justifyContent: "center",
     alignItems: "center",
   },
-  headerIcon: {
-    width: "100%",
-    height: "100%",
+  headerCircleIconSmall: {
+    width: responsiveWidth(55),
+    height: responsiveWidth(55),
+    tintColor: "#ff4f8a",
+  },
+  headerCircleIconLarge: {
+    width: responsiveWidth(86),
+    height: responsiveWidth(86),
+    tintColor: "#ff4f8a",
+    marginLeft: responsiveWidth(2),
+    marginTop: responsiveHeight(2),
   },
   notificationIconWrap: {
     width: "100%",
@@ -830,12 +946,12 @@ const styles = StyleSheet.create({
   },
   notifBadge: {
     position: "absolute",
-    top: responsiveHeight(4),
-    right: responsiveWidth(4),
-    minWidth: responsiveWidth(18),
-    height: responsiveWidth(18),
-    paddingHorizontal: responsiveWidth(5),
-    borderRadius: responsiveWidth(9),
+    top: responsiveHeight(2),
+    right: responsiveWidth(2),
+    minWidth: responsiveWidth(16),
+    height: responsiveWidth(16),
+    paddingHorizontal: responsiveWidth(4),
+    borderRadius: responsiveWidth(8),
     backgroundColor: "#ffffff",
     borderWidth: 1,
     borderColor: "#ff5a7a",
@@ -844,229 +960,410 @@ const styles = StyleSheet.create({
   },
   notifBadgeText: {
     fontFamily: "Montserrat-SemiBold",
-    fontSize: responsiveFont(10),
+    fontSize: responsiveFont(9),
     color: "#ff5a7a",
   },
-  scrollView: {
+  homeBackground: {
     flex: 1,
-    backgroundColor: "#ffffff",
+    paddingBottom: responsiveHeight(20),
   },
-  greetingCard: {
-    marginHorizontal: responsiveWidth(16),
-    marginTop: responsiveHeight(16),
-    marginBottom: responsiveHeight(24),
-    backgroundColor: "#ffe4e8",
-    borderRadius: responsiveWidth(16),
-    padding: responsiveWidth(24),
+  scrollContent: {
+    paddingBottom: 0,
   },
-  greeting: {
+  heroRow: {
+    marginTop: responsiveHeight(12),
+    marginHorizontal: responsiveWidth(20),
+    flexDirection: "row",
+    gap: responsiveWidth(12),
+    alignItems: "flex-start",
+  },
+  upgradeCard: {
+    width: responsiveWidth(100),
+    backgroundColor: "transparent",
+    alignItems: "center",
+  },
+  upgradeCardBody: {
+    width: "100%",
+    backgroundColor: "rgba(255, 255, 255, 0.59)",
+    borderRadius: responsiveWidth(18),
+    paddingTop: responsiveHeight(4),
+    paddingBottom: responsiveHeight(0),
+    paddingHorizontal: responsiveWidth(4),
+    alignItems: "center",
+    overflow: "visible",
+  },
+  upgradeAvatar: {
+    width: responsiveWidth(150),
+    height: responsiveWidth(160),
+    marginBottom: responsiveHeight(-50),
+    marginTop: responsiveHeight(-30),
+  },
+  upgradeTitle: {
     fontFamily: "Montserrat-SemiBold",
+    fontSize: responsiveFont(10),
+    color: "#ff4f8a",
+    textAlign: "center",
+    marginBottom: responsiveHeight(2),
+  },
+  upgradeBadge: {
+    width: responsiveWidth(60),
+    height: responsiveWidth(35),
+    position: "absolute",
+    top: -responsiveHeight(20),
+    left: responsiveWidth(-25),
+    transform: [{ rotate: "-24deg" }],
+    alignSelf: "center",
+  },
+  upgradeButton: {
+    backgroundColor: "#ffffff",
+    paddingHorizontal: responsiveWidth(10),
+    paddingVertical: responsiveHeight(4),
+    borderRadius: responsiveWidth(10),
+  },
+  upgradeButtonText: {
+    fontFamily: "Montserrat-SemiBold",
+    fontSize: responsiveFont(10),
+    color: "#ff4f8a",
+  },
+  heroCard: {
+    flex: 1,
+    paddingVertical: responsiveHeight(18),
+    paddingHorizontal: responsiveWidth(16),
+    borderRadius: responsiveWidth(22),
+    backgroundColor: "rgba(231, 120, 149, 0.85)",
+    alignItems: "center",
+  },
+  heroNames: {
+    fontFamily: "Montserrat-SemiBold",
+    fontSize: responsiveFont(18),
+    color: "#ffffff",
+    marginBottom: responsiveHeight(8),
+  },
+  heroCountdownRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: responsiveWidth(6),
+  },
+  heroCountdownText: {
+    fontFamily: "Montserrat-Bold",
     fontSize: responsiveFont(22),
-    fontWeight: "500",
-    color: "#1f2937",
-    marginBottom: responsiveHeight(12),
+    color: "#ffffff",
+    letterSpacing: 1,
   },
-  greetingText: {
+  heroCountdownSeparator: {
+    fontFamily: "Montserrat-Bold",
+    fontSize: responsiveFont(18),
+    color: "#ffffff",
+    opacity: 0.8,
+  },
+  heroCountdownLabels: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    width: "100%",
+    paddingHorizontal: responsiveWidth(8),
+    marginTop: responsiveHeight(4),
+  },
+  heroCountdownLabel: {
     fontFamily: "Montserrat-Medium",
-    color: "#6b7280",
-    fontSize: responsiveFont(16),
-    lineHeight: responsiveHeight(22),
-    marginBottom: responsiveHeight(24),
+    fontSize: responsiveFont(10),
+    color: "#ffffff",
+    opacity: 0.9,
   },
-  heartCountdownContainer: {
-    position: "relative",
-    alignItems: "center",
-    justifyContent: "center",
-    height: responsiveHeight(270),
-    marginTop: -responsiveHeight(230), // Đẩy nhẹ lên để lồng vào mép rách giấy
-    marginBottom: responsiveHeight(16),
-  },
-  heartBackground: {
-    position: "absolute",
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 10,
-  },
-  sideFlower: {
-    position: "absolute",
-    width: responsiveWidth(190),
-    height: responsiveWidth(180),
-    zIndex: 1,
-  },
-  sideFlowerLeft: {
-    left: -responsiveWidth(35),
-    top: responsiveHeight(20),
-    transform: [{ scaleX: -1 }],
-  },
-  sideFlowerRight: {
-    right: -responsiveWidth(35),
-    top: responsiveHeight(20),
-    transform: [{ scaleX: 1 }],
-  },
-  heartImage: {
-    width: responsiveWidth(350),
-    height: responsiveWidth(330),
-  },
-  countdownContent: {
-    position: "absolute",
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 10,
-  },
-  namesContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "center",
-    alignItems: "center",
-    width: responsiveWidth(200), // Khung tên nhỏ hơn, tên 2 chữ trở lên tự xuống dòng
-    marginBottom: responsiveHeight(-20),
-    marginTop: responsiveHeight(-40),
-  },
-  nameBlock: {
-    maxWidth: responsiveWidth(88),
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  nameText: {
-    fontFamily: "Charm-Bold",
-    fontSize: responsiveFont(20),
-    color: "#fd4166",
-    textAlign: "center",
-  },
-  ampersandText: {
-    fontFamily: "Charm-Bold",
-    fontSize: responsiveFont(20),
-    color: "#fd4166",
-    textAlign: "center",
-    marginHorizontal: responsiveWidth(0),
-  },
-  countdownTitle: {
-    fontFamily: "Charm-Bold",
-
-    fontSize: responsiveFont(12),
-    color: "#fd4166",
-    marginBottom: responsiveHeight(10),
-    textAlign: "center",
-  },
-  timeUnitsContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: responsiveWidth(5),
-  },
-  timeUnit: {
-    alignItems: "center",
-  },
-  timeNumber: {
-    fontFamily: "Charm-Bold",
-    fontSize: responsiveFont(26),
-    color: "#fd4166",
-    marginTop: responsiveHeight(-6),
-  },
-  timeLabel: {
-    fontFamily: "Charm-Bold",
-    fontSize: responsiveFont(9),
-    color: "#fd4166",
-    marginTop: responsiveHeight(2),
-  },
-  timeSeparator: {
-    fontFamily: "Charm-Bold",
-    fontSize: responsiveFont(17),
-    fontWeight: "bold",
-    color: "#fd4166",
-    marginBottom: responsiveHeight(-5),
-  },
-  weddingDateText: {
-    marginTop: responsiveHeight(-20),
-    fontFamily: "Charm-Regular",
-    fontSize: responsiveFont(17),
-    color: "#fd4166",
-    opacity: 1,
-    textAlign: "center",
-  },
-  countdownContainer: {
+  heroDateRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: responsiveWidth(8),
+    marginTop: responsiveHeight(8),
   },
-  countdownNumber: {
-    fontFamily: "Charm-regular",
-    fontSize: responsiveFont(36),
-    fontWeight: "bold",
-    color: "#ff6b9d",
-  },
-  countdownLabel: {
-    fontFamily: "Charm-regular",
-    color: "#6b7280",
-    fontSize: responsiveFont(24),
-  },
-  imageSection: {
-    marginBottom: responsiveHeight(60),
-    marginTop: -responsiveHeight(140), // Đẩy lên thêm một chút
-  },
-  carouselContainer: {
-    // Để trống vì nó đã tự động theo chiều rộng màn hình
-  },
-  imageContainer: {
-    width: width, // Tràn màn hình
-    marginHorizontal: 0,
-    borderRadius: 0, // Bỏ bo góc
-    overflow: "hidden",
-  },
-  weddingImage: {
-    width: "100%",
-    height: width * 1.2, // Tăng chiều cao để ảnh trông sang trọng hơn
-  },
-  imageCaption: {
-    fontFamily: "Montserrat-Medium",
-    textAlign: "center",
-    color: "#6b7280",
+  heroDateText: {
+    fontFamily: "Montserrat-SemiBold",
     fontSize: responsiveFont(14),
-    marginBottom: responsiveHeight(16),
+    color: "#ffffff",
   },
-  menuSection: {
-    marginHorizontal: responsiveWidth(16),
-    marginBottom: responsiveHeight(32),
-    gap: responsiveHeight(4),
+  heroHeartIcon: {
+    width: responsiveWidth(16),
+    height: responsiveWidth(16),
+    tintColor: "#ffffff",
   },
-  menuItem: {
+  noteCarousel: {
+    flex: 1,
+    marginRight: -responsiveWidth(20),
+  },
+  noteRow: {
+    gap: responsiveWidth(14),
+    paddingVertical: 0,
+  },
+  noteCard: {
+    width: responsiveWidth(200),
+    minHeight: responsiveHeight(110),
+    paddingVertical: responsiveHeight(12),
+    paddingHorizontal: responsiveWidth(14),
+    borderRadius: responsiveWidth(20),
+    backgroundColor: "rgba(231, 120, 149, 0.85)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  noteCardTopLeft: {
+    alignItems: "flex-start",
+    justifyContent: "flex-start",
+  },
+  noteCardCountdown: {
+    paddingTop: responsiveHeight(20),
+  },
+  noteTitle: {
+    fontFamily: "Montserrat-SemiBold",
+    fontSize: responsiveFont(16),
+    color: "#ffffff",
+    marginBottom: responsiveHeight(6),
+  },
+  noteTitleLeft: {
+    textAlign: "left",
+    alignSelf: "stretch",
+  },
+  noteSubtitle: {
+    fontFamily: "Montserrat-Medium",
+    fontSize: responsiveFont(12),
+    color: "#ffffff",
+    opacity: 0.95,
+    marginTop: responsiveHeight(2),
+  },
+  noteSubtitleStrong: {
+    fontFamily: "Montserrat-SemiBold",
+    fontSize: responsiveFont(11),
+    opacity: 1,
+    marginTop: responsiveHeight(2),
+  },
+  noteSubtitleLeft: {
+    textAlign: "left",
+    alignSelf: "stretch",
+  },
+  noteNameRow: {
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: responsiveHeight(6),
+  },
+  noteNameColumn: {
+    flex: 1,
+    alignItems: "center",
+  },
+  noteNameText: {
+    fontFamily: "Montserrat-SemiBold",
+    fontSize: responsiveFont(13),
+    color: "#ffffff",
+    lineHeight: responsiveHeight(16),
+  },
+  noteAmpersand: {
+    fontFamily: "Montserrat-SemiBold",
+    fontSize: responsiveFont(14),
+    color: "#ffffff",
+    marginHorizontal: responsiveWidth(6),
+  },
+  noteCountdownRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: responsiveWidth(6),
+  },
+  noteCountdownText: {
+    fontFamily: "Montserrat-Bold",
+    fontSize: responsiveFont(20),
+    color: "#ffffff",
+    letterSpacing: 1,
+  },
+  noteCountdownTextSmall: {
+    fontFamily: "Montserrat-Bold",
+    fontSize: responsiveFont(18),
+    color: "#ffffff",
+    letterSpacing: 1,
+  },
+  noteCountdownSeparator: {
+    fontFamily: "Montserrat-Bold",
+    fontSize: responsiveFont(16),
+    color: "#ffffff",
+    opacity: 0.8,
+  },
+  noteCountdownLabels: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: responsiveWidth(19),
+    width: "100%",
+    paddingHorizontal: responsiveWidth(2),
+    marginTop: responsiveHeight(4),
+  },
+  noteCountdownLabel: {
+    fontFamily: "Montserrat-Medium",
+    fontSize: responsiveFont(9),
+    color: "#ffffff",
+    opacity: 0.9,
+  },
+  noteCountdownLabelSmall: {
+    fontFamily: "Montserrat-Medium",
+    fontSize: responsiveFont(8),
+    color: "#ffffff",
+    opacity: 0.9,
+  },
+  noteDateRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: responsiveWidth(6),
+    marginTop: responsiveHeight(6),
+  },
+  noteDateText: {
+    fontFamily: "Montserrat-SemiBold",
+    fontSize: responsiveFont(16),
+    color: "#ffffff",
+  },
+  noteDateTextSmall: {
+    fontFamily: "Montserrat-SemiBold",
+    fontSize: responsiveFont(12),
+    color: "#ffffff",
+  },
+  noteHeartIcon: {
+    width: responsiveWidth(18),
+    height: responsiveWidth(14),
+    tintColor: "#ffffff",
+  },
+  quickActionsRow: {
+    paddingTop: responsiveHeight(8),
+    paddingBottom: responsiveHeight(6),
+    paddingHorizontal: responsiveWidth(6),
+    backgroundColor: "transparent",
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    backgroundColor: "transparent",
-    borderRadius: 0,
-    padding: responsiveWidth(16),
   },
-  menuItemLeft: {
+  quickActionItem: {
+    alignItems: "center",
+    flex: 1,
+  },
+  quickActionIconWrap: {
+    width: responsiveWidth(61),
+    height: responsiveWidth(57),
+    borderRadius: responsiveWidth(9),
+    backgroundColor: "#fde8f0",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: responsiveHeight(6),
+    marginTop: responsiveHeight(15),
+  },
+  quickActionIcon: {
+    width: responsiveWidth(86),
+    height: responsiveWidth(90),
+    tintColor: "#ff4f78",
+
+  },
+  quickActionLabel: {
+    fontFamily: "Montserrat-SemiBold",
+    fontSize: responsiveFont(13),
+    color: "#1f2937",
+  },
+  contentCard: {
+    marginTop: responsiveHeight(16),
+    marginHorizontal: 0,
+    paddingTop: responsiveHeight(10),
+    paddingBottom: responsiveHeight(18),
+    paddingHorizontal: responsiveWidth(18),
+    backgroundColor: "#ffffff",
+    borderTopLeftRadius: responsiveWidth(28),
+    borderTopRightRadius: responsiveWidth(28),
+  },
+  dividerRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: responsiveWidth(8),
+    justifyContent: "center",
+    marginTop: responsiveHeight(10),
+    marginBottom: responsiveHeight(8),
+    paddingHorizontal: responsiveWidth(50),
+    position: "relative",
   },
-  menuTextContainer: {
-    gap: responsiveHeight(2),
+  dividerLine: {
+    position: "absolute",
+    left: responsiveWidth(50),
+    right: responsiveWidth(50),
+    height: 1,
+    backgroundColor: "rgba(15, 23, 42, 0.12)",
   },
-  menuTitle: {
-    fontFamily: "MavenPro",
-    fontWeight: "500",
-    color: "#fd4166",
-    textShadowColor: "rgba(236, 182, 192, 0.6)",
-    textShadowOffset: { width: -1, height: 1.5 },
-    textShadowRadius: 2,
-    fontSize: responsiveFont(22),
+  dividerButton: {
+    width: responsiveWidth(20),
+    height: responsiveWidth(20),
+    borderRadius: responsiveWidth(15),
+    backgroundColor: "#ffffff",
+    justifyContent: "center",
+    alignItems: "center",
+    marginHorizontal: responsiveWidth(10),
+    zIndex: 1,
   },
-  menuSubtitle: {
-    fontFamily: "MavenPro",
+  dividerIcon: {
+    width: responsiveWidth(55),
+    height: responsiveWidth(55),
+
+  },
+  dividerIconExpanded: {
+    transform: [{ rotate: "180deg" }],
+  },
+  miniGameSection: {
+    marginBottom: responsiveHeight(12),
+  },
+  adRow: {
+    gap: responsiveWidth(12),
+    paddingLeft: (width - responsiveWidth(240)) / 2,
+    paddingRight: (width - responsiveWidth(240)) / 2,
+    paddingVertical: responsiveHeight(6),
+  },
+  adScroll: {
+    marginHorizontal: -responsiveWidth(18),
+  },
+  adCard: {
+    width: responsiveWidth(240),
+    height: responsiveWidth(130),
+    borderRadius: responsiveWidth(18),
+    overflow: "hidden",
+  },
+  adImage: {
+    width: "100%",
+    height: "100%",
+  },
+  sectionTitle: {
+    marginTop: responsiveHeight(18),
+    fontFamily: "Montserrat-SemiBold",
     fontSize: responsiveFont(16),
-    color: "rgba(226, 62, 92, 0.6)",
-
-
+    color: "#1f2937",
   },
-  menuArrow: {
-    width: responsiveWidth(22),
-    height: responsiveWidth(22),
-    marginLeft: responsiveWidth(8),
+  miniGameCard: {
+    marginTop: responsiveHeight(12),
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fff3f7",
+    borderRadius: responsiveWidth(18),
+    padding: responsiveWidth(14),
   },
-  bottomPadding: {
-    height: responsiveHeight(85), // Không gian cho thanh điều hướng dưới cùng
+  miniGameIconWrap: {
+    width: responsiveWidth(54),
+    height: responsiveWidth(54),
+    borderRadius: responsiveWidth(12),
+    backgroundColor: "#ffe0eb",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: responsiveWidth(12),
+  },
+  miniGameIcon: {
+    width: responsiveWidth(28),
+    height: responsiveWidth(28),
+  },
+  miniGameTextWrap: {
+    flex: 1,
+  },
+  miniGameTitle: {
+    fontFamily: "Montserrat-SemiBold",
+    fontSize: responsiveFont(14),
+    color: "#1f2937",
+  },
+  miniGameSubtitle: {
+    marginTop: responsiveHeight(4),
+    fontFamily: "Montserrat-Medium",
+    fontSize: responsiveFont(12),
+    color: "#6b7280",
   },
   centerScreen: {
     flex: 1,

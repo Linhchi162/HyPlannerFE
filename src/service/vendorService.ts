@@ -204,6 +204,31 @@ export const activateVendorPriority = async (
   });
 };
 
+const PAYOS_FUNCTION_URL = process.env.EXPO_PUBLIC_PAYOS_FUNCTION_URL;
+
+export const createVendorPriorityPayment = async (
+  vendorId: string,
+  amount = 50000
+) => {
+  if (!PAYOS_FUNCTION_URL) {
+    throw new Error("missing-payos-function-url");
+  }
+  const baseUrl = PAYOS_FUNCTION_URL.replace(/\/+$/, "");
+  const response = await fetch(`${baseUrl}/createVendorPriorityPayment`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ vendorId, amount }),
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    const message = data?.message || "payos-create-failed";
+    throw new Error(message);
+  }
+  return data;
+};
+
 export const deleteVendorProfile = async (uid: string) => {
   await deleteDoc(doc(db, "vendors", uid));
   await AsyncStorage.removeItem(vendorProfileCacheKey(uid));
