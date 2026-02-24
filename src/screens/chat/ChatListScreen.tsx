@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+﻿import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -8,9 +8,11 @@ import {
   ScrollView,
   ActivityIndicator,
   Image,
+  StatusBar,
+  Platform,
 } from "react-native";
 import { ChevronLeft } from "lucide-react-native";
-import { useNavigation, useRoute } from "@react-navigation/native";
+import { useNavigation, useRoute, useFocusEffect } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../../navigation/types";
 import {
@@ -37,6 +39,7 @@ export default function ChatListScreen() {
   const [chats, setChats] = useState<ChatSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [vendors, setVendors] = useState<Vendor[]>([]);
+
 
   const participantId = useMemo(() => {
     if (role === "vendor") return auth.currentUser?.uid || null;
@@ -112,7 +115,7 @@ export default function ChatListScreen() {
       <ScrollView contentContainerStyle={styles.content}>
         {loading ? (
           <View style={styles.loadingBox}>
-            <ActivityIndicator size="small" color="#ff5a7a" />
+            <ActivityIndicator size="small" color="#f7577c" />
             <Text style={styles.loadingText}>Đang tải tin nhắn...</Text>
           </View>
         ) : chats.length === 0 ? (
@@ -188,7 +191,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#f8f9fa",
   },
   header: {
-    backgroundColor: "#ff5a7a",
+    backgroundColor: "#f7577c",
     paddingHorizontal: responsiveWidth(16),
     paddingVertical: responsiveHeight(12),
     height: responsiveHeight(56),
@@ -244,7 +247,7 @@ const styles = StyleSheet.create({
   avatarText: {
     fontFamily: "Montserrat-SemiBold",
     fontSize: responsiveFont(14),
-    color: "#ff5a7a",
+    color: "#f7577c",
   },
   cardInfo: {
     flex: 1,
@@ -268,7 +271,7 @@ const styles = StyleSheet.create({
     minWidth: responsiveWidth(22),
     height: responsiveWidth(22),
     borderRadius: responsiveWidth(11),
-    backgroundColor: "#ff5a7a",
+    backgroundColor: "#f7577c",
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: responsiveWidth(6),

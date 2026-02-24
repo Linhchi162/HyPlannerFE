@@ -1,4 +1,4 @@
-import React, { memo, use, useEffect, useState } from "react";
+﻿import React, { memo, use, useCallback, useEffect, useState } from "react";
 import {
   StyleSheet,
   View,
@@ -30,7 +30,7 @@ import {
   responsiveHeight,
   responsiveWidth,
 } from "../../../assets/styles/utils/responsive";
-import { NavigationProp, useNavigation } from "@react-navigation/native";
+import { NavigationProp, useNavigation, useFocusEffect } from "@react-navigation/native";
 import { RootStackParamList } from "../../navigation/types";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useDispatch, useSelector } from "react-redux";
@@ -179,6 +179,8 @@ const ListFooter = memo(
 
 export default function BudgetListScreen() {
   const insets = useSafeAreaInsets();
+
+
   const [modalVisible, setModalVisible] = useState(false);
   const [groupName, setGroupName] = useState("");
   const [showStartPicker, setShowStartPicker] = useState(false);
@@ -537,8 +539,8 @@ export default function BudgetListScreen() {
                   {selectedTask.payer === "bride"
                     ? "Cô dâu"
                     : selectedTask.payer === "groom"
-                    ? "Chú rể"
-                    : "Quỹ chung"}
+                      ? "Chú rể"
+                      : "Quỹ chung"}
                 </Text>
               </>
             )}
@@ -738,7 +740,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
   },
   appbarHeader: {
-    backgroundColor: "#ff5a7a",
+    backgroundColor: "#f7577c",
     elevation: 0,
     shadowOpacity: 0,
   },
@@ -779,7 +781,7 @@ const styles = StyleSheet.create({
     fontFamily: "MavenPro",
     fontSize: responsiveFont(14),
     fontWeight: "700",
-    color: "#ff5a7a",
+    color: "#f7577c",
   },
   accordionDescription: {
     fontFamily: "MavenPro",
@@ -810,7 +812,7 @@ const styles = StyleSheet.create({
     marginTop: responsiveHeight(14),
     padding: responsiveHeight(18),
     borderRadius: 12,
-    backgroundColor: "#ff5a7a",
+    backgroundColor: "#f7577c",
   },
   addStageButtonLabel: {
     fontSize: responsiveFont(14),

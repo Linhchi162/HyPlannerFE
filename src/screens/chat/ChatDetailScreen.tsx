@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+﻿import React, { useEffect, useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -175,7 +175,7 @@ export default function ChatDetailScreen() {
       <ScrollView contentContainerStyle={styles.content}>
         {loading ? (
           <View style={styles.loadingBox}>
-            <ActivityIndicator size="small" color="#ff5a7a" />
+            <ActivityIndicator size="small" color="#f7577c" />
             <Text style={styles.loadingText}>Đang tải tin nhắn...</Text>
           </View>
         ) : messages.length === 0 ? (
@@ -239,7 +239,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#f8f9fa",
   },
   header: {
-    backgroundColor: "#ff5a7a",
+    backgroundColor: "#f7577c",
     paddingHorizontal: responsiveWidth(16),
     paddingVertical: responsiveHeight(12),
     height: responsiveHeight(56),
@@ -282,7 +282,7 @@ const styles = StyleSheet.create({
   },
   messageMe: {
     alignSelf: "flex-end",
-    backgroundColor: "#ff5a7a",
+    backgroundColor: "#f7577c",
   },
   messageOther: {
     alignSelf: "flex-start",
@@ -329,7 +329,7 @@ const styles = StyleSheet.create({
   },
   sendBtn: {
     marginLeft: responsiveWidth(10),
-    backgroundColor: "#ff5a7a",
+    backgroundColor: "#f7577c",
     width: responsiveWidth(40),
     height: responsiveWidth(40),
     borderRadius: responsiveWidth(20),

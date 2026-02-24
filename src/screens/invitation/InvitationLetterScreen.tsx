@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from "react";
+﻿import React, { useMemo, useState, useEffect } from "react";
 import {
   SafeAreaView,
   View,
@@ -32,7 +32,7 @@ const COLORS = {
   card: "#FFFFFF",
   textPrimary: "#374151",
   textSecondary: "#6D6D6D",
-  primary: "#ff5a7a",
+  primary: "#f7577c",
   accent: "#e07181",
   white: "#FFFFFF",
 };

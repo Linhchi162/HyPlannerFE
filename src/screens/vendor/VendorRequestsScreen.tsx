@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+﻿import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -67,7 +67,7 @@ export default function VendorRequestsScreen() {
       <ScrollView contentContainerStyle={styles.content}>
         {loading ? (
           <View style={styles.loadingBox}>
-            <ActivityIndicator size="small" color="#ff5a7a" />
+            <ActivityIndicator size="small" color="#f7577c" />
             <Text style={styles.loadingText}>Đang tải yêu cầu...</Text>
           </View>
         ) : requests.length === 0 ? (
@@ -98,7 +98,7 @@ export default function VendorRequestsScreen() {
                   ) : null}
                 </View>
                 <TouchableOpacity style={styles.callBtn}>
-                  <Phone size={16} color="#ff5a7a" />
+                  <Phone size={16} color="#f7577c" />
                   <Text style={styles.callBtnText}>Liên hệ</Text>
                 </TouchableOpacity>
               </View>
@@ -116,7 +116,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#f8f9fa",
   },
   header: {
-    backgroundColor: "#ff5a7a",
+    backgroundColor: "#f7577c",
     paddingHorizontal: responsiveWidth(16),
     paddingVertical: responsiveHeight(12),
     height: responsiveHeight(56),
@@ -174,13 +174,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: responsiveWidth(6),
     borderWidth: 1,
-    borderColor: "#ff5a7a",
+    borderColor: "#f7577c",
     borderRadius: responsiveWidth(8),
     paddingHorizontal: responsiveWidth(10),
     paddingVertical: responsiveHeight(6),
   },
   callBtnText: {
-    color: "#ff5a7a",
+    color: "#f7577c",
     fontSize: responsiveFont(12),
     fontFamily: "Montserrat-SemiBold",
   },

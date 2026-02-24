@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import {
   View,
   Text,
@@ -1041,7 +1041,7 @@ const AlbumDetailScreen = () => {
             ))}
           </ScrollView>
           <TouchableOpacity
-            style={[styles.confirmButton, { backgroundColor: '#ff5a7a' }]}
+            style={[styles.confirmButton, { backgroundColor: '#f7577c' }]}
             onPress={handleConfirmUpload}
             disabled={isUploading}
             activeOpacity={0.85}
@@ -1271,7 +1271,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
   },
   header: {
-    backgroundColor: "#ff5a7a",
+    backgroundColor: "#f7577c",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -1421,7 +1421,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   filterButtonActive: {
-    backgroundColor: "#ff5a7a",
+    backgroundColor: "#f7577c",
   },
   filterButtonText: {
     fontFamily: fonts.montserratMedium,

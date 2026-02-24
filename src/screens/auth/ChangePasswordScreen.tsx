@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import {
   View,
   Text,
@@ -227,7 +227,7 @@ const styles = StyleSheet.create({
     fontFamily: "MavenPro-Bold",
     fontSize: 24,
     fontWeight: "600",
-    color: "#ff5a7a",
+    color: "#f7577c",
   },
   form: {
     maxWidth: 400,
@@ -281,7 +281,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   checkIconActive: {
-    backgroundColor: "#ff5a7a",
+    backgroundColor: "#f7577c",
   },
   requirementText: {
     fontSize: 14,
@@ -295,7 +295,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   saveButtonActive: {
-    backgroundColor: "#ff5a7a",
+    backgroundColor: "#f7577c",
   },
   saveButtonText: {
     color: "white",
@@ -317,7 +317,7 @@ const styles = StyleSheet.create({
   shieldIcon: {
     width: 24,
     height: 24,
-    backgroundColor: "#ff5a7a",
+    backgroundColor: "#f7577c",
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",

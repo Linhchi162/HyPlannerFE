@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+﻿import React, { useEffect, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -68,7 +68,7 @@ const CommunityScreen = () => {
   // Chỉ đặt StatusBar khi màn này focus; không reset trong cleanup để màn đích (vd Home) tự set, tránh top panel bị lỗi
   useFocusEffect(
     useCallback(() => {
-      StatusBar.setBackgroundColor("#ff5a7a");
+      StatusBar.setBackgroundColor("#f7577c");
       StatusBar.setBarStyle("light-content");
       if (Platform.OS === "android") StatusBar.setTranslucent(false);
       return () => { };
@@ -163,7 +163,7 @@ const CommunityScreen = () => {
     <SafeAreaView style={[styles.container, { paddingTop: topPad }]}>
       <StatusBar
         barStyle="light-content"
-        backgroundColor="#ff5a7a"
+        backgroundColor="#f7577c"
         translucent={false}
       />
       {/* StatusBar thực tế được set trong useFocusEffect để tránh ghi đè lên Home khi đổi tab */}
@@ -304,10 +304,10 @@ const CommunityScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#ff5a7a",
+    backgroundColor: "#f7577c",
   },
   header: {
-    backgroundColor: "#ff5a7a",
+    backgroundColor: "#f7577c",
     paddingHorizontal: responsiveWidth(16),
     height: responsiveHeight(10),
     justifyContent: "center",

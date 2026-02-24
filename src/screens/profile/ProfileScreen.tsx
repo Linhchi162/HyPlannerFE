@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -11,8 +11,9 @@ import {
   ActivityIndicator,
   Alert,
   Platform,
+  StatusBar,
 } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import {
   ArrowLeft,
   ChevronRight,
@@ -63,7 +64,7 @@ const COLORS = {
   card: "#FFFFFF",
   textPrimary: "#1F2024",
   textSecondary: "#6D6D6D",
-  primary: "#ff5a7a",
+  primary: "#f7577c",
   iconColor: "#FFFFFF",
   white: "#FFFFFF",
 };
@@ -116,6 +117,15 @@ const ProfileScreen = () => {
     (state) => state.weddingEvent.getWeddingEvent.weddingEvent
   );
   // ----------------------------------------
+
+  useFocusEffect(
+    useCallback(() => {
+      StatusBar.setBackgroundColor("#f7577c");
+      StatusBar.setBarStyle("light-content");
+      if (Platform.OS === "android") StatusBar.setTranslucent(false);
+      return () => {};
+    }, [])
+  );
 
   // Hàm chọn và upload avatar
   const handleChangeAvatar = async () => {
@@ -333,6 +343,7 @@ const ProfileScreen = () => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <StatusBar backgroundColor="#f7577c" barStyle="light-content" translucent={false} />
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <ArrowLeft size={responsiveWidth(24)} color="#ffffff" />
@@ -580,7 +591,7 @@ const styles = StyleSheet.create({
   },
   safeArea: {
     flex: 1,
-    backgroundColor: "#ff5a7a",
+    backgroundColor: "#f7577c",
   },
   header: {
     flexDirection: "row",
@@ -589,7 +600,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: responsiveWidth(16),
     paddingVertical: responsiveHeight(12),
     height: responsiveHeight(56),
-    backgroundColor: "#ff5a7a",
+    backgroundColor: "#f7577c",
   },
   headerTitle: {
     fontFamily: "MavenPro",

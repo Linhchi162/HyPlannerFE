@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import {
   View,
   Text,
@@ -29,7 +29,7 @@ import { responsiveHeight } from "../../../assets/styles/utils/responsive";
 
 const COLORS = {
   bg: "#fedef0",
-  primary: "#ff5a7a",
+  primary: "#f7577c",
   text: "#111827",
   muted: "#6b7280",
   border: "#e5e7eb",

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import {
   View,
   Text,
@@ -34,8 +34,8 @@ const COLORS = {
   card: "#FFFFFF",
   textPrimary: "#1F2024",
   textSecondary: "#6D6D6D",
-  primary: "#ff5a7a",
-  iconColor: "#ff5a7a",
+  primary: "#f7577c",
+  iconColor: "#f7577c",
   white: "#FFFFFF",
 };
 

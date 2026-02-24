@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from "react";
+﻿import React, { useMemo, useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
   Modal,
   FlatList,
   Image,
+  StatusBar,
 } from "react-native";
 import {
   ChevronLeft,
@@ -147,39 +148,21 @@ export default function VendorListScreen() {
     });
   }, [activeCategory, activeLocation, query, vendors]);
 
-  const isFeatured = (vendor: Vendor) => vendor.isFeatured === true;
-
   // apply sorting after filtering
   const displayed = useMemo(() => {
     const arr = [...filtered];
-    arr.sort((a, b) => {
-      if (isFeatured(a) === isFeatured(b)) return 0;
-      return isFeatured(a) ? -1 : 1;
-    });
     switch (sortOption) {
       case "rating-asc":
-        arr.sort((a, b) => {
-          if (isFeatured(a) !== isFeatured(b)) return isFeatured(a) ? -1 : 1;
-          return (a.rating || 0) - (b.rating || 0);
-        });
+        arr.sort((a, b) => (a.rating || 0) - (b.rating || 0));
         break;
       case "rating-desc":
-        arr.sort((a, b) => {
-          if (isFeatured(a) !== isFeatured(b)) return isFeatured(a) ? -1 : 1;
-          return (b.rating || 0) - (a.rating || 0);
-        });
+        arr.sort((a, b) => (b.rating || 0) - (a.rating || 0));
         break;
       case "services-asc":
-        arr.sort((a, b) => {
-          if (isFeatured(a) !== isFeatured(b)) return isFeatured(a) ? -1 : 1;
-          return (a.services?.length || 0) - (b.services?.length || 0);
-        });
+        arr.sort((a, b) => (a.services?.length || 0) - (b.services?.length || 0));
         break;
       case "services-desc":
-        arr.sort((a, b) => {
-          if (isFeatured(a) !== isFeatured(b)) return isFeatured(a) ? -1 : 1;
-          return (b.services?.length || 0) - (a.services?.length || 0);
-        });
+        arr.sort((a, b) => (b.services?.length || 0) - (a.services?.length || 0));
         break;
     }
     return arr;
@@ -187,6 +170,7 @@ export default function VendorListScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <StatusBar backgroundColor="#f7577c" barStyle="light-content" translucent={false} />
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <ChevronLeft size={24} color="#ffffff" />
@@ -268,7 +252,7 @@ export default function VendorListScreen() {
       <ScrollView contentContainerStyle={styles.list}>
         {loading ? (
           <View style={styles.loadingBox}>
-            <ActivityIndicator size="small" color="#ff5a7a" />
+            <ActivityIndicator size="small" color="#f7577c" />
             <Text style={styles.loadingText}>Đang tải nhà cung cấp...</Text>
           </View>
         ) : displayed.length === 0 ? (
@@ -301,13 +285,6 @@ export default function VendorListScreen() {
                   <View style={styles.cardHeader}>
                     <View style={styles.cardHeaderLeft}>
                       <Text style={styles.cardTitle}>{v.name}</Text>
-                      {isFeatured(v) && (
-                        <View style={styles.recommendedBadge}>
-                          <Text style={styles.recommendedBadgeText}>
-                            Đề xuất
-                          </Text>
-                        </View>
-                      )}
                     </View>
                     <View style={styles.ratingRow}>
                       <Star size={14} color="#f59e0b" />
@@ -475,7 +452,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#f8f9fa",
   },
   header: {
-    backgroundColor: "#ff5a7a",
+    backgroundColor: "#f7577c",
     paddingHorizontal: responsiveWidth(16),
     paddingVertical: responsiveHeight(12),
     height: responsiveHeight(56),
@@ -512,7 +489,7 @@ const styles = StyleSheet.create({
   headerBadgeText: {
     fontSize: responsiveFont(9),
     fontFamily: "Montserrat-SemiBold",
-    color: "#ff5a7a",
+    color: "#f7577c",
   },
   searchRow: {
     flexDirection: "row",
@@ -666,7 +643,7 @@ const styles = StyleSheet.create({
   cardImageText: {
     fontFamily: "Montserrat-SemiBold",
     fontSize: responsiveFont(18),
-    color: "#ff5a7a",
+    color: "#f7577c",
   },
   cardImageWrapper: {
     position: "relative",
@@ -699,19 +676,6 @@ const styles = StyleSheet.create({
   ratingText: {
     fontSize: responsiveFont(12),
     color: "#6b7280",
-  },
-  recommendedBadge: {
-    backgroundColor: "#fff1f2",
-    borderWidth: 1,
-    borderColor: "#fecdd3",
-    paddingHorizontal: responsiveWidth(8),
-    paddingVertical: responsiveHeight(2),
-    borderRadius: responsiveWidth(999),
-  },
-  recommendedBadgeText: {
-    fontFamily: "Montserrat-SemiBold",
-    fontSize: responsiveFont(10),
-    color: "#be123c",
   },
   cardCategory: {
     marginTop: responsiveHeight(6),

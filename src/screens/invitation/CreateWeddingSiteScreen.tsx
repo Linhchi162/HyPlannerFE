@@ -1,4 +1,4 @@
-// screens/CreateWeddingSiteScreen.js
+﻿// screens/CreateWeddingSiteScreen.js
 
 import React, { useState, useEffect } from "react";
 import {
@@ -22,7 +22,7 @@ const COLORS = {
   card: "#FFFFFF",
   textPrimary: "#374151",
   textSecondary: "#6D6D6D",
-  primary: "#ff5a7a",
+  primary: "#f7577c",
   accent: "#e07181",
   white: "#FFFFFF",
   error: "#e74c3c",

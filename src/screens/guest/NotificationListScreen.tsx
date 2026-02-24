@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+﻿import React, { useEffect, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -23,7 +23,8 @@ import {
   Users,
   Trash2,
 } from "lucide-react-native";
-import { useNavigation, useRoute } from "@react-navigation/native";
+import { useNavigation, useRoute, useFocusEffect } from "@react-navigation/native";
+import { Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   responsiveWidth,
@@ -55,6 +56,16 @@ const NotificationListScreen = () => {
   const route = useRoute();
   const { weddingEventId } = route.params as { weddingEventId: string };
   const insets = useSafeAreaInsets();
+
+  // Chỉ đặt StatusBar khi màn này focus; không reset trong cleanup để màn đích tự set
+  useFocusEffect(
+    useCallback(() => {
+      StatusBar.setBackgroundColor("#f7577c");
+      StatusBar.setBarStyle("light-content");
+      if (Platform.OS === "android") StatusBar.setTranslucent(false);
+      return () => { };
+    }, [])
+  );
 
   const [notifications, setNotifications] = useState<NotificationData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -262,7 +273,7 @@ const NotificationListScreen = () => {
     <SafeAreaView style={styles.container}>
       <StatusBar
         barStyle="light-content"
-        backgroundColor="#ff5a7a"
+        backgroundColor="#f7577c"
         translucent={false}
       />
 
@@ -342,7 +353,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: responsiveWidth(20),
     paddingVertical: responsiveHeight(16),
-    backgroundColor: "#ff5a7a",
+    backgroundColor: "#f7577c",
   },
   headerTitle: {
     fontSize: responsiveFont(20),
@@ -425,7 +436,7 @@ const styles = StyleSheet.create({
     width: responsiveWidth(8),
     height: responsiveWidth(8),
     borderRadius: responsiveWidth(4),
-    backgroundColor: "#ff5a7a",
+    backgroundColor: "#f7577c",
   },
   emptyContainer: {
     flex: 1,

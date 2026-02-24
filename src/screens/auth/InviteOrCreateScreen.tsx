@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+﻿import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -14,7 +14,7 @@ import {
 
 // shared color palette
 const COLORS = {
-  primary: "#ff5a7a",
+  primary: "#f7577c",
   accent: "#ec4899", // used in some pink gradients
   white: "#FFFFFF",
 };

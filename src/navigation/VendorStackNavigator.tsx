@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import { createStackNavigator } from "@react-navigation/stack";
 import { StatusBar } from "react-native";
 import VendorDashboardScreen from "../screens/vendor/VendorDashboardScreen";
@@ -26,7 +26,7 @@ export default function VendorStackNavigator() {
     <>
       <StatusBar
         barStyle="light-content"
-        backgroundColor="#ff5a7a"
+        backgroundColor="#f7577c"
         translucent={false}
       />
       <Stack.Navigator screenOptions={{ headerShown: false }}>

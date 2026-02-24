@@ -1,4 +1,4 @@
-// screens/EditCoupleInfo.tsx
+﻿// screens/EditCoupleInfo.tsx
 
 import React, { useState, useEffect } from "react";
 import {
@@ -54,7 +54,7 @@ const COLORS = {
   card: "#FFFFFF",
   textPrimary: "#374151",
   textSecondary: "#6D6D6D",
-  primary: "#ff5a7a",      // main brand pink
+  primary: "#f7577c",      // main brand pink
   accent: "#e07181",       // secondary/action color
   white: "#FFFFFF",
   error: "#e74c3c",

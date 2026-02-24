@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+﻿import React, { useEffect, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -26,7 +26,7 @@ import * as DocumentPicker from "expo-document-picker";
 import * as Contacts from "expo-contacts";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useDispatch, useSelector } from "react-redux";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import {
   ChevronLeft,
@@ -49,7 +49,6 @@ import {
   Mail,
   Calendar,
   CheckSquare,
-  Square,
 } from "lucide-react-native";
 import { AppDispatch, RootState } from "../../store";
 import {
@@ -152,6 +151,7 @@ const GuestManagementScreen = () => {
     giftReturnedGift: false,
   });
   const [showEditDatePicker, setShowEditDatePicker] = useState(false);
+
 
   useEffect(() => {
     MixpanelService.track("Viewed Guest Management");
@@ -919,12 +919,6 @@ const GuestManagementScreen = () => {
   if (!weddingEvent?._id) {
     return (
       <SafeAreaView style={styles.container}>
-        <StatusBar
-          barStyle="light-content"
-          backgroundColor="#ff5a7a"
-          translucent={false}
-        />
-
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity
@@ -963,12 +957,6 @@ const GuestManagementScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar
-        barStyle="light-content"
-        backgroundColor="#ff5a7a"
-        translucent={false}
-      />
-
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
@@ -2710,7 +2698,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: responsiveWidth(20),
     paddingVertical: responsiveHeight(18),
-    backgroundColor: "#ff5a7a",
+    backgroundColor: "#f7577c",
     borderBottomWidth: 0,
   },
   headerBackButton: {
@@ -2843,7 +2831,7 @@ const styles = StyleSheet.create({
   progressPercentage: {
     fontFamily: "Montserrat-Bold",
     fontSize: responsiveFont(16),
-    color: "#ff5a7a",
+    color: "#f7577c",
   },
   progressBarContainer: {
     height: 8,
@@ -2853,7 +2841,7 @@ const styles = StyleSheet.create({
   },
   progressBarFill: {
     height: "100%",
-    backgroundColor: "#ff5a7a",
+    backgroundColor: "#f7577c",
     borderRadius: 4,
   },
   // New Table Suggestion Styles
@@ -2926,10 +2914,10 @@ const styles = StyleSheet.create({
     width: responsiveWidth(40),
     height: responsiveWidth(40),
     borderRadius: responsiveWidth(20),
-    backgroundColor: "#ff5a7a",
+    backgroundColor: "#f7577c",
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#ff5a7a",
+    shadowColor: "#f7577c",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
@@ -2950,7 +2938,7 @@ const styles = StyleSheet.create({
   tableConfigValue: {
     fontFamily: "Montserrat-Bold",
     fontSize: responsiveFont(32),
-    color: "#ff5a7a",
+    color: "#f7577c",
     lineHeight: responsiveFont(36),
   },
   tableConfigUnit: {
@@ -3627,7 +3615,7 @@ const styles = StyleSheet.create({
     color: "#6b7280",
   },
   thankYouButton: {
-    backgroundColor: "#ff5a7a",
+    backgroundColor: "#f7577c",
     paddingVertical: responsiveHeight(14),
     borderRadius: responsiveWidth(12),
     alignItems: "center",

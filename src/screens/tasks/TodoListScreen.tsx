@@ -5,7 +5,6 @@ import {
   StyleSheet,
   SafeAreaView,
   TouchableOpacity,
-  StatusBar,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { ArrowLeft } from "lucide-react-native";
@@ -21,7 +20,6 @@ const TodoListScreen = () => {
 
   return (
     <SafeAreaView style={todoStyles.safeArea}>
-      <StatusBar barStyle="dark-content" translucent={false} />
       {/* Header tùy chỉnh */}
       <View style={todoStyles.headerContainer}>
         <TouchableOpacity

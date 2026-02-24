@@ -1,6 +1,7 @@
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const crypto = require("crypto");
+require("dotenv").config();
 
 admin.initializeApp();
 
@@ -9,12 +10,12 @@ const PAYOS_API_BASE = "https://api-merchant.payos.vn";
 const getPayosConfig = () => {
   const config = functions.config().payos || {};
   return {
-    clientId: config.client_id,
-    apiKey: config.api_key,
-    checksumKey: config.checksum_key,
-    partnerCode: config.partner_code,
-    returnUrl: config.return_url,
-    cancelUrl: config.cancel_url,
+    clientId: process.env.PAYOS_CLIENT_ID || config.client_id,
+    apiKey: process.env.PAYOS_API_KEY || config.api_key,
+    checksumKey: process.env.PAYOS_CHECKSUM_KEY || config.checksum_key,
+    partnerCode: process.env.PAYOS_PARTNER_CODE || config.partner_code,
+    returnUrl: process.env.PAYOS_RETURN_URL || config.return_url,
+    cancelUrl: process.env.PAYOS_CANCEL_URL || config.cancel_url,
   };
 };
 
@@ -297,8 +298,10 @@ exports.payosWebhook = functions.https.onRequest(async (req, res) => {
   }
 
   const payment = paymentSnap.data() || {};
-  const status = data.status || body.status || "unknown";
-  const paid = status === "PAID" || status === "SUCCESS";
+  const topCode = String(body.code || "");
+  const dataCode = String(data.code || "");
+  const status = topCode || dataCode || "unknown";
+  const paid = body.success === true || topCode === "00" || dataCode === "00";
 
   await paymentRef.set(
     {

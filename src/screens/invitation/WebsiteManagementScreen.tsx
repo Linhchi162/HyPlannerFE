@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from "react"; // --- THÊM useState
+﻿import React, { useCallback, useState } from "react"; // --- THÊM useState
 import {
   SafeAreaView,
   View,
@@ -62,7 +62,7 @@ const COLORS = {
   card: "#FFFFFF",
   textPrimary: "#374151",
   textSecondary: "#6D6D6D",
-  primary: "#ff5a7a",
+  primary: "#f7577c",
   accent: "#e07181",
   white: "#FFFFFF",
   success: "#2ecc71",

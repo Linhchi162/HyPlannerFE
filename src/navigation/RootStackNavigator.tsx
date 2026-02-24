@@ -10,7 +10,6 @@ import {
   Modal,
   ScrollView,
   ActivityIndicator,
-  StatusBar,
 } from "react-native";
 import {
   NavigationContainer,
@@ -271,7 +270,7 @@ const RootStackNavigator = () => {
               vendorImageUrl: c.vendorImageUrl,
               role: "user",
             }
-          ).catch(() => {});
+          ).catch(() => { });
         }
         next.set(c.id, current);
       }
@@ -310,11 +309,6 @@ const RootStackNavigator = () => {
 
   return (
     <>
-      <StatusBar
-        barStyle="dark-content"
-        backgroundColor="transparent"
-        translucent={true}
-      />
       <NavigationContainer
         linking={linking}
         ref={navigationRef}

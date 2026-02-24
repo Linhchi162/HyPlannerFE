@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Image } from "react-native";
 import { Users, Lock } from "lucide-react-native";
 import { TopicGroup } from "../service/topicGroupService";
@@ -9,7 +9,7 @@ import {
 } from "../../assets/styles/utils/responsive";
 
 const COLORS = {
-  primary: "#ff5a7a",
+  primary: "#f7577c",
   primarySoft: "#ffe1e8",
   textDark: "#1f2937",
   textMuted: "#6b7280",

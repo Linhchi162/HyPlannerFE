@@ -68,6 +68,7 @@ export const MainTabNavigator = () => {
         },
         tabBarActiveTintColor: "#ffffff",
         tabBarInactiveTintColor: "#ef456d",
+        tabBarPressColor: "#ffffff",
         tabBarLabelStyle: {
           fontFamily: "Montserrat-Medium",
           fontSize: responsiveFont(10),

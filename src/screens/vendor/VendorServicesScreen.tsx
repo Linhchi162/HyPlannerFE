@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+﻿import React, { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -209,7 +209,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#f8f9fa",
   },
   header: {
-    backgroundColor: "#ff5a7a",
+    backgroundColor: "#f7577c",
     paddingHorizontal: responsiveWidth(16),
     paddingVertical: responsiveHeight(12),
     height: responsiveHeight(56),
@@ -246,7 +246,7 @@ const styles = StyleSheet.create({
   },
   primaryBtn: {
     marginTop: responsiveHeight(16),
-    backgroundColor: "#ff5a7a",
+    backgroundColor: "#f7577c",
     paddingVertical: responsiveHeight(12),
     borderRadius: responsiveWidth(10),
     flexDirection: "row",

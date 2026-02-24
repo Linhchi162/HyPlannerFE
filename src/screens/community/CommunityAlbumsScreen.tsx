@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+﻿import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -27,7 +27,7 @@ import {
 } from "../../../assets/styles/utils/responsive";
 
 const COLORS = {
-  primary: "#ff5a7a",
+  primary: "#f7577c",
   primarySoft: "#ffe1e8",
   textDark: "#1f2937",
   textMuted: "#6b7280",

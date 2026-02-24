@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+﻿import React, { useState, useEffect, useRef } from "react";
 import {
   SafeAreaView,
   View,
@@ -315,7 +315,7 @@ export default function UpgradeAccountScreen() {
         <View
           style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
         >
-          <ActivityIndicator size="large" color="#ff5a7a" />
+          <ActivityIndicator size="large" color="#f7577c" />
         </View>
       </SafeAreaView>
     );
@@ -325,7 +325,7 @@ export default function UpgradeAccountScreen() {
     <SafeAreaView style={styles.safeArea}>
       <StatusBar
         barStyle="light-content"
-        backgroundColor="#ff5a7a"
+        backgroundColor="#f7577c"
         translucent={false}
       />
       <View style={styles.header}>
@@ -505,7 +505,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#f7f7f7",
   },
   header: {
-    backgroundColor: "#ff5a7a",
+    backgroundColor: "#f7577c",
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
@@ -535,8 +535,8 @@ const styles = StyleSheet.create({
     borderColor: "#eee",
   },
   activeUpgradeTabButton: {
-    backgroundColor: "#ff5a7a",
-    borderColor: "#ff5a7a",
+    backgroundColor: "#f7577c",
+    borderColor: "#f7577c",
   },
   upgradeTabButtonText: {
     fontFamily: "Montserrat-SemiBold",
@@ -623,7 +623,7 @@ const styles = StyleSheet.create({
     fontFamily: "Montserrat-Medium",
     fontSize: 14,
     fontWeight: "bold",
-    color: "#ff5a7a",
+    color: "#f7577c",
   },
   verticalSeparator: {
     width: 1,
@@ -640,7 +640,7 @@ const styles = StyleSheet.create({
     borderTopColor: "#eee",
   },
   upgradeButton: {
-    backgroundColor: "#ff5a7a",
+    backgroundColor: "#f7577c",
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: "center",

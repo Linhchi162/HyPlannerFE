@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import {
   View,
   Text,
@@ -118,7 +118,7 @@ export default function VendorAuthScreen() {
     <SafeAreaView style={styles.safeArea}>
       <StatusBar
         barStyle="light-content"
-        backgroundColor="#ff5a7a"
+        backgroundColor="#f7577c"
         translucent={false}
       />
       <View style={styles.header}>
@@ -235,7 +235,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#f8f9fa",
   },
   header: {
-    backgroundColor: "#ff5a7a",
+    backgroundColor: "#f7577c",
     paddingHorizontal: responsiveWidth(16),
     paddingVertical: responsiveHeight(12),
     height: responsiveHeight(56),
@@ -291,12 +291,12 @@ const styles = StyleSheet.create({
   },
   forgotPasswordText: {
     fontSize: responsiveFont(12),
-    color: "#ff5a7a",
+    color: "#f7577c",
     fontFamily: "Montserrat-SemiBold",
   },
   primaryBtn: {
     marginTop: responsiveHeight(6),
-    backgroundColor: "#ff5a7a",
+    backgroundColor: "#f7577c",
     paddingVertical: responsiveHeight(12),
     borderRadius: responsiveWidth(10),
     alignItems: "center",

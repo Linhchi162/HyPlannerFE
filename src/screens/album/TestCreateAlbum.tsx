@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+﻿import React, { useState, useEffect, useMemo } from "react";
 import {
   View,
   Text,
@@ -1317,7 +1317,7 @@ const styles = StyleSheet.create({
   headerSubtitle: {
     fontSize: responsiveFont(12),
     fontFamily: fonts.montserratMedium,
-    color: "#ff5a7a",
+    color: "#f7577c",
     marginTop: spacing.xs / 2,
   },
   loadingContainer: {
@@ -1351,7 +1351,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   filterButtonActive: {
-    backgroundColor: "#ff5a7a",
+    backgroundColor: "#f7577c",
   },
   filterButtonText: {
     fontFamily: fonts.montserratMedium,
@@ -1412,8 +1412,8 @@ const styles = StyleSheet.create({
     marginRight: spacing.md,
   },
   checkboxChecked: {
-    backgroundColor: "#ff5a7a",
-    borderColor: "#ff5a7a",
+    backgroundColor: "#f7577c",
+    borderColor: "#f7577c",
   },
   checkmark: {
     color: "#ffffff",
@@ -1448,7 +1448,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: spacing.md,
     borderRadius: borderRadius.lg,
-    backgroundColor: "#ff5a7a",
+    backgroundColor: "#f7577c",
     alignItems: "center",
   },
   applyButtonText: {
@@ -1513,7 +1513,7 @@ const styles = StyleSheet.create({
     borderTopColor: "#F3F4F6",
   },
   saveButton: {
-    backgroundColor: "#ff5a7a",
+    backgroundColor: "#f7577c",
     paddingVertical: spacing.md + 4,
     borderRadius: borderRadius.lg,
     alignItems: "center",

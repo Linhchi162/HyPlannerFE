@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -11,7 +11,7 @@ import {
   Platform,
 } from "react-native";
 import { ChevronLeft } from "lucide-react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import WeddingItemCard from "../../components/WeddingItemCard";
 import { fonts } from "../../theme/fonts";
 import * as weddingCostumeService from "../../service/weddingCostumeService";
@@ -45,6 +45,15 @@ const AccessoriesScreen = () => {
   const [veils, setVeils] = useState<Style[]>([]);
   const { selectedVeils, toggleVeilSelection, saveSelections } = useSelection();
 
+  useFocusEffect(
+    useCallback(() => {
+      StatusBar.setBackgroundColor("#ffffff");
+      StatusBar.setBarStyle("dark-content");
+      if (Platform.OS === "android") StatusBar.setTranslucent(false);
+      return () => {};
+    }, [])
+  );
+
   useEffect(() => {
     const fetchVeils = async () => {
       setIsLoading(true);
@@ -62,8 +71,7 @@ const AccessoriesScreen = () => {
     fetchVeils();
   }, []);
 
-  const topPad =
-    Platform.OS === "android" ? (StatusBar.currentHeight || 0) + 8 : 0;
+  const topPad = 0;
 
   return (
     <SafeAreaView style={[styles.container, { paddingTop: topPad }]}>

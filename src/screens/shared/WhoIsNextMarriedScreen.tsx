@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+﻿import React, { useState, useRef, useEffect } from "react";
 import {
   View,
   StyleSheet,
@@ -237,7 +237,7 @@ export default function WhoIsNextMarriedScreen() {
       <AppBar onBack={() => navigation.goBack()} />
       {isLoading ? (
         <View style={[styles.container, { justifyContent: "center" }]}>
-          <ActivityIndicator size="large" color="#ff5a7a" />
+          <ActivityIndicator size="large" color="#f7577c" />
           <Text style={{ marginTop: 12, fontSize: responsiveFont(13) }}>
             Đang tải thông tin
           </Text>
@@ -361,8 +361,8 @@ export default function WhoIsNextMarriedScreen() {
               style={styles.textInput}
               mode="outlined"
               dense
-              outlineColor="#ff5a7a"
-              activeOutlineColor="#ff5a7a"
+              outlineColor="#f7577c"
+              activeOutlineColor="#f7577c"
               textColor="#000000"
               theme={{
                 colors: {
@@ -379,7 +379,7 @@ export default function WhoIsNextMarriedScreen() {
               style={styles.addButton}
               disabled={spinning || newName.trim() === ""}
               icon="plus"
-              textColor="#ff5a7a"
+              textColor="#f7577c"
               labelStyle={styles.addButtonLabel}
               theme={{
                 colors: {
@@ -438,7 +438,7 @@ export default function WhoIsNextMarriedScreen() {
                 textColor="#ffffff"
                 theme={{
                   colors: {
-                    primary: "#ff5a7a",
+                    primary: "#f7577c",
                     onPrimary: "#ffffff",
                     surfaceDisabled: "#ffd1da",
                     onSurfaceDisabled: "#ffffff",
@@ -455,12 +455,12 @@ export default function WhoIsNextMarriedScreen() {
                 onPress={shuffleMembers}
                 style={styles.shuffleButton}
                 disabled={spinning || !members || members.length === 0}
-                labelStyle={[styles.outlinedButtonLabel, { color: "#ff5a7a" }]}
-                textColor="#ff5a7a"
+                labelStyle={[styles.outlinedButtonLabel, { color: "#f7577c" }]}
+                textColor="#f7577c"
                 theme={{
                   colors: {
-                    outline: "#ff5a7a",
-                    onSurface: "#ff5a7a",
+                    outline: "#f7577c",
+                    onSurface: "#f7577c",
                     onSurfaceDisabled: "#9ca3af",
                   },
                 }}
@@ -508,8 +508,8 @@ export default function WhoIsNextMarriedScreen() {
               {winner?.fullName || winner?.name || ""}
             </Text>
             <Text style={styles.dialogSubText}>
-              <Heart color="#ff5a7a" /> là người tiếp theo sẽ kết hôn!{" "}
-              <Heart color="#ff5a7a" />
+              <Heart color="#f7577c" /> là người tiếp theo sẽ kết hôn!{" "}
+              <Heart color="#f7577c" />
             </Text>
           </Dialog.Content>
           <Dialog.Actions style={styles.dialogActions}>
@@ -523,7 +523,7 @@ export default function WhoIsNextMarriedScreen() {
               textColor="#ffffff"
               theme={{
                 colors: {
-                  primary: "#ff5a7a",
+                  primary: "#f7577c",
                   onPrimary: "#ffffff",
                 },
               }}
@@ -551,7 +551,7 @@ export default function WhoIsNextMarriedScreen() {
 const styles = StyleSheet.create({
   // ... (appbar styles)
   appbarHeader: {
-    backgroundColor: "#ff5a7a",
+    backgroundColor: "#f7577c",
     elevation: 0,
     shadowOpacity: 0,
     minHeight: responsiveHeight(30),
@@ -645,11 +645,11 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   spinButton: {
-    backgroundColor: "#ff5a7a",
+    backgroundColor: "#f7577c",
     flex: 1,
   },
   shuffleButton: {
-    borderColor: "#ff5a7a",
+    borderColor: "#f7577c",
     flex: 1,
   },
   resetButton: {
@@ -665,7 +665,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fef3f2",
     borderRadius: responsiveWidth(20),
     borderWidth: 2,
-    borderColor: "#ff5a7a",
+    borderColor: "#f7577c",
   },
   congratsEmoji: {
     fontSize: responsiveFont(48),
@@ -732,7 +732,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontFamily: "Montserrat-SemiBold",
     fontSize: responsiveFont(22),
-    color: "#ff5a7a",
+    color: "#f7577c",
     fontWeight: "700",
   },
   dialogContent: {
@@ -740,7 +740,7 @@ const styles = StyleSheet.create({
     paddingBottom: responsiveHeight(20),
   },
   dialogIcon: {
-    backgroundColor: "#ff5a7a",
+    backgroundColor: "#f7577c",
     marginBottom: responsiveWidth(16),
   },
   dialogText: {
@@ -762,7 +762,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: responsiveWidth(16),
   },
   dialogButton: {
-    backgroundColor: "#ff5a7a",
+    backgroundColor: "#f7577c",
     width: "100%",
   },
 });

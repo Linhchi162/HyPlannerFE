@@ -1,4 +1,4 @@
-import React, { useMemo, useEffect, useState } from "react";
+﻿import React, { useMemo, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -354,7 +354,7 @@ export default function VendorProfileEditScreen() {
       <ScrollView contentContainerStyle={styles.content}>
         {loading && (
           <View style={styles.loadingBox}>
-            <ActivityIndicator size="small" color="#ff5a7a" />
+            <ActivityIndicator size="small" color="#f7577c" />
             <Text style={styles.loadingText}>Đang tải hồ sơ...</Text>
           </View>
         )}
@@ -641,7 +641,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#f8f9fa",
   },
   header: {
-    backgroundColor: "#ff5a7a",
+    backgroundColor: "#f7577c",
     paddingHorizontal: responsiveWidth(16),
     paddingVertical: responsiveHeight(12),
     height: responsiveHeight(56),
@@ -713,7 +713,7 @@ const styles = StyleSheet.create({
   imagePlaceholderText: {
     fontFamily: "Montserrat-SemiBold",
     fontSize: responsiveFont(24),
-    color: "#ff5a7a",
+    color: "#f7577c",
   },
   imageOverlay: {
     position: "absolute",
@@ -741,7 +741,7 @@ const styles = StyleSheet.create({
     color: "#6b7280",
   },
   galleryAddBtn: {
-    backgroundColor: "#ff5a7a",
+    backgroundColor: "#f7577c",
     paddingHorizontal: responsiveWidth(12),
     paddingVertical: responsiveHeight(6),
     borderRadius: responsiveWidth(8),
@@ -808,7 +808,7 @@ const styles = StyleSheet.create({
   },
   primaryBtn: {
     marginTop: responsiveHeight(20),
-    backgroundColor: "#ff5a7a",
+    backgroundColor: "#f7577c",
     paddingVertical: responsiveHeight(12),
     borderRadius: responsiveWidth(10),
     flexDirection: "row",
@@ -825,14 +825,14 @@ const styles = StyleSheet.create({
     marginTop: responsiveHeight(10),
     backgroundColor: "#ffffff",
     borderWidth: 1,
-    borderColor: "#ff5a7a",
+    borderColor: "#f7577c",
     paddingVertical: responsiveHeight(10),
     borderRadius: responsiveWidth(10),
     alignItems: "center",
     justifyContent: "center",
   },
   secondaryBtnText: {
-    color: "#ff5a7a",
+    color: "#f7577c",
     fontFamily: "Montserrat-SemiBold",
     fontSize: responsiveFont(13),
   },

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import {
   View,
   Text,
@@ -193,8 +193,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
   },
   categoryChipActive: {
-    backgroundColor: "#ff5a7a",
-    borderColor: "#ff5a7a",
+    backgroundColor: "#f7577c",
+    borderColor: "#f7577c",
   },
   categoryText: {
     fontFamily: "Montserrat-Medium",
@@ -207,7 +207,7 @@ const styles = StyleSheet.create({
   },
   primaryBtn: {
     marginTop: responsiveHeight(16),
-    backgroundColor: "#ff5a7a",
+    backgroundColor: "#f7577c",
     paddingVertical: responsiveHeight(12),
     borderRadius: responsiveWidth(10),
     alignItems: "center",

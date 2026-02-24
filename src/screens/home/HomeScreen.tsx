@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, useCallback } from "react";
+﻿import React, { useEffect, useState, useMemo, useCallback } from "react";
 import {
   View,
   Text,
@@ -73,6 +73,8 @@ const HomeScreen = () => {
   const noteSnap = noteCardWidth + noteGap;
   const currentNoteIndexRef = React.useRef(1);
   const isAdjustingNoteLoopRef = React.useRef(false);
+  const isAdDraggingRef = React.useRef(false);
+  const isNoteDraggingRef = React.useRef(false);
 
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const dispatch = useDispatch<AppDispatch>();
@@ -386,7 +388,7 @@ const HomeScreen = () => {
     if (loopedAdImages.length <= 1) return;
 
     const interval = setInterval(() => {
-      if (isAdjustingLoopRef.current) return;
+      if (isAdjustingLoopRef.current || isAdDraggingRef.current) return;
       const nextIndex = currentAdIndexRef.current + 1;
       adScrollRef.current?.scrollTo({ x: nextIndex * adSnap, animated: true });
     }, 3500);
@@ -409,7 +411,7 @@ const HomeScreen = () => {
     if (loopedNoteCards.length <= 1) return;
 
     const interval = setInterval(() => {
-      if (isAdjustingNoteLoopRef.current) return;
+      if (isAdjustingNoteLoopRef.current || isNoteDraggingRef.current) return;
       const nextIndex = currentNoteIndexRef.current + 1;
       noteScrollRef.current?.scrollTo({ x: nextIndex * noteSnap, animated: true });
     }, 3200);
@@ -468,6 +470,22 @@ const HomeScreen = () => {
     },
     [noteCards.length, noteSnap, loopedNoteCards.length]
   );
+
+  const handleAdScrollBeginDrag = useCallback(() => {
+    isAdDraggingRef.current = true;
+  }, []);
+
+  const handleAdScrollEndDrag = useCallback(() => {
+    isAdDraggingRef.current = false;
+  }, []);
+
+  const handleNoteScrollBeginDrag = useCallback(() => {
+    isNoteDraggingRef.current = true;
+  }, []);
+
+  const handleNoteScrollEndDrag = useCallback(() => {
+    isNoteDraggingRef.current = false;
+  }, []);
 
   // --- XỬ LÝ CÁC TRẠNG THÁI UI ---
   if (isLoading) {
@@ -537,7 +555,7 @@ const HomeScreen = () => {
               <View style={styles.headerButtons}>
                 <TouchableOpacity
                   style={styles.headerCircleButton}
-                  onPress={() => Alert.alert("Thông báo", "Tính năng Chatbot AI đang được phát triển!")}
+                  onPress={() => navigation.navigate("ChatList", { role: "user" })}
                 >
                   <Image
                     source={require("../../../assets/images/icon bong bóng chat với vendors.png")}
@@ -587,7 +605,11 @@ const HomeScreen = () => {
           </SafeAreaView>
 
           <View style={styles.heroRow}>
-            <View style={styles.upgradeCard}>
+            <TouchableOpacity
+              style={styles.upgradeCard}
+              onPress={() => !isPremium && navigation.navigate("UpgradeAccountScreen")}
+              activeOpacity={isPremium ? 1 : 0.7}
+            >
               <Image
                 source={require("../../../assets/images/icon user hỷ.png")}
                 style={styles.upgradeAvatar}
@@ -606,16 +628,8 @@ const HomeScreen = () => {
                   style={styles.upgradeBadge}
                   resizeMode="contain"
                 />
-                {!isPremium && (
-                  <TouchableOpacity
-                    style={styles.upgradeButton}
-                    onPress={() => navigation.navigate("UpgradeAccountScreen")}
-                  >
-                    <Text style={styles.upgradeButtonText}>Nâng cấp</Text>
-                  </TouchableOpacity>
-                )}
               </View>
-            </View>
+            </TouchableOpacity>
 
             <View style={styles.noteCarousel}>
               <Animated.ScrollView
@@ -625,6 +639,8 @@ const HomeScreen = () => {
                 snapToInterval={noteSnap}
                 decelerationRate="fast"
                 onMomentumScrollEnd={handleNoteMomentumEnd}
+                onScrollBeginDrag={handleNoteScrollBeginDrag}
+                onScrollEndDrag={handleNoteScrollEndDrag}
                 onScroll={Animated.event(
                   [{ nativeEvent: { contentOffset: { x: noteScrollX } } }],
                   { useNativeDriver: true }
@@ -757,7 +773,6 @@ const HomeScreen = () => {
             style={[
               styles.contentCard,
               {
-                minHeight: height,
                 paddingBottom: Math.max(
                   insets.bottom + responsiveHeight(84),
                   responsiveHeight(120)
@@ -805,10 +820,59 @@ const HomeScreen = () => {
             </View>
 
             {isExpanded && (
-              <View style={styles.miniGameSection}>
-                <Text style={styles.sectionTitle}>Minigame dùng trong đám cưới</Text>
+              <View style={styles.adContainer}>
+                <Animated.ScrollView
+                  ref={adScrollRef}
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  snapToInterval={adSnap}
+                  decelerationRate="fast"
+                  style={styles.adScroll}
+                  onMomentumScrollEnd={handleAdMomentumEnd}
+                  onScrollBeginDrag={handleAdScrollBeginDrag}
+                  onScrollEndDrag={handleAdScrollEndDrag}
+                  onScroll={Animated.event(
+                    [{ nativeEvent: { contentOffset: { x: adScrollX } } }],
+                    { useNativeDriver: true }
+                  )}
+                  scrollEventThrottle={16}
+                  contentContainerStyle={styles.adRow}
+                >
+                  {loopedAdImages.map((img, index) => {
+                    const inputRange = [
+                      (index - 1) * adSnap,
+                      index * adSnap,
+                      (index + 1) * adSnap,
+                    ];
+                    const scale = adScrollX.interpolate({
+                      inputRange,
+                      outputRange: [0.88, 1.08, 0.88],
+                      extrapolate: "clamp",
+                    });
+
+                    return (
+                      <Animated.View
+                        key={`ad-${index}`}
+                        style={[styles.adCard, { transform: [{ scale }] }]}
+                      >
+                        <Image source={img} style={styles.adImage} resizeMode="cover" />
+                      </Animated.View>
+                    );
+                  })}
+                </Animated.ScrollView>
+              </View>
+            )}
+
+            <View
+              style={[
+                styles.miniGameSection,
+                isExpanded && styles.miniGameSectionWithAds,
+              ]}
+            >
+              <Text style={styles.sectionTitle}>Minigame dùng trong đám cưới</Text>
+              <View style={styles.miniGameRow}>
                 <TouchableOpacity
-                  style={styles.miniGameCard}
+                  style={styles.miniGameItem}
                   onPress={() => {
                     const limits = getAccountLimits(user?.accountType || "FREE");
                     if (!limits.canAccessWhoIsNext) {
@@ -832,60 +896,19 @@ const HomeScreen = () => {
                     });
                   }}
                 >
-                  <View style={styles.miniGameIconWrap}>
+                  <View style={styles.quickActionIconWrap}>
                     <Image
                       source={require("../../../assets/images/icon minigame.png")}
                       style={styles.miniGameIcon}
                       resizeMode="contain"
                     />
                   </View>
-                  <View style={styles.miniGameTextWrap}>
-                    <Text style={styles.miniGameTitle} numberOfLines={2}>
-                      Ai là người kết hôn tiếp theo
-                    </Text>
-                    <Text style={styles.miniGameSubtitle}>Minigame vui nhộn</Text>
-                  </View>
+                  <Text style={styles.miniGameLabel} numberOfLines={2}>
+                    Ai là người{"\n"}kết hôn tiếp theo
+                  </Text>
                 </TouchableOpacity>
               </View>
-            )}
-
-            <Animated.ScrollView
-              ref={adScrollRef}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              snapToInterval={adSnap}
-              decelerationRate="fast"
-              style={styles.adScroll}
-              onMomentumScrollEnd={handleAdMomentumEnd}
-              onScroll={Animated.event(
-                [{ nativeEvent: { contentOffset: { x: adScrollX } } }],
-                { useNativeDriver: true }
-              )}
-              scrollEventThrottle={16}
-              contentContainerStyle={styles.adRow}
-            >
-              {loopedAdImages.map((img, index) => {
-                const inputRange = [
-                  (index - 1) * adSnap,
-                  index * adSnap,
-                  (index + 1) * adSnap,
-                ];
-                const scale = adScrollX.interpolate({
-                  inputRange,
-                  outputRange: [0.88, 1.08, 0.88],
-                  extrapolate: "clamp",
-                });
-
-                return (
-                  <Animated.View
-                    key={`ad-${index}`}
-                    style={[styles.adCard, { transform: [{ scale }] }]}
-                  >
-                    <Image source={img} style={styles.adImage} resizeMode="cover" />
-                  </Animated.View>
-                );
-              })}
-            </Animated.ScrollView>
+            </View>
           </View>
         </ScrollView>
       </ImageBackground>
@@ -965,10 +988,10 @@ const styles = StyleSheet.create({
   },
   homeBackground: {
     flex: 1,
-    paddingBottom: responsiveHeight(20),
   },
   scrollContent: {
     paddingBottom: 0,
+    flexGrow: 1,
   },
   heroRow: {
     marginTop: responsiveHeight(12),
@@ -1267,6 +1290,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
     borderTopLeftRadius: responsiveWidth(28),
     borderTopRightRadius: responsiveWidth(28),
+    flexGrow: 1,
   },
   dividerRow: {
     flexDirection: "row",
@@ -1303,20 +1327,45 @@ const styles = StyleSheet.create({
     transform: [{ rotate: "180deg" }],
   },
   miniGameSection: {
+    marginTop: responsiveHeight(18),
     marginBottom: responsiveHeight(12),
+  },
+  miniGameSectionWithAds: {
+    marginTop: responsiveHeight(8),
+  },
+  miniGameRow: {
+    flexDirection: "row",
+    justifyContent: "flex-start",
+    paddingTop: responsiveHeight(8),
+    marginLeft: 10,
+  },
+  miniGameItem: {
+    alignItems: "center",
+    width: responsiveWidth(80),
+  },
+  miniGameLabel: {
+    fontFamily: "Montserrat-SemiBold",
+    fontSize: responsiveFont(11),
+    color: "#1f2937",
+    textAlign: "center",
+  },
+  adContainer: {
+    height: responsiveWidth(166),
+    overflow: "hidden",
   },
   adRow: {
     gap: responsiveWidth(12),
     paddingLeft: (width - responsiveWidth(240)) / 2,
     paddingRight: (width - responsiveWidth(240)) / 2,
-    paddingVertical: responsiveHeight(6),
+    paddingVertical: responsiveHeight(8),
+    alignItems: "center",
   },
   adScroll: {
     marginHorizontal: -responsiveWidth(18),
   },
   adCard: {
     width: responsiveWidth(240),
-    height: responsiveWidth(130),
+    height: responsiveWidth(150),
     borderRadius: responsiveWidth(18),
     overflow: "hidden",
   },
@@ -1325,9 +1374,8 @@ const styles = StyleSheet.create({
     height: "100%",
   },
   sectionTitle: {
-    marginTop: responsiveHeight(18),
     fontFamily: "Montserrat-SemiBold",
-    fontSize: responsiveFont(16),
+    fontSize: responsiveFont(14),
     color: "#1f2937",
   },
   miniGameCard: {
@@ -1336,7 +1384,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#fff3f7",
     borderRadius: responsiveWidth(18),
-    padding: responsiveWidth(14),
+    padding: responsiveWidth(5),
+
   },
   miniGameIconWrap: {
     width: responsiveWidth(54),
@@ -1345,11 +1394,11 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffe0eb",
     justifyContent: "center",
     alignItems: "center",
-    marginRight: responsiveWidth(12),
+
   },
   miniGameIcon: {
-    width: responsiveWidth(28),
-    height: responsiveWidth(28),
+    width: responsiveWidth(86),
+    height: responsiveWidth(90),
   },
   miniGameTextWrap: {
     flex: 1,

@@ -1,4 +1,4 @@
-import React, { memo, useCallback, useEffect, useState } from "react";
+﻿import React, { memo, useCallback, useEffect, useState } from "react";
 import {
   StyleSheet,
   View,
@@ -31,7 +31,7 @@ import {
   responsiveWidth,
 } from "../../../assets/styles/utils/responsive";
 import { pinkHeaderStyles } from "../../styles/pinkHeader";
-import { NavigationProp, useNavigation } from "@react-navigation/native";
+import { NavigationProp, useNavigation, useFocusEffect } from "@react-navigation/native";
 import { RootStackParamList } from "../../navigation/types";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useDispatch, useSelector } from "react-redux";
@@ -236,6 +236,8 @@ const ListFooter = memo(
 
 export default function TaskListScreen() {
   const insets = useSafeAreaInsets();
+
+
   const [modalVisible, setModalVisible] = useState(false);
   const [showAddMemberModal, setShowAddMemberModal] = useState(false);
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
@@ -727,7 +729,7 @@ export default function TaskListScreen() {
               size={24}
               color="#ffffff"
               style={{
-                backgroundColor: "#ff5a7a",
+                backgroundColor: "#f7577c",
                 borderRadius: 8,
                 padding: 7,
               }}
@@ -743,7 +745,7 @@ export default function TaskListScreen() {
               size={24}
               color="#000000"
               style={{
-                backgroundColor: "#ff5a7a",
+                backgroundColor: "#f7577c",
                 borderRadius: 8,
                 padding: 7,
               }}
@@ -1068,7 +1070,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
   },
   appbarHeader: {
-    backgroundColor: "#ff5a7a",
+    backgroundColor: "#f7577c",
     elevation: 0,
     shadowOpacity: 0,
   },
@@ -1114,7 +1116,7 @@ const styles = StyleSheet.create({
     fontFamily: "MavenPro",
     fontSize: responsiveFont(14),
     fontWeight: "700",
-    color: "#ff5a7a",
+    color: "#f7577c",
   },
   accordionDescription: {
     fontFamily: "MavenPro",
@@ -1145,7 +1147,7 @@ const styles = StyleSheet.create({
     marginTop: responsiveHeight(14),
     padding: responsiveHeight(18),
     borderRadius: 12,
-    backgroundColor: "#ff5a7a",
+    backgroundColor: "#f7577c",
   },
   addStageButtonLabel: {
     fontSize: responsiveFont(14),

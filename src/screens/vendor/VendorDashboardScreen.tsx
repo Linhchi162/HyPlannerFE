@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+﻿import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -6,10 +6,8 @@ import {
   SafeAreaView,
   TouchableOpacity,
   ScrollView,
-  Alert,
-  Linking,
 } from "react-native";
-import { ChevronLeft, Package, User, LogOut, Crown } from "lucide-react-native";
+import { ChevronLeft, Package, User, LogOut } from "lucide-react-native";
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../../navigation/types";
@@ -24,7 +22,6 @@ import { useSelector } from "react-redux";
 import { selectCurrentUser } from "../../store/authSlice";
 import { auth } from "../../service/firebase";
 import {
-  createVendorPriorityPayment,
   subscribeVendorProfile,
   Vendor,
 } from "../../service/vendorService";
@@ -39,7 +36,6 @@ export default function VendorDashboardScreen() {
     currentUser?._id ||
     currentUser?.uid || "";
   const [vendorProfile, setVendorProfile] = useState<Vendor | null>(null);
-  const [isCreatingPayment, setIsCreatingPayment] = useState(false);
 
   useEffect(() => {
     if (!vendorId) return;
@@ -47,41 +43,10 @@ export default function VendorDashboardScreen() {
     return () => unsub();
   }, [vendorId]);
 
-  const isFeatured = vendorProfile?.isFeatured === true;
-
-  const handleRegisterPriority = async () => {
-    if (!vendorId) {
-      Alert.alert("Lỗi", "Không tìm thấy thông tin nhà cung cấp.");
-      return;
-    }
-    if (!vendorProfile) {
-      Alert.alert(
-        "Lỗi",
-        "Chưa có hồ sơ nhà cung cấp. Vui lòng cập nhật hồ sơ trước."
-      );
-      return;
-    }
-    try {
-      setIsCreatingPayment(true);
-      const result = await createVendorPriorityPayment(vendorId, 50000);
-      const checkoutUrl = result?.checkoutUrl || result?.data?.checkoutUrl;
-      if (!checkoutUrl) {
-        throw new Error("missing-checkout-url");
-      }
-      await Linking.openURL(checkoutUrl);
-    } catch {
-      Alert.alert("Lỗi", "Không thể tạo thanh toán. Vui lòng thử lại.");
-    } finally {
-      setIsCreatingPayment(false);
-    }
-  };
-
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <ChevronLeft size={24} color="#ffffff" />
-        </TouchableOpacity>
+        <View style={styles.headerSpacer} />
         <View style={pinkHeaderStyles.titleContainer}>
           <Text style={[styles.headerTitle, pinkHeaderStyles.title]}>
             Kênh nhà cung cấp
@@ -116,38 +81,10 @@ export default function VendorDashboardScreen() {
             style={styles.outlineBtn}
             onPress={() => navigation.navigate("VendorServices")}
           >
-            <Package size={18} color="#ff5a7a" />
+            <Package size={18} color="#f7577c" />
             <Text style={styles.outlineBtnText}>Quản lý dịch vụ</Text>
           </TouchableOpacity>
         </View>
-
-        <View style={[styles.card, styles.featuredCard]}>
-          <View style={styles.featuredHeader}>
-            <Text style={styles.featuredPrice}>50.000 VND / tháng</Text>
-          </View>
-          <Text style={styles.cardTitle}>Ưu tiên hiển thị</Text>
-          <Text style={styles.cardSub}>
-            Nhà cung cấp được đẩy lên đầu danh sách và gắn nhãn đề xuất.
-          </Text>
-          <TouchableOpacity
-            style={[
-              styles.primaryBtn,
-              (isFeatured || isCreatingPayment) && styles.primaryBtnDisabled,
-            ]}
-            onPress={handleRegisterPriority}
-            disabled={isFeatured || isCreatingPayment}
-          >
-            <Crown size={18} color="#ffffff" />
-            <Text style={styles.primaryBtnText}>
-              {isFeatured
-                ? "Đã đăng ký"
-                : isCreatingPayment
-                  ? "Đang tạo thanh toán..."
-                  : "Đăng ký gói ưu tiên"}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
       </ScrollView>
     </SafeAreaView>
   );
@@ -159,7 +96,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#f8f9fa",
   },
   header: {
-    backgroundColor: "#ff5a7a",
+    backgroundColor: "#f7577c",
     paddingHorizontal: responsiveWidth(16),
     paddingVertical: responsiveHeight(12),
     height: responsiveHeight(56),
@@ -174,6 +111,10 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     textAlign: "center",
   },
+  headerSpacer: {
+    width: responsiveWidth(24),
+    height: responsiveWidth(24),
+  },
   content: {
     padding: responsiveWidth(16),
     paddingBottom: responsiveHeight(120),
@@ -185,21 +126,6 @@ const styles = StyleSheet.create({
     padding: responsiveWidth(12),
     borderWidth: 1,
     borderColor: "#f3f4f6",
-  },
-  featuredCard: {
-    borderColor: "#ffd1da",
-    backgroundColor: "#fff5f7",
-  },
-  featuredHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: responsiveHeight(8),
-  },
-  featuredPrice: {
-    fontFamily: "Montserrat-SemiBold",
-    fontSize: responsiveFont(12),
-    color: "#be123c",
   },
   cardTitle: {
     fontFamily: "Montserrat-SemiBold",
@@ -213,16 +139,13 @@ const styles = StyleSheet.create({
   },
   primaryBtn: {
     marginTop: responsiveHeight(12),
-    backgroundColor: "#ff5a7a",
+    backgroundColor: "#f7577c",
     paddingVertical: responsiveHeight(10),
     borderRadius: responsiveWidth(10),
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: responsiveWidth(6),
-  },
-  primaryBtnDisabled: {
-    backgroundColor: "#fda4af",
   },
   primaryBtnText: {
     color: "#ffffff",
@@ -232,7 +155,7 @@ const styles = StyleSheet.create({
   outlineBtn: {
     marginTop: responsiveHeight(12),
     borderWidth: 1,
-    borderColor: "#ff5a7a",
+    borderColor: "#f7577c",
     paddingVertical: responsiveHeight(10),
     borderRadius: responsiveWidth(10),
     flexDirection: "row",
@@ -241,7 +164,7 @@ const styles = StyleSheet.create({
     gap: responsiveWidth(6),
   },
   outlineBtnText: {
-    color: "#ff5a7a",
+    color: "#f7577c",
     fontFamily: "Montserrat-SemiBold",
     fontSize: responsiveFont(13),
   },

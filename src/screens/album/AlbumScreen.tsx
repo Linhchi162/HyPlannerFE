@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+﻿import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   StyleSheet,
@@ -66,7 +66,7 @@ const AlbumScreen = () => {
   // Chỉ đặt StatusBar khi màn này focus; không reset trong cleanup để tránh ghi đè sau khi Home đã set (top panel bị đẩy lên khi quay từ Tủ đồ)
   useFocusEffect(
     useCallback(() => {
-      StatusBar.setBackgroundColor("#ff5a7a");
+      StatusBar.setBackgroundColor("#f7577c");
       StatusBar.setBarStyle("light-content");
       if (Platform.OS === "android") StatusBar.setTranslucent(false);
       return () => { };
@@ -110,6 +110,7 @@ const AlbumScreen = () => {
 
   return (
     <SafeAreaView style={[styles.container, { paddingTop: topPad }]}>
+      <StatusBar backgroundColor="#f7577c" barStyle="light-content" translucent={false} />
       <View style={styles.header}>
         <View style={styles.headerRow}>
           <TouchableOpacity
@@ -186,10 +187,10 @@ const AlbumScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#ff5a7a",
+    backgroundColor: "#f7577c",
   },
   header: {
-    backgroundColor: "#ff5a7a",
+    backgroundColor: "#f7577c",
     paddingHorizontal: responsiveWidth(16),
     height: responsiveHeight(10),
     justifyContent: "center",
