@@ -152,7 +152,7 @@ export const TopicGroupsScreen = ({ navigation }: any) => {
                 styles.categoryChip,
                 (selectedCategory === item ||
                   (item === "All" && !selectedCategory)) &&
-                  styles.activeCategoryChip,
+                styles.activeCategoryChip,
               ]}
               onPress={() =>
                 setSelectedCategory(item === "All" ? undefined : item)
@@ -163,7 +163,7 @@ export const TopicGroupsScreen = ({ navigation }: any) => {
                   styles.categoryText,
                   (selectedCategory === item ||
                     (item === "All" && !selectedCategory)) &&
-                    styles.activeCategoryText,
+                  styles.activeCategoryText,
                 ]}
               >
                 {item}
@@ -226,7 +226,7 @@ const styles = StyleSheet.create({
     width: responsiveWidth(24),
   },
   logo: {
-    fontFamily: "MavenPro-Bold",
+    fontFamily: "Roboto",
     fontSize: responsiveFont(24),
     color: COLORS.white,
     flex: 1,
@@ -240,12 +240,12 @@ const styles = StyleSheet.create({
     gap: responsiveWidth(8),
   },
   title: {
-    fontFamily: "Montserrat-Bold",
+    fontFamily: "Roboto",
     fontSize: responsiveFont(22),
     color: "#1f2937",
   },
   subtitle: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
     fontSize: responsiveFont(13),
     color: COLORS.primarySoft,
     textAlign: "center",
@@ -278,7 +278,7 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
     fontSize: responsiveFont(14),
     color: COLORS.textDark,
   },
@@ -309,7 +309,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.primary,
   },
   tabText: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
     fontSize: responsiveFont(14),
     color: COLORS.textDark,
   },
@@ -340,7 +340,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.primary,
   },
   categoryText: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
     fontSize: responsiveFont(13),
     color: COLORS.textDark,
   },

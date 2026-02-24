@@ -194,7 +194,7 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: responsiveFont(18),
-    fontFamily: fonts.montserratSemiBold,
+    fontFamily: "Roboto",
     color: "#111827",
   },
   closeButton: {
@@ -214,13 +214,13 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: responsiveFont(16),
-    fontFamily: fonts.montserratMedium,
+    fontFamily: "Roboto",
     color: "#6b7280",
     marginBottom: spacing.xs,
   },
   emptySubtext: {
     fontSize: responsiveFont(14),
-    fontFamily: fonts.montserratMedium,
+    fontFamily: "Roboto",
     color: "#9ca3af",
     textAlign: "center",
   },
@@ -263,13 +263,13 @@ const styles = StyleSheet.create({
   },
   albumName: {
     fontSize: responsiveFont(16),
-    fontFamily: fonts.montserratSemiBold,
+    fontFamily: "Roboto",
     color: "#111827",
     marginBottom: spacing.xs,
   },
   albumDetails: {
     fontSize: responsiveFont(14),
-    fontFamily: fonts.montserratMedium,
+    fontFamily: "Roboto",
     color: "#6b7280",
   },
 });

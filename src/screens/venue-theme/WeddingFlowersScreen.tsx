@@ -156,7 +156,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: responsiveFont(16),
-    fontFamily: "MavenPro-Bold",
+    fontFamily: "Roboto",
     color: "#1f2937",
     textAlign: "center",
   },
@@ -173,7 +173,7 @@ const styles = StyleSheet.create({
   errorText: {
     color: "red",
     textAlign: "center",
-    fontFamily: fonts.montserratMedium,
+    fontFamily: "Roboto",
   },
   scrollContent: {
     paddingBottom: responsiveHeight(100),
@@ -218,7 +218,7 @@ const styles = StyleSheet.create({
     color: "#000000",
     textAlign: "center",
     fontSize: responsiveFont(14),
-    fontFamily: fonts.montserratSemiBold,
+    fontFamily: "Roboto",
     marginRight: responsiveWidth(4),
   },
 });

@@ -148,7 +148,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   headerTitle: {
-    fontFamily: "MavenPro-Bold",
+    fontFamily: "Roboto",
     fontSize: responsiveFont(18),
     color: "#ffffff",
   },
@@ -156,7 +156,7 @@ const styles = StyleSheet.create({
     padding: responsiveWidth(16),
   },
   label: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
     fontSize: responsiveFont(13),
     color: "#111827",
     marginTop: responsiveHeight(12),
@@ -182,7 +182,7 @@ const styles = StyleSheet.create({
   },
   primaryBtnText: {
     color: "#ffffff",
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
     fontSize: responsiveFont(13),
   },
 });

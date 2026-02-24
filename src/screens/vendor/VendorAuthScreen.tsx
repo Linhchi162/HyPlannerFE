@@ -244,7 +244,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   headerTitle: {
-    fontFamily: "MavenPro",
+    fontFamily: "Roboto",
     fontSize: responsiveFont(18),
     fontWeight: "700",
     color: "#ffffff",
@@ -292,7 +292,7 @@ const styles = StyleSheet.create({
   forgotPasswordText: {
     fontSize: responsiveFont(12),
     color: "#f7577c",
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
   },
   primaryBtn: {
     marginTop: responsiveHeight(6),
@@ -304,7 +304,7 @@ const styles = StyleSheet.create({
   },
   primaryBtnText: {
     color: "#ffffff",
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
     fontSize: responsiveFont(13),
   },
   modeToggle: {

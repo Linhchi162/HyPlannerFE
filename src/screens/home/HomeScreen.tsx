@@ -534,6 +534,7 @@ const HomeScreen = () => {
       <ImageBackground
         source={require("../../../assets/images/ảnh nền hồng - trang chủ.jpg")}
         style={styles.homeBackground}
+        imageStyle={{ top: -250 }}
         resizeMode="cover"
       >
         <ScrollView

@@ -125,7 +125,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   headerTitle: {
-    fontFamily: "MavenPro",
+    fontFamily: "Roboto",
     fontSize: responsiveFont(18),
     fontWeight: "700",
     color: "#ffffff",
@@ -160,7 +160,7 @@ const styles = StyleSheet.create({
     paddingRight: responsiveWidth(12),
   },
   cardTitle: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
     fontSize: responsiveFont(14),
     color: "#111827",
   },
@@ -182,7 +182,7 @@ const styles = StyleSheet.create({
   callBtnText: {
     color: "#f7577c",
     fontSize: responsiveFont(12),
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
   },
   emptyText: {
     textAlign: "center",

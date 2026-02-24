@@ -472,7 +472,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   headerTitle: {
-    fontFamily: "MavenPro",
+    fontFamily: "Roboto",
     fontSize: responsiveFont(18),
     fontWeight: "700",
     color: "#ffffff",
@@ -498,7 +498,7 @@ const styles = StyleSheet.create({
     marginTop: responsiveHeight(16),
   },
   vendorName: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
     fontSize: responsiveFont(20),
     color: "#111827",
     marginBottom: responsiveHeight(6),
@@ -520,7 +520,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   heroPlaceholderText: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
     fontSize: responsiveFont(28),
     color: "#f7577c",
   },
@@ -542,7 +542,7 @@ const styles = StyleSheet.create({
     color: "#6b7280",
   },
   sectionTitle: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
     fontSize: responsiveFont(14),
     color: "#111827",
     marginTop: responsiveHeight(10),
@@ -654,7 +654,7 @@ const styles = StyleSheet.create({
   },
   primaryBtnText: {
     color: "#ffffff",
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
     fontSize: responsiveFont(13),
   },
   primaryBtnDisabled: {
@@ -673,7 +673,7 @@ const styles = StyleSheet.create({
   },
   outlineBtnText: {
     color: "#f7577c",
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
     fontSize: responsiveFont(13),
   },
 });

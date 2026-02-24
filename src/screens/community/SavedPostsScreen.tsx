@@ -155,7 +155,7 @@ const styles = StyleSheet.create({
     gap: responsiveWidth(8),
   },
   headerTitle: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
     fontSize: responsiveFont(18),
     color: "#1f2937",
   },
@@ -175,14 +175,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: responsiveWidth(32),
   },
   emptyTitle: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
     fontSize: responsiveFont(18),
     color: "#1f2937",
     marginTop: responsiveHeight(16),
     marginBottom: responsiveHeight(8),
   },
   emptyText: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
     fontSize: responsiveFont(14),
     color: "#6b7280",
     textAlign: "center",

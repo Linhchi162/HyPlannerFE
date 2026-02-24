@@ -272,7 +272,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: responsiveFont(35),
     color: "#333",
-    fontFamily: "Gwendolyn-Regular",
+    fontFamily: "Roboto",
     marginTop: responsiveHeight(10),
     textAlign: "center",
   },
@@ -302,13 +302,13 @@ const styles = StyleSheet.create({
   label: {
     fontSize: responsiveFont(12),
     color: "#831843",
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
     marginBottom: 4,
   },
   note: {
     fontSize: responsiveFont(10),
     color: "#6B7280",
-    fontFamily: "Montserrat-Regular",
+    fontFamily: "Roboto",
   },
   input: {
     backgroundColor: "#fff",
@@ -316,7 +316,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 13,
     fontSize: responsiveFont(13),
-    fontFamily: "Montserrat-Regular",
+    fontFamily: "Roboto",
     borderWidth: 1,
     borderColor: "#F9E2E7",
     marginBottom: 0,
@@ -337,6 +337,6 @@ const styles = StyleSheet.create({
     color: "red",
     fontSize: responsiveFont(11),
     marginTop: 4,
-    fontFamily: "Montserrat-Regular",
+    fontFamily: "Roboto",
   },
 });

@@ -650,7 +650,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   headerTitle: {
-    fontFamily: "MavenPro",
+    fontFamily: "Roboto",
     fontSize: responsiveFont(18),
     fontWeight: "700",
     color: "#ffffff",
@@ -670,7 +670,7 @@ const styles = StyleSheet.create({
     color: "#6b7280",
   },
   label: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
     fontSize: responsiveFont(13),
     color: "#111827",
     marginTop: responsiveHeight(12),
@@ -711,7 +711,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   imagePlaceholderText: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
     fontSize: responsiveFont(24),
     color: "#f7577c",
   },
@@ -748,7 +748,7 @@ const styles = StyleSheet.create({
   },
   galleryAddText: {
     color: "#ffffff",
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
     fontSize: responsiveFont(12),
   },
   galleryGrid: {
@@ -818,7 +818,7 @@ const styles = StyleSheet.create({
   },
   primaryBtnText: {
     color: "#ffffff",
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
     fontSize: responsiveFont(13),
   },
   secondaryBtn: {
@@ -833,7 +833,7 @@ const styles = StyleSheet.create({
   },
   secondaryBtnText: {
     color: "#f7577c",
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
     fontSize: responsiveFont(13),
   },
   modalSafeArea: {
@@ -909,7 +909,7 @@ const styles = StyleSheet.create({
   },
   dangerBtnText: {
     color: "#ffffff",
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
     fontSize: responsiveFont(13),
   },
 });

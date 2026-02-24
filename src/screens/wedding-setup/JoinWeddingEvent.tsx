@@ -170,7 +170,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: responsiveFont(30),
     color: "#333",
-    fontFamily: "Gwendolyn-Regular",
+    fontFamily: "Roboto",
     marginTop: responsiveHeight(10),
     textAlign: "center",
   },
@@ -188,7 +188,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: responsiveFont(12),
     color: "#831843",
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
     marginBottom: 4,
   },
   input: {
@@ -197,7 +197,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 13,
     fontSize: responsiveFont(13),
-    fontFamily: "Montserrat-Regular",
+    fontFamily: "Roboto",
     borderWidth: 1,
     borderColor: "#F9E2E7",
     marginBottom: 0,

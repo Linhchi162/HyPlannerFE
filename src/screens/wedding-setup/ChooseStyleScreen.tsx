@@ -199,7 +199,7 @@ const styles = StyleSheet.create({
   },
   itemTitle: {
     fontSize: responsiveFont(16),
-    fontFamily: fonts.montserratMedium,
+    fontFamily: "Roboto",
     color: "#1f2937",
     textAlign: "center",
   },

@@ -218,7 +218,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   headerTitle: {
-    fontFamily: "MavenPro",
+    fontFamily: "Roboto",
     fontSize: responsiveFont(18),
     fontWeight: "700",
     color: "#ffffff",
@@ -228,7 +228,7 @@ const styles = StyleSheet.create({
     paddingBottom: responsiveHeight(120),
   },
   label: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
     fontSize: responsiveFont(13),
     color: "#111827",
     marginTop: responsiveHeight(12),
@@ -256,7 +256,7 @@ const styles = StyleSheet.create({
   },
   primaryBtnText: {
     color: "#ffffff",
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
     fontSize: responsiveFont(13),
   },
   primaryBtnDisabled: {
@@ -277,7 +277,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   cardTitle: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
     fontSize: responsiveFont(14),
     color: "#111827",
   },

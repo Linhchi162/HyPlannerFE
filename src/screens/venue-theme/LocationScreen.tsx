@@ -221,7 +221,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
   },
   headerTitle: {
-    fontFamily: "MavenPro-Bold",
+    fontFamily: "Roboto",
     fontSize: responsiveFont(24),
     fontWeight: "600",
     color: "#1f2937",

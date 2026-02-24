@@ -305,7 +305,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: responsiveFont(18),
-    fontFamily: "MavenPro-Bold",
+    fontFamily: "Roboto",
     color: COLORS.textPrimary,
   },
   content: {
@@ -330,7 +330,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: responsiveFont(16),
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
     color: COLORS.textPrimary,
     marginBottom: responsiveHeight(8),
   },
@@ -340,7 +340,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: responsiveWidth(16),
     paddingVertical: responsiveHeight(16),
     fontSize: responsiveFont(16),
-    fontFamily: "Montserrat-Regular",
+    fontFamily: "Roboto",
     color: COLORS.textPrimary,
     borderWidth: 1,
     borderColor: "#E5E5E5",
@@ -358,7 +358,7 @@ const styles = StyleSheet.create({
   },
   dateText: {
     fontSize: responsiveFont(16),
-    fontFamily: "Montserrat-Regular",
+    fontFamily: "Roboto",
     color: COLORS.textPrimary,
   },
   fixedButtonContainer: {
@@ -379,7 +379,7 @@ const styles = StyleSheet.create({
   },
   saveButtonText: {
     fontSize: responsiveFont(18),
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
     color: COLORS.white,
   },
 });

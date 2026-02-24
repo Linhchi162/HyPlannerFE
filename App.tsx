@@ -82,7 +82,8 @@ export default function App() {
       "Charm-Regular": require("./assets/fonts/Charm-Regular.ttf"),
       "Charm-Bold": require("./assets/fonts/Charm-Bold.ttf"),
       MavenPro: require("./assets/fonts/MavenPro-VariableFont_wght.ttf"),
-      // ...các font khác
+      Roboto: require("./assets/fonts/Roboto-VariableFont_wdth,wght.ttf"),
+      "Roboto-Italic": require("./assets/fonts/Roboto-Italic-VariableFont_wdth,wght.ttf"),
     }).then(() => setFontsLoaded(true));
 
     // Listener for notifications received while app is in foreground

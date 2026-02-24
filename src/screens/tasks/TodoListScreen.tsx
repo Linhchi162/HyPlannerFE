@@ -69,7 +69,7 @@ const todoStyles = StyleSheet.create({
     fontSize: responsiveFont(24),
     fontWeight: "700",
     color: "#d35a68",
-    fontFamily: "MavenPro",
+    fontFamily: "Roboto",
   },
   content: {
     flex: 1,

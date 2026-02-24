@@ -3,7 +3,7 @@ import { responsiveFont } from "../../assets/styles/utils/responsive";
 
 export const pinkHeaderStyles = StyleSheet.create({
     title: {
-        fontFamily: "MavenPro",
+        fontFamily: "Roboto",
         fontSize: responsiveFont(16),
         fontWeight: "700",
         textAlign: "center",
