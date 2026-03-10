@@ -41,3 +41,6 @@ hyplanner.json
 
 # typescript
 *.tsbuildinfo
+
+android
+.idea

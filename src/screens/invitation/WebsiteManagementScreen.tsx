@@ -69,6 +69,7 @@ const COLORS = {
   info: "#3498db",
   danger: "#e74c3c",
   neutral: "#95a5a6",
+  error: "#e74c3c",
 };
 
 export default function WebsiteManagementScreen() {
@@ -121,7 +122,7 @@ export default function WebsiteManagementScreen() {
   const invitationBaseUrl =
     process.env.EXPO_PUBLIC_INVITATION_BASE_URL ||
     process.env.EXPO_PUBLIC_BASE_URL ||
-    "https://hy-planner-be.vercel.app";
+    "https://hyplanner-be.vercel.app";
   const websiteUrl = `${invitationBaseUrl.replace(/\/+$/, "")}/inviletter/${invitation.slug
     }`;
 

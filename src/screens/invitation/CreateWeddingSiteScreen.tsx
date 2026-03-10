@@ -45,6 +45,7 @@ import {
 import { RootStackParamList } from "../../navigation/types";
 import slugify from "slugify";
 import invitationClient from "../../api/invitationClient";
+import apiClient from "../../api/client";
 import { useAppDispatch } from "../../store/hooks";
 import { fetchUserInvitation } from "../../store/invitationSlice";
 
@@ -57,6 +58,7 @@ export default function CreateWeddingSiteScreen() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const route = useRoute<CreateWeddingSiteRouteProp>();
   const { template } = route.params; // Nhận template từ màn hình trước
+  const useAI = (route.params as any)?.useAI;
   const dispatch = useAppDispatch();
 
   const [groomName, setGroomName] = useState("");
@@ -68,7 +70,7 @@ export default function CreateWeddingSiteScreen() {
   const invitationBaseUrl =
     process.env.EXPO_PUBLIC_INVITATION_BASE_URL ||
     process.env.EXPO_PUBLIC_BASE_URL ||
-    "https://hy-planner-be.vercel.app";
+    "https://hyplanner-be.vercel.app";
   const invitationHost = invitationBaseUrl
     .replace(/^https?:\/\//, "")
     .replace(/\/+$/, "");
@@ -91,27 +93,29 @@ export default function CreateWeddingSiteScreen() {
     setIsLoading(true);
 
     try {
-      const response = await invitationClient.post("/invitation/invitation-letters", {
+      const response = await apiClient.post("/invitation/invitation-letters", {
         templateId: template.id,
         groomName,
         brideName,
         weddingDate,
         slug,
+        useAI,
       });
       const result = response.data;
       dispatch(fetchUserInvitation());
 
-      navigation.reset({
-        index: 0,
-        routes: [
-          {
-            name: "Main",
-            params: {
-              screen: "WebsiteTab",
-            },
-          },
-        ],
-      });
+      // navigation.reset({
+      //   index: 0,
+      //   routes: [
+      //     {
+      //       name: "Main",
+      //       params: {
+      //         screen: "WebsiteTab",
+      //       },
+      //     },
+      //   ],
+      // });
+      navigation.navigate("WebsiteManagement", { invitation: result.data });
     } catch (error: any) {
       const message =
         typeof error === "object" && error !== null && "message" in error
@@ -142,7 +146,7 @@ export default function CreateWeddingSiteScreen() {
         </TouchableOpacity>
         <View style={pinkHeaderStyles.titleContainer}>
           <Text style={[styles.headerTitle, pinkHeaderStyles.title]}>
-            Tạo Mới Website Đám Cưới
+            {useAI ? "Tạo Website Đám Cưới (AI)" : "Tạo Mới Website Đám Cưới"}
           </Text>
         </View>
         <View style={{ width: responsiveWidth(24) }} />
@@ -161,6 +165,7 @@ export default function CreateWeddingSiteScreen() {
           value={groomName}
           onChangeText={setGroomName}
           placeholder="Nhập tên chú rể"
+          placeholderTextColor={COLORS.textSecondary}
         />
 
         <Text style={styles.label}>Tên cô dâu*</Text>
@@ -169,6 +174,7 @@ export default function CreateWeddingSiteScreen() {
           value={brideName}
           onChangeText={setBrideName}
           placeholder="Nhập tên cô dâu"
+          placeholderTextColor={COLORS.textSecondary}
         />
 
         <Text style={styles.label}>Ngày tổ chức đám cưới*</Text>
@@ -177,6 +183,7 @@ export default function CreateWeddingSiteScreen() {
           value={weddingDate}
           onChangeText={setWeddingDate}
           placeholder="DD/MM/YYYY"
+          placeholderTextColor={COLORS.textSecondary}
         />
 
         <Text style={styles.label}>Địa chỉ website*</Text>
@@ -189,6 +196,7 @@ export default function CreateWeddingSiteScreen() {
             value={slug}
             onChangeText={setSlug}
             placeholder="ten-chu-re-va-co-dau"
+            placeholderTextColor={COLORS.textSecondary}
             autoCapitalize="none"
           />
         </View>
@@ -253,6 +261,7 @@ const styles = StyleSheet.create({
     marginBottom: responsiveHeight(16),
     borderWidth: 1,
     borderColor: "#D1D5DB",
+    color: COLORS.textPrimary, // 👈 ADD THIS
   },
   slugInputContainer: {
     flexDirection: "row",
@@ -274,6 +283,7 @@ const styles = StyleSheet.create({
     paddingVertical: responsiveHeight(12),
     paddingHorizontal: responsiveWidth(8),
     fontSize: responsiveFont(16),
+    color: COLORS.textPrimary, // 👈 ADD THIS
   },
   button: {
     backgroundColor: COLORS.primary,
