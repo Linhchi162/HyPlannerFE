@@ -10,7 +10,6 @@ import {
   TextInput,
   Alert,
   Image,
-  Modal,
 } from "react-native";
 import { ChevronLeft, MessageCircle, Star } from "lucide-react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
@@ -50,7 +49,6 @@ export default function VendorDetailScreen() {
   const [selectedRating, setSelectedRating] = useState(0);
   const [ratingSubmitting, setRatingSubmitting] = useState(false);
   const [hasRated, setHasRated] = useState(false);
-  const [previewImage, setPreviewImage] = useState<string | null>(null);
   const currentUser = useSelector(selectCurrentUser);
 
   useEffect(() => {
@@ -212,32 +210,6 @@ export default function VendorDetailScreen() {
                 ? vendor.description
                 : "Nhà cung cấp chưa cập nhật mô tả."}
             </Text>
-
-
-            {Array.isArray(vendor.galleryUrls) && vendor.galleryUrls.length > 0 ? (
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.galleryRow}
-              >
-                {vendor.galleryUrls.slice(0, 6).map((url) => (
-                  <TouchableOpacity
-                    key={url}
-                    onPress={() => setPreviewImage(url)}
-                  >
-                    <Image
-                      source={{ uri: url }}
-                      style={styles.galleryImage}
-                    />
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            ) : (
-              <Text style={styles.sectionText}>
-                Nhà cung cấp chưa cập nhật ảnh.
-              </Text>
-            )}
-
             <Text style={styles.sectionTitle}>Dịch vụ cung cấp</Text>
             {Array.isArray(vendor.services) && vendor.services.length > 0 ? (
               <View style={styles.serviceList}>
@@ -436,23 +408,6 @@ export default function VendorDetailScreen() {
         )}
       </ScrollView>
 
-      <Modal visible={!!previewImage} transparent>
-        <View style={styles.previewOverlay}>
-          <TouchableOpacity
-            style={styles.previewClose}
-            onPress={() => setPreviewImage(null)}
-          >
-            <Text style={styles.previewCloseText}>×</Text>
-          </TouchableOpacity>
-          {previewImage ? (
-            <Image
-              source={{ uri: previewImage }}
-              style={styles.previewImage}
-              resizeMode="contain"
-            />
-          ) : null}
-        </View>
-      </Modal>
     </SafeAreaView>
   );
 }
@@ -577,44 +532,6 @@ const styles = StyleSheet.create({
   serviceChipTextActive: {
     color: "#ffffff",
     fontWeight: "700",
-  },
-  galleryRow: {
-    marginTop: responsiveHeight(8),
-    gap: responsiveWidth(8),
-    paddingBottom: responsiveHeight(4),
-  },
-  galleryImage: {
-    width: responsiveWidth(120),
-    height: responsiveWidth(90),
-    borderRadius: responsiveWidth(10),
-    backgroundColor: "#ffe4ea",
-  },
-  previewOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.9)",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: responsiveWidth(16),
-  },
-  previewImage: {
-    width: "100%",
-    height: "80%",
-  },
-  previewClose: {
-    position: "absolute",
-    right: responsiveWidth(16),
-    top: responsiveHeight(30),
-    width: responsiveWidth(36),
-    height: responsiveWidth(36),
-    borderRadius: responsiveWidth(18),
-    backgroundColor: "rgba(255,255,255,0.2)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  previewCloseText: {
-    color: "#ffffff",
-    fontSize: responsiveFont(22),
-    lineHeight: responsiveFont(22),
   },
   requestBox: {
     marginTop: responsiveHeight(18),

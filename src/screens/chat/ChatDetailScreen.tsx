@@ -9,8 +9,11 @@ import {
   TextInput,
   ActivityIndicator,
   Alert,
+  Image,
+  Modal,
 } from "react-native";
-import { ChevronLeft, Send } from "lucide-react-native";
+import { ChevronLeft, ImagePlus, Send } from "lucide-react-native";
+import * as ImagePicker from "expo-image-picker";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../../navigation/types";
@@ -29,6 +32,7 @@ import {
   sendChatMessage,
   subscribeChatMessages,
 } from "../../service/chatService";
+import apiClient from "../../api/client";
 
 export default function ChatDetailScreen() {
   const navigation =
@@ -51,6 +55,8 @@ export default function ChatDetailScreen() {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(true);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   const headerTitle = useMemo(() => {
     if (params?.role === "vendor") return params?.userName || "Khách hàng";
@@ -119,7 +125,7 @@ export default function ChatDetailScreen() {
   useEffect(() => {
     if (!chatId) return;
     if (!params?.role) return;
-    markChatRead(chatId, params.role).catch(() => {});
+    markChatRead(chatId, params.role).catch(() => { });
   }, [chatId, params?.role]);
 
   const handleSend = async () => {
@@ -142,10 +148,10 @@ export default function ChatDetailScreen() {
       params?.role === "vendor"
         ? params?.vendorImageUrl || null
         : currentUser?.picture ||
-          currentUser?.avatar ||
-          currentUser?.photoUrl ||
-          currentUser?.photoURL ||
-          null;
+        currentUser?.avatar ||
+        currentUser?.photoUrl ||
+        currentUser?.photoURL ||
+        null;
     await sendChatMessage({
       chatId,
       text,
@@ -153,6 +159,94 @@ export default function ChatDetailScreen() {
       senderRole: params?.role === "vendor" ? "vendor" : "user",
       senderImageUrl,
     });
+  };
+
+  const handleSendImage = async () => {
+    if (!chatId) {
+      Alert.alert("Lỗi", "Không thể mở cuộc trò chuyện.");
+      return;
+    }
+
+    const senderId =
+      params?.role === "vendor"
+        ? auth.currentUser?.uid
+        : currentUser?.id || currentUser?._id || currentUser?.uid;
+
+    if (!senderId) {
+      Alert.alert("Chưa đăng nhập", "Vui lòng đăng nhập để nhắn tin.");
+      return;
+    }
+
+    try {
+      const permissionResult =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permissionResult.granted) {
+        Alert.alert(
+          "Quyền truy cập bị từ chối",
+          "Bạn cần cho phép truy cập thư viện ảnh để gửi ảnh."
+        );
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        allowsMultipleSelection: false,
+        quality: 0.8,
+      });
+
+      if (result.canceled || !result.assets[0]) return;
+
+      setUploadingImage(true);
+      const asset = result.assets[0];
+      const filename = asset.uri.split("/").pop() || "chat-image.jpg";
+      const extMatch = /\.(\w+)$/.exec(filename);
+      const type = extMatch ? `image/${extMatch[1]}` : "image/jpeg";
+
+      const formData = new FormData();
+      formData.append("images", {
+        uri: asset.uri,
+        name: filename,
+        type,
+      } as any);
+
+      const uploadResponse = await apiClient.post(
+        "/upload/post-images",
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      const uploadedImageUrl = uploadResponse?.data?.imageUrls?.[0];
+      if (!uploadedImageUrl) {
+        Alert.alert("Lỗi", "Không thể tải ảnh lên. Vui lòng thử lại.");
+        return;
+      }
+
+      const senderImageUrl =
+        params?.role === "vendor"
+          ? params?.vendorImageUrl || null
+          : currentUser?.picture ||
+          currentUser?.avatar ||
+          currentUser?.photoUrl ||
+          currentUser?.photoURL ||
+          null;
+
+      await sendChatMessage({
+        chatId,
+        text: "",
+        imageUrl: uploadedImageUrl,
+        senderId,
+        senderRole: params?.role === "vendor" ? "vendor" : "user",
+        senderImageUrl,
+      });
+    } catch {
+      Alert.alert("Lỗi", "Không thể gửi ảnh. Vui lòng thử lại.");
+    } finally {
+      setUploadingImage(false);
+    }
   };
 
   const formatMessageTime = (value?: any) => {
@@ -193,14 +287,28 @@ export default function ChatDetailScreen() {
                   fromMe ? styles.messageMe : styles.messageOther,
                 ]}
               >
-                <Text
-                  style={[
-                    styles.messageText,
-                    fromMe ? styles.messageTextMe : styles.messageTextOther,
-                  ]}
-                >
-                  {m.text}
-                </Text>
+                {m.text?.trim() ? (
+                  <Text
+                    style={[
+                      styles.messageText,
+                      fromMe ? styles.messageTextMe : styles.messageTextOther,
+                    ]}
+                  >
+                    {m.text}
+                  </Text>
+                ) : null}
+                {m.imageUrl ? (
+                  <TouchableOpacity
+                    activeOpacity={0.9}
+                    onPress={() => setPreviewImage(m.imageUrl || null)}
+                  >
+                    <Image
+                      source={{ uri: m.imageUrl }}
+                      style={styles.messageImage}
+                      resizeMode="cover"
+                    />
+                  </TouchableOpacity>
+                ) : null}
                 {m.createdAt ? (
                   <Text
                     style={[
@@ -218,6 +326,17 @@ export default function ChatDetailScreen() {
       </ScrollView>
 
       <View style={styles.inputRow}>
+        <TouchableOpacity
+          style={styles.imageBtn}
+          onPress={handleSendImage}
+          disabled={uploadingImage}
+        >
+          {uploadingImage ? (
+            <ActivityIndicator size="small" color="#f7577c" />
+          ) : (
+            <ImagePlus size={18} color="#f7577c" />
+          )}
+        </TouchableOpacity>
         <TextInput
           style={styles.input}
           value={message}
@@ -229,6 +348,24 @@ export default function ChatDetailScreen() {
           <Send size={18} color="#ffffff" />
         </TouchableOpacity>
       </View>
+
+      <Modal visible={!!previewImage} transparent>
+        <View style={styles.previewOverlay}>
+          <TouchableOpacity
+            style={styles.previewClose}
+            onPress={() => setPreviewImage(null)}
+          >
+            <Text style={styles.previewCloseText}>×</Text>
+          </TouchableOpacity>
+          {previewImage ? (
+            <Image
+              source={{ uri: previewImage }}
+              style={styles.previewImage}
+              resizeMode="contain"
+            />
+          ) : null}
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -293,6 +430,13 @@ const styles = StyleSheet.create({
   messageText: {
     fontSize: responsiveFont(12),
   },
+  messageImage: {
+    marginTop: responsiveHeight(6),
+    width: responsiveWidth(180),
+    height: responsiveWidth(180),
+    borderRadius: responsiveWidth(10),
+    backgroundColor: "#f3f4f6",
+  },
   messageTextMe: {
     color: "#ffffff",
   },
@@ -327,6 +471,15 @@ const styles = StyleSheet.create({
     fontSize: responsiveFont(12),
     color: "#111827",
   },
+  imageBtn: {
+    width: responsiveWidth(38),
+    height: responsiveWidth(38),
+    borderRadius: responsiveWidth(19),
+    marginRight: responsiveWidth(8),
+    backgroundColor: "#fff1f4",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   sendBtn: {
     marginLeft: responsiveWidth(10),
     backgroundColor: "#f7577c",
@@ -335,5 +488,33 @@ const styles = StyleSheet.create({
     borderRadius: responsiveWidth(20),
     alignItems: "center",
     justifyContent: "center",
+  },
+  previewOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.92)",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: responsiveWidth(12),
+  },
+  previewClose: {
+    position: "absolute",
+    top: responsiveHeight(42),
+    right: responsiveWidth(18),
+    zIndex: 2,
+    width: responsiveWidth(36),
+    height: responsiveWidth(36),
+    borderRadius: responsiveWidth(18),
+    backgroundColor: "rgba(255, 255, 255, 0.25)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  previewCloseText: {
+    color: "#ffffff",
+    fontSize: responsiveFont(24),
+    lineHeight: responsiveFont(24),
+  },
+  previewImage: {
+    width: "100%",
+    height: "82%",
   },
 });

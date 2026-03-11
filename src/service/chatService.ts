@@ -34,7 +34,8 @@ export type ChatSummary = {
 
 export type ChatMessage = {
   id: string;
-  text: string;
+  text?: string;
+  imageUrl?: string;
   senderId: string;
   senderRole: ChatRole;
   createdAt?: any;
@@ -118,21 +119,31 @@ export const subscribeChatMessages = (
 
 export const sendChatMessage = async (params: {
   chatId: string;
-  text: string;
+  text?: string;
+  imageUrl?: string | null;
   senderId: string;
   senderRole: ChatRole;
   senderImageUrl?: string | null;
 }) => {
-  const { chatId, text, senderId, senderRole, senderImageUrl } = params;
+  const { chatId, text, imageUrl, senderId, senderRole, senderImageUrl } = params;
+  const normalizedText = text?.trim() || "";
+  const normalizedImageUrl = imageUrl || null;
+
+  if (!normalizedText && !normalizedImageUrl) {
+    throw new Error("Message requires text or image.");
+  }
+
   await addDoc(collection(db, "chats", chatId, "messages"), {
-    text,
+    text: normalizedText,
+    ...(normalizedImageUrl ? { imageUrl: normalizedImageUrl } : {}),
     senderId,
     senderRole,
     createdAt: serverTimestamp(),
   });
   const unreadField = senderRole === "user" ? "vendorUnread" : "userUnread";
+  const previewMessage = normalizedText || "[Hình ảnh]";
   const chatUpdate: Record<string, any> = {
-    lastMessage: text,
+    lastMessage: previewMessage,
     updatedAt: serverTimestamp(),
     lastSenderId: senderId,
     lastSenderRole: senderRole,

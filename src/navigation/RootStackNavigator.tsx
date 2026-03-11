@@ -117,6 +117,7 @@ import VendorServicesScreen from "../screens/vendor/VendorServicesScreen";
 import VendorRequestsScreen from "../screens/vendor/VendorRequestsScreen";
 import ChatListScreen from "../screens/chat/ChatListScreen";
 import ChatDetailScreen from "../screens/chat/ChatDetailScreen";
+import AssistantScreen from "../screens/chat/AssistantScreen";
 import GroomAccessoriesPocketSquareScreen from "../screens/groom/GroomAccessoriesPocketSquareScreen";
 import GroomAccessoriesDecorScreen from "../screens/groom/GroomAccessoriesDecorScreen";
 import BrideAoDaiStyleScreen from "../screens/bride/BrideAoDaiStyleScreen";
@@ -692,6 +693,11 @@ const RootStackNavigator = () => {
           <Stack.Screen
             name="ChatDetail"
             component={ChatDetailScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="Assistant"
+            component={AssistantScreen}
             options={{ headerShown: false }}
           />
           <Stack.Screen

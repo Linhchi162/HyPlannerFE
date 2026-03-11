@@ -45,11 +45,9 @@ export default function VendorProfileEditScreen() {
   const [phone, setPhone] = useState("");
   const [description, setDescription] = useState("");
   const [imageUrl, setImageUrl] = useState<string | null>(null);
-  const [galleryUrls, setGalleryUrls] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
-  const [uploadingGallery, setUploadingGallery] = useState(false);
   const [cityModalVisible, setCityModalVisible] = useState(false);
   const [cityQuery, setCityQuery] = useState("");
   const [categoryModalVisible, setCategoryModalVisible] = useState(false);
@@ -175,7 +173,6 @@ export default function VendorProfileEditScreen() {
           setPhone(cached.phone || "");
           setDescription(cached.description || "");
           setImageUrl(cached.imageUrl || null);
-          setGalleryUrls(cached.galleryUrls || []);
         }
         const unsub = subscribeVendorProfile(uid, (data) => {
           if (!isMounted || !data) return;
@@ -185,7 +182,6 @@ export default function VendorProfileEditScreen() {
           setPhone(data.phone || "");
           setDescription(data.description || "");
           setImageUrl(data.imageUrl || null);
-          setGalleryUrls(data.galleryUrls || []);
         });
         if (isMounted) setLoading(false);
         return unsub;
@@ -270,71 +266,6 @@ export default function VendorProfileEditScreen() {
     } finally {
       setUploadingImage(false);
     }
-  };
-
-  const handlePickGallery = async () => {
-    try {
-      if (galleryUrls.length >= 6) {
-        Alert.alert("Giới hạn ảnh", "Bạn chỉ được tải tối đa 6 ảnh.");
-        return;
-      }
-      const permissionResult =
-        await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (permissionResult.granted === false) {
-        Alert.alert(
-          "Quyền truy cập bị từ chối",
-          "Bạn cần cho phép truy cập thư viện ảnh để tải ảnh."
-        );
-        return;
-      }
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ["images"],
-        allowsEditing: false,
-        allowsMultipleSelection: true,
-        selectionLimit: 6 - galleryUrls.length,
-        quality: 0.8,
-      });
-      if (result.canceled || !result.assets?.length) return;
-
-      const uid = auth.currentUser?.uid;
-      if (!uid) {
-        Alert.alert("Lỗi", "Chưa đăng nhập vendor.");
-        return;
-      }
-
-      setUploadingGallery(true);
-      const uploads = await Promise.all(
-        result.assets.map(async (asset, idx) => {
-          const response = await fetch(asset.uri);
-          const blob = await response.blob();
-          const fileRef = ref(
-            storage,
-            `vendors/${uid}/gallery/${Date.now()}_${idx}.jpg`
-          );
-          await uploadBytes(fileRef, blob);
-          return await getDownloadURL(fileRef);
-        })
-      );
-      const next = [...galleryUrls, ...uploads].slice(0, 6);
-      await updateVendorProfile(uid, { galleryUrls: next });
-      setGalleryUrls(next);
-      Alert.alert("Thành công", "Đã cập nhật ảnh mô tả.");
-    } catch {
-      Alert.alert("Lỗi", "Không thể tải ảnh lên.");
-    } finally {
-      setUploadingGallery(false);
-    }
-  };
-
-  const handleRemoveGallery = async (url: string) => {
-    const uid = auth.currentUser?.uid;
-    if (!uid) {
-      Alert.alert("Lỗi", "Chưa đăng nhập vendor.");
-      return;
-    }
-    const next = galleryUrls.filter((u) => u !== url);
-    setGalleryUrls(next);
-    await updateVendorProfile(uid, { galleryUrls: next });
   };
 
   return (
@@ -445,37 +376,6 @@ export default function VendorProfileEditScreen() {
           placeholderTextColor="#9ca3af"
           multiline
         />
-
-        <Text style={styles.label}>Ảnh mô tả (tối đa 6)</Text>
-        <View style={styles.galleryHeader}>
-          <Text style={styles.galleryHint}>
-            {galleryUrls.length}/6 ảnh
-          </Text>
-          <TouchableOpacity
-            style={styles.galleryAddBtn}
-            onPress={handlePickGallery}
-            disabled={uploadingGallery}
-          >
-            {uploadingGallery ? (
-              <ActivityIndicator size="small" color="#ffffff" />
-            ) : (
-              <Text style={styles.galleryAddText}>Thêm ảnh</Text>
-            )}
-          </TouchableOpacity>
-        </View>
-        <View style={styles.galleryGrid}>
-          {galleryUrls.map((url) => (
-            <View key={url} style={styles.galleryItem}>
-              <Image source={{ uri: url }} style={styles.galleryImage} />
-              <TouchableOpacity
-                style={styles.galleryRemoveBtn}
-                onPress={() => handleRemoveGallery(url)}
-              >
-                <Text style={styles.galleryRemoveText}>×</Text>
-              </TouchableOpacity>
-            </View>
-          ))}
-        </View>
 
         <TouchableOpacity
           style={styles.primaryBtn}
@@ -729,60 +629,6 @@ const styles = StyleSheet.create({
     marginTop: responsiveHeight(6),
     fontSize: responsiveFont(11),
     color: "#6b7280",
-  },
-  galleryHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: responsiveHeight(8),
-  },
-  galleryHint: {
-    fontSize: responsiveFont(12),
-    color: "#6b7280",
-  },
-  galleryAddBtn: {
-    backgroundColor: "#f7577c",
-    paddingHorizontal: responsiveWidth(12),
-    paddingVertical: responsiveHeight(6),
-    borderRadius: responsiveWidth(8),
-  },
-  galleryAddText: {
-    color: "#ffffff",
-    fontFamily: "Roboto",
-    fontSize: responsiveFont(12),
-  },
-  galleryGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: responsiveWidth(8),
-    marginBottom: responsiveHeight(12),
-  },
-  galleryItem: {
-    width: responsiveWidth(90),
-    height: responsiveWidth(90),
-    borderRadius: responsiveWidth(10),
-    overflow: "hidden",
-    backgroundColor: "#ffe4ea",
-  },
-  galleryImage: {
-    width: "100%",
-    height: "100%",
-  },
-  galleryRemoveBtn: {
-    position: "absolute",
-    right: responsiveWidth(6),
-    top: responsiveWidth(6),
-    width: responsiveWidth(22),
-    height: responsiveWidth(22),
-    borderRadius: responsiveWidth(11),
-    backgroundColor: "rgba(0,0,0,0.5)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  galleryRemoveText: {
-    color: "#ffffff",
-    fontSize: responsiveFont(16),
-    lineHeight: responsiveFont(16),
   },
   selectInput: {
     backgroundColor: "#ffffff",

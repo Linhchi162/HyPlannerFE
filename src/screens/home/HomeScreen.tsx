@@ -55,7 +55,7 @@ const HomeScreen = () => {
   const eventId = weddingEvent?._id;
   const member = weddingEvent?.member || [];
   const [notifUnread, setNotifUnread] = useState(0);
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(true);
   const adScrollX = React.useRef(new Animated.Value(0)).current;
   const adScrollRef = React.useRef<ScrollView>(null);
   const adCardWidth = responsiveWidth(240);
@@ -566,7 +566,7 @@ const HomeScreen = () => {
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.headerCircleButton}
-                  onPress={() => Alert.alert("Thông báo", "Trợ lý đang được phát triển!")}
+                  onPress={() => navigation.navigate("Assistant")}
                 >
                   <Image
                     source={require("../../../assets/images/icon khỉ trợ lý.png")}
@@ -897,6 +897,13 @@ const HomeScreen = () => {
                     });
                   }}
                 >
+                  {isPremium ? (
+                    <Image
+                      source={require("../../../assets/images/icon bạn là khách vip hihi.png")}
+                      style={styles.miniGameVipBadge}
+                      resizeMode="contain"
+                    />
+                  ) : null}
                   <View style={styles.quickActionIconWrap}>
                     <Image
                       source={require("../../../assets/images/icon minigame.png")}
@@ -1343,6 +1350,17 @@ const styles = StyleSheet.create({
   miniGameItem: {
     alignItems: "center",
     width: responsiveWidth(80),
+    position: "relative",
+    overflow: "visible",
+  },
+  miniGameVipBadge: {
+    width: responsiveWidth(60),
+    height: responsiveWidth(35),
+    position: "absolute",
+    top: -responsiveHeight(8),
+    left: responsiveWidth(-14),
+    transform: [{ rotate: "-24deg" }],
+    zIndex: 2,
   },
   miniGameLabel: {
     fontFamily: "Montserrat-SemiBold",

@@ -171,6 +171,7 @@ export type RootStackParamList = {
     vendorImageUrl?: string;
     role?: "user" | "vendor";
   } | undefined;
+  Assistant: undefined;
 };
 
 // Định nghĩa các màn hình trong Tab Navigator
