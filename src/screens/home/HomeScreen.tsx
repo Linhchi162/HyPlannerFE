@@ -1,4 +1,5 @@
-﻿import React, { useEffect, useState, useMemo, useCallback } from "react";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
+import { Asset } from "expo-asset";
 import {
   View,
   Text,
@@ -15,17 +16,19 @@ import {
   Platform,
   Alert,
 } from "react-native";
+import { Feather } from "@expo/vector-icons";
 import { useSelector, useDispatch } from "react-redux";
 import { selectCurrentUser, updateUserField } from "../../store/authSlice";
 import { getAccountLimits, getUpgradeMessage } from "../../utils/accountLimits";
 import apiClient from "../../api/client";
 import { StackNavigationProp } from "@react-navigation/stack";
-import { useNavigation, useFocusEffect, useIsFocused } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { RootStackParamList } from "../../navigation/types"; // Đảm bảo đường dẫn này đúng
 import { AppDispatch, RootState } from "../../store";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MixpanelService } from "../../service/mixpanelService";
 import * as notificationService from "../../service/notificationService";
+import { evaluateChecklistAutoAlerts } from "../../utils/checklistAutoAlerts";
 import { getPhases } from "../../service/phaseService";
 import { getGroupActivities } from "../../service/groupActivityService";
 
@@ -37,6 +40,8 @@ import {
 
 const { width, height } = Dimensions.get("window");
 
+const MINIGAME_ICON_ASSET = require("../../../assets/images/icon minigame.png");
+const AD_GIFT_ICON_ASSET = require("../../../assets/images/icon món quà.png");
 
 const HomeScreen = () => {
   // --- LẤY DỮ LIỆU TỪ REDUX STORE ---
@@ -78,7 +83,6 @@ const HomeScreen = () => {
 
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const dispatch = useDispatch<AppDispatch>();
-  const isFocused = useIsFocused();
 
   const fetchNotifUnread = useCallback(async () => {
     if (!eventId) {
@@ -93,11 +97,28 @@ const HomeScreen = () => {
     }
   }, [eventId]);
 
+  const checklistAlertCount = useMemo(() => {
+    if (!eventId) return 0;
+    return evaluateChecklistAutoAlerts(
+      phases,
+      weddingEvent?.timeToMarried
+    ).length;
+  }, [eventId, phases, weddingEvent?.timeToMarried]);
+
+  const notificationBadgeTotal = notifUnread + checklistAlertCount;
+
   useFocusEffect(
     useCallback(() => {
       fetchNotifUnread();
     }, [fetchNotifUnread])
   );
+
+  useEffect(() => {
+    Promise.all([
+      Asset.fromModule(MINIGAME_ICON_ASSET).downloadAsync(),
+      Asset.fromModule(AD_GIFT_ICON_ASSET).downloadAsync(),
+    ]).catch(() => { });
+  }, []);
 
   // Countdown state (theo giây)
   const [timeLeft, setTimeLeft] = useState({
@@ -133,17 +154,14 @@ const HomeScreen = () => {
 
   useFocusEffect(
     useCallback(() => {
-      const applyHome = () => {
+      StatusBar.setBarStyle("light-content");
+      if (Platform.OS === "android") {
         StatusBar.setBackgroundColor("transparent");
-        StatusBar.setBarStyle("light-content");
-        if (Platform.OS === "android") StatusBar.setTranslucent(true);
-      };
-      applyHome();
-
+        StatusBar.setTranslucent(true);
+      }
       return () => {
-        StatusBar.setBackgroundColor("#ff5a7a");
-        StatusBar.setBarStyle("light-content");
-        if (Platform.OS === "android") StatusBar.setTranslucent(false);
+        /* Không tắt translucent / đổi màu ở đây — gây nháy đen khi chuyển màn.
+           Màn hình kế tiếp tự cấu hình StatusBar trong useFocusEffect của nó. */
       };
     }, [])
   );
@@ -280,25 +298,46 @@ const HomeScreen = () => {
     },
   ];
 
-  const adImages = useMemo(
+  const adItems = useMemo(
     () => [
-      require("../../../assets/images/ảnh QC bella bridal.jpg"),
-      require("../../../assets/images/ảnh QC bảo tín minh châu.jpg"),
-      require("../../../assets/images/ảnh QC chung thanh phong bridal.jpg"),
-      require("../../../assets/images/ảnh QC doji.jpg"),
-      require("../../../assets/images/ảnh QC huy thanh.jpg"),
-      require("../../../assets/images/ảnh QC pnj.png"),
-      require("../../../assets/images/ảnh QC SJC.jpg"),
-      require("../../../assets/images/ảnh QC thế giới kim cương.jpg"),
-      require("../../../assets/images/ảnh QC trương thanh hải.jpg"),
+      { key: "promo-gift", type: "promo" as const },
+      {
+        key: "bella-bridal",
+        type: "image" as const,
+        image: require("../../../assets/images/ảnh QC bella bridal.jpg"),
+      },
+      {
+        key: "bao-tin-minh-chau",
+        type: "image" as const,
+        image: require("../../../assets/images/ảnh QC bảo tín minh châu.jpg"),
+      },
+      {
+        key: "chung-thanh-phong",
+        type: "image" as const,
+        image: require("../../../assets/images/ảnh QC chung thanh phong bridal.jpg"),
+      },
+      { key: "doji", type: "image" as const, image: require("../../../assets/images/ảnh QC doji.jpg") },
+      { key: "huy-thanh", type: "image" as const, image: require("../../../assets/images/ảnh QC huy thanh.jpg") },
+      { key: "pnj", type: "image" as const, image: require("../../../assets/images/ảnh QC pnj.png") },
+      { key: "sjc", type: "image" as const, image: require("../../../assets/images/ảnh QC SJC.jpg") },
+      {
+        key: "the-gioi-kim-cuong",
+        type: "image" as const,
+        image: require("../../../assets/images/ảnh QC thế giới kim cương.jpg"),
+      },
+      {
+        key: "truong-thanh-hai",
+        type: "image" as const,
+        image: require("../../../assets/images/ảnh QC trương thanh hải.jpg"),
+      },
     ],
     []
   );
 
-  const loopedAdImages = useMemo(() => {
-    if (adImages.length <= 1) return adImages;
-    return [adImages[adImages.length - 1], ...adImages, adImages[0]];
-  }, [adImages]);
+  const loopedAdItems = useMemo(() => {
+    if (adItems.length <= 1) return adItems;
+    return [adItems[adItems.length - 1], ...adItems, adItems[0]];
+  }, [adItems]);
 
   const accountType = (user?.accountType || "").toLowerCase();
   const isPremium = accountType === "premium" || accountType === "vip";
@@ -374,7 +413,7 @@ const HomeScreen = () => {
   }, [noteCards]);
 
   useEffect(() => {
-    if (loopedAdImages.length <= 1) return;
+    if (loopedAdItems.length <= 1) return;
 
     const timeoutId = setTimeout(() => {
       adScrollRef.current?.scrollTo({ x: adSnap, animated: false });
@@ -382,10 +421,10 @@ const HomeScreen = () => {
     }, 0);
 
     return () => clearTimeout(timeoutId);
-  }, [adSnap, loopedAdImages.length]);
+  }, [adSnap, loopedAdItems.length]);
 
   useEffect(() => {
-    if (loopedAdImages.length <= 1) return;
+    if (loopedAdItems.length <= 1) return;
 
     const interval = setInterval(() => {
       if (isAdjustingLoopRef.current || isAdDraggingRef.current) return;
@@ -394,7 +433,7 @@ const HomeScreen = () => {
     }, 3500);
 
     return () => clearInterval(interval);
-  }, [adSnap, loopedAdImages.length]);
+  }, [adSnap, loopedAdItems.length]);
 
   useEffect(() => {
     if (loopedNoteCards.length <= 1) return;
@@ -421,7 +460,7 @@ const HomeScreen = () => {
 
   const handleAdMomentumEnd = useCallback(
     (event: any) => {
-      if (loopedAdImages.length <= 1) return;
+      if (loopedAdItems.length <= 1) return;
 
       const offsetX = event.nativeEvent.contentOffset.x;
       const rawIndex = Math.round(offsetX / adSnap);
@@ -430,19 +469,19 @@ const HomeScreen = () => {
       if (rawIndex === 0) {
         isAdjustingLoopRef.current = true;
         adScrollRef.current?.scrollTo({
-          x: adImages.length * adSnap,
+          x: adItems.length * adSnap,
           animated: false,
         });
-        currentAdIndexRef.current = adImages.length;
+        currentAdIndexRef.current = adItems.length;
         isAdjustingLoopRef.current = false;
-      } else if (rawIndex === adImages.length + 1) {
+      } else if (rawIndex === adItems.length + 1) {
         isAdjustingLoopRef.current = true;
         adScrollRef.current?.scrollTo({ x: adSnap, animated: false });
         currentAdIndexRef.current = 1;
         isAdjustingLoopRef.current = false;
       }
     },
-    [adImages.length, adSnap, loopedAdImages.length]
+    [adItems.length, adSnap, loopedAdItems.length]
   );
 
   const handleNoteMomentumEnd = useCallback(
@@ -524,13 +563,6 @@ const HomeScreen = () => {
 
   return (
     <View style={styles.container}>
-      {isFocused && (
-        <StatusBar
-          barStyle="light-content"
-          backgroundColor="transparent"
-          translucent
-        />
-      )}
       <ImageBackground
         source={require("../../../assets/images/ảnh nền hồng - trang chủ.jpg")}
         style={styles.homeBackground}
@@ -566,7 +598,7 @@ const HomeScreen = () => {
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.headerCircleButton}
-                  onPress={() => navigation.navigate("Assistant")}
+                  onPress={() => navigation.navigate("AssistantHome")}
                 >
                   <Image
                     source={require("../../../assets/images/icon khỉ trợ lý.png")}
@@ -592,10 +624,12 @@ const HomeScreen = () => {
                       style={styles.headerCircleIconSmall}
                       resizeMode="contain"
                     />
-                    {notifUnread > 0 && (
+                    {notificationBadgeTotal > 0 && (
                       <View style={styles.notifBadge}>
                         <Text style={styles.notifBadgeText}>
-                          {notifUnread > 99 ? "99+" : notifUnread}
+                          {notificationBadgeTotal > 99
+                            ? "99+"
+                            : notificationBadgeTotal}
                         </Text>
                       </View>
                     )}
@@ -672,23 +706,45 @@ const HomeScreen = () => {
                             <View style={styles.noteNameColumn}>
                               {weddingEvent.brideName ? (
                                 <>
-                                  <Text style={styles.noteNameText}>
+                                  <Text
+                                    style={styles.noteNameText}
+                                    numberOfLines={1}
+                                    ellipsizeMode="tail"
+                                    allowFontScaling={false}
+                                  >
                                     {splitNameLines(weddingEvent.brideName, "last")[0]}
                                   </Text>
-                                  <Text style={styles.noteNameText}>
+                                  <Text
+                                    style={styles.noteNameText}
+                                    numberOfLines={1}
+                                    ellipsizeMode="tail"
+                                    allowFontScaling={false}
+                                  >
                                     {splitNameLines(weddingEvent.brideName, "last")[1]}
                                   </Text>
                                 </>
                               ) : null}
                             </View>
-                            <Text style={styles.noteAmpersand}>&</Text>
+                            <Text style={styles.noteAmpersand} allowFontScaling={false}>
+                              &
+                            </Text>
                             <View style={styles.noteNameColumn}>
                               {weddingEvent.groomName ? (
                                 <>
-                                  <Text style={styles.noteNameText}>
+                                  <Text
+                                    style={styles.noteNameText}
+                                    numberOfLines={1}
+                                    ellipsizeMode="tail"
+                                    allowFontScaling={false}
+                                  >
                                     {splitNameLines(weddingEvent.groomName, "first")[0]}
                                   </Text>
-                                  <Text style={styles.noteNameText}>
+                                  <Text
+                                    style={styles.noteNameText}
+                                    numberOfLines={1}
+                                    ellipsizeMode="tail"
+                                    allowFontScaling={false}
+                                  >
                                     {splitNameLines(weddingEvent.groomName, "first")[1]}
                                   </Text>
                                 </>
@@ -696,25 +752,41 @@ const HomeScreen = () => {
                             </View>
                           </View>
                           <View style={styles.noteCountdownRow}>
-                            <Text style={styles.noteCountdownTextSmall}>{timeLeft.days}</Text>
-                            <Text style={styles.noteCountdownSeparator}>:</Text>
-                            <Text style={styles.noteCountdownTextSmall}>
+                            <Text style={styles.noteCountdownTextSmall} allowFontScaling={false}>
+                              {timeLeft.days}
+                            </Text>
+                            <Text style={styles.noteCountdownSeparator} allowFontScaling={false}>
+                              :
+                            </Text>
+                            <Text style={styles.noteCountdownTextSmall} allowFontScaling={false}>
                               {String(timeLeft.hours).padStart(2, "0")}
                             </Text>
-                            <Text style={styles.noteCountdownSeparator}>:</Text>
-                            <Text style={styles.noteCountdownTextSmall}>
+                            <Text style={styles.noteCountdownSeparator} allowFontScaling={false}>
+                              :
+                            </Text>
+                            <Text style={styles.noteCountdownTextSmall} allowFontScaling={false}>
                               {String(timeLeft.minutes).padStart(2, "0")}
                             </Text>
-                            <Text style={styles.noteCountdownSeparator}>:</Text>
-                            <Text style={styles.noteCountdownTextSmall}>
+                            <Text style={styles.noteCountdownSeparator} allowFontScaling={false}>
+                              :
+                            </Text>
+                            <Text style={styles.noteCountdownTextSmall} allowFontScaling={false}>
                               {String(timeLeft.seconds).padStart(2, "0")}
                             </Text>
                           </View>
                           <View style={styles.noteCountdownLabels}>
-                            <Text style={styles.noteCountdownLabelSmall}>ngày</Text>
-                            <Text style={styles.noteCountdownLabelSmall}>giờ</Text>
-                            <Text style={styles.noteCountdownLabelSmall}>phút</Text>
-                            <Text style={styles.noteCountdownLabelSmall}>giây</Text>
+                            <Text style={styles.noteCountdownLabelSmall} allowFontScaling={false}>
+                              ngày
+                            </Text>
+                            <Text style={styles.noteCountdownLabelSmall} allowFontScaling={false}>
+                              giờ
+                            </Text>
+                            <Text style={styles.noteCountdownLabelSmall} allowFontScaling={false}>
+                              phút
+                            </Text>
+                            <Text style={styles.noteCountdownLabelSmall} allowFontScaling={false}>
+                              giây
+                            </Text>
                           </View>
                           <View style={styles.noteDateRow}>
                             <Image
@@ -722,7 +794,9 @@ const HomeScreen = () => {
                               style={styles.noteHeartIcon}
                               resizeMode="contain"
                             />
-                            <Text style={styles.noteDateTextSmall}>{weddingDateLabel}</Text>
+                            <Text style={styles.noteDateTextSmall} allowFontScaling={false}>
+                              {weddingDateLabel}
+                            </Text>
                             <Image
                               source={require("../../../assets/images/icon trái tim trong trắng.png")}
                               style={styles.noteHeartIcon}
@@ -839,7 +913,7 @@ const HomeScreen = () => {
                   scrollEventThrottle={16}
                   contentContainerStyle={styles.adRow}
                 >
-                  {loopedAdImages.map((img, index) => {
+                  {loopedAdItems.map((item, index) => {
                     const inputRange = [
                       (index - 1) * adSnap,
                       index * adSnap,
@@ -853,10 +927,38 @@ const HomeScreen = () => {
 
                     return (
                       <Animated.View
-                        key={`ad-${index}`}
+                        key={`ad-${item.key}-${index}`}
                         style={[styles.adCard, { transform: [{ scale }] }]}
                       >
-                        <Image source={img} style={styles.adImage} resizeMode="cover" />
+                        {item.type === "promo" ? (
+                          <TouchableOpacity
+                            style={styles.promoGiftCardInCarousel}
+                            onPress={() => {
+                              if (eventId) {
+                                navigation.navigate("PromotionDeals");
+                              }
+                            }}
+                            disabled={!eventId}
+                          >
+                            {/* Ảnh quà — layer dưới, neo góc phải */}
+                            <Image
+                              source={AD_GIFT_ICON_ASSET}
+                              style={styles.promoGiftImage}
+                              resizeMode="contain"
+                            />
+                            {/* Chữ + nút — layer trên, trải full width */}
+                            <View style={styles.promoGiftTextWrap}>
+                              <Text style={styles.promoGiftTitle}>
+                                Xem tất cả khuyến mãi
+                              </Text>
+                              <View style={styles.promoGiftArrowCircle}>
+                                <Feather name="arrow-right" size={responsiveWidth(14)} color="#333" />
+                              </View>
+                            </View>
+                          </TouchableOpacity>
+                        ) : (
+                          <Image source={item.image} style={styles.adImage} resizeMode="cover" />
+                        )}
                       </Animated.View>
                     );
                   })}
@@ -897,19 +999,19 @@ const HomeScreen = () => {
                     });
                   }}
                 >
-                  {isPremium ? (
+                  <View style={styles.miniGameIconStack}>
                     <Image
                       source={require("../../../assets/images/icon bạn là khách vip hihi.png")}
                       style={styles.miniGameVipBadge}
                       resizeMode="contain"
                     />
-                  ) : null}
-                  <View style={styles.quickActionIconWrap}>
-                    <Image
-                      source={require("../../../assets/images/icon minigame.png")}
-                      style={styles.miniGameIcon}
-                      resizeMode="contain"
-                    />
+                    <View style={styles.miniGameIconWrap}>
+                      <Image
+                        source={MINIGAME_ICON_ASSET}
+                        style={styles.miniGameIcon}
+                        resizeMode="contain"
+                      />
+                    </View>
                   </View>
                   <Text style={styles.miniGameLabel} numberOfLines={2}>
                     Ai là người{"\n"}kết hôn tiếp theo
@@ -927,7 +1029,7 @@ const HomeScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#ffffff",
+    backgroundColor: "#fff0f4",
   },
   headerContent: {
     backgroundColor: "transparent",
@@ -990,12 +1092,14 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   notifBadgeText: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(9),
     color: "#ff5a7a",
   },
   homeBackground: {
     flex: 1,
+    backgroundColor: "#fff0f4",
   },
   scrollContent: {
     paddingBottom: 0,
@@ -1030,7 +1134,8 @@ const styles = StyleSheet.create({
     marginTop: responsiveHeight(-30),
   },
   upgradeTitle: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(10),
     color: "#ff4f8a",
     textAlign: "center",
@@ -1052,7 +1157,8 @@ const styles = StyleSheet.create({
     borderRadius: responsiveWidth(10),
   },
   upgradeButtonText: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(10),
     color: "#ff4f8a",
   },
@@ -1065,7 +1171,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   heroNames: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(18),
     color: "#ffffff",
     marginBottom: responsiveHeight(8),
@@ -1076,13 +1183,15 @@ const styles = StyleSheet.create({
     gap: responsiveWidth(6),
   },
   heroCountdownText: {
-    fontFamily: "Montserrat-Bold",
+    fontFamily: "Roboto",
+    fontWeight: "700",
     fontSize: responsiveFont(22),
     color: "#ffffff",
     letterSpacing: 1,
   },
   heroCountdownSeparator: {
-    fontFamily: "Montserrat-Bold",
+    fontFamily: "Roboto",
+    fontWeight: "700",
     fontSize: responsiveFont(18),
     color: "#ffffff",
     opacity: 0.8,
@@ -1095,7 +1204,8 @@ const styles = StyleSheet.create({
     marginTop: responsiveHeight(4),
   },
   heroCountdownLabel: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     fontSize: responsiveFont(10),
     color: "#ffffff",
     opacity: 0.9,
@@ -1107,7 +1217,8 @@ const styles = StyleSheet.create({
     marginTop: responsiveHeight(8),
   },
   heroDateText: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(14),
     color: "#ffffff",
   },
@@ -1142,7 +1253,8 @@ const styles = StyleSheet.create({
     paddingTop: responsiveHeight(20),
   },
   noteTitle: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(16),
     color: "#ffffff",
     marginBottom: responsiveHeight(6),
@@ -1152,14 +1264,16 @@ const styles = StyleSheet.create({
     alignSelf: "stretch",
   },
   noteSubtitle: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     fontSize: responsiveFont(12),
     color: "#ffffff",
     opacity: 0.95,
     marginTop: responsiveHeight(2),
   },
   noteSubtitleStrong: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(11),
     opacity: 1,
     marginTop: responsiveHeight(2),
@@ -1178,15 +1292,20 @@ const styles = StyleSheet.create({
   noteNameColumn: {
     flex: 1,
     alignItems: "center",
+    minWidth: 0,
   },
   noteNameText: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(13),
     color: "#ffffff",
     lineHeight: responsiveHeight(16),
+    textAlign: "center",
+    width: "100%",
   },
   noteAmpersand: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(14),
     color: "#ffffff",
     marginHorizontal: responsiveWidth(6),
@@ -1197,19 +1316,22 @@ const styles = StyleSheet.create({
     gap: responsiveWidth(6),
   },
   noteCountdownText: {
-    fontFamily: "Montserrat-Bold",
+    fontFamily: "Roboto",
+    fontWeight: "700",
     fontSize: responsiveFont(20),
     color: "#ffffff",
     letterSpacing: 1,
   },
   noteCountdownTextSmall: {
-    fontFamily: "Montserrat-Bold",
+    fontFamily: "Roboto",
+    fontWeight: "700",
     fontSize: responsiveFont(18),
     color: "#ffffff",
     letterSpacing: 1,
   },
   noteCountdownSeparator: {
-    fontFamily: "Montserrat-Bold",
+    fontFamily: "Roboto",
+    fontWeight: "700",
     fontSize: responsiveFont(16),
     color: "#ffffff",
     opacity: 0.8,
@@ -1223,13 +1345,15 @@ const styles = StyleSheet.create({
     marginTop: responsiveHeight(4),
   },
   noteCountdownLabel: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     fontSize: responsiveFont(9),
     color: "#ffffff",
     opacity: 0.9,
   },
   noteCountdownLabelSmall: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     fontSize: responsiveFont(8),
     color: "#ffffff",
     opacity: 0.9,
@@ -1241,12 +1365,14 @@ const styles = StyleSheet.create({
     marginTop: responsiveHeight(6),
   },
   noteDateText: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(16),
     color: "#ffffff",
   },
   noteDateTextSmall: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(12),
     color: "#ffffff",
   },
@@ -1278,6 +1404,17 @@ const styles = StyleSheet.create({
     marginBottom: responsiveHeight(6),
     marginTop: responsiveHeight(15),
   },
+  miniGameIconWrap: {
+    width: responsiveWidth(61),
+    height: responsiveWidth(57),
+    borderRadius: responsiveWidth(9),
+    backgroundColor: "#fde8f0",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: responsiveHeight(6),
+    marginTop: responsiveHeight(10),
+    overflow: "visible",
+  },
   quickActionIcon: {
     width: responsiveWidth(86),
     height: responsiveWidth(90),
@@ -1285,7 +1422,8 @@ const styles = StyleSheet.create({
 
   },
   quickActionLabel: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(13),
     color: "#1f2937",
   },
@@ -1353,17 +1491,26 @@ const styles = StyleSheet.create({
     position: "relative",
     overflow: "visible",
   },
+  /* Cùng bề ngang với ô icon — badge căn giữa theo ô, không lệch trái */
+  miniGameIconStack: {
+    position: "relative",
+    width: responsiveWidth(61),
+    alignItems: "center",
+    overflow: "visible",
+  },
   miniGameVipBadge: {
     width: responsiveWidth(60),
     height: responsiveWidth(35),
     position: "absolute",
-    top: -responsiveHeight(8),
-    left: responsiveWidth(-14),
+    top: -responsiveHeight(17),
+    left: "50%",
+    marginLeft: -responsiveWidth(50),
     transform: [{ rotate: "-24deg" }],
     zIndex: 2,
   },
   miniGameLabel: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(11),
     color: "#1f2937",
     textAlign: "center",
@@ -1392,8 +1539,57 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
   },
+  promoGiftCardInCarousel: {
+    width: "100%",
+    height: "100%",
+    borderRadius: responsiveWidth(18),
+    backgroundColor: "#fce8ef",
+    overflow: "hidden",
+  },
+  promoGiftImage: {
+    position: "absolute",
+    right: -responsiveWidth(4),
+    bottom: -responsiveHeight(4),
+    width: responsiveWidth(130),
+    height: responsiveWidth(130),
+  },
+  promoGiftTextWrap: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    paddingTop: responsiveHeight(16),
+    paddingBottom: responsiveHeight(14),
+    paddingHorizontal: responsiveWidth(16),
+    justifyContent: "space-between",
+  },
+  promoGiftTitle: {
+    fontFamily: "Roboto",
+    fontWeight: "600",
+    fontSize: responsiveFont(14),
+    lineHeight: responsiveFont(20),
+    color: "#ff3f6c",
+  },
+  promoGiftArrowCircle: {
+    width: responsiveWidth(28),
+    height: responsiveWidth(28),
+    borderRadius: responsiveWidth(14),
+    backgroundColor: "#ffffff",
+    justifyContent: "center",
+    alignItems: "center",
+    alignSelf: "flex-start",
+  },
+  promoGiftArrow: {
+    fontFamily: "Roboto",
+    fontWeight: "600",
+    fontSize: responsiveFont(14),
+    color: "#333",
+    lineHeight: responsiveFont(18),
+  },
   sectionTitle: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(14),
     color: "#1f2937",
   },
@@ -1406,30 +1602,23 @@ const styles = StyleSheet.create({
     padding: responsiveWidth(5),
 
   },
-  miniGameIconWrap: {
-    width: responsiveWidth(54),
-    height: responsiveWidth(54),
-    borderRadius: responsiveWidth(12),
-    backgroundColor: "#ffe0eb",
-    justifyContent: "center",
-    alignItems: "center",
-
-  },
   miniGameIcon: {
-    width: responsiveWidth(86),
-    height: responsiveWidth(90),
+    width: responsiveWidth(52),
+    height: responsiveWidth(52),
   },
   miniGameTextWrap: {
     flex: 1,
   },
   miniGameTitle: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(14),
     color: "#1f2937",
   },
   miniGameSubtitle: {
     marginTop: responsiveHeight(4),
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     fontSize: responsiveFont(12),
     color: "#6b7280",
   },
@@ -1441,7 +1630,8 @@ const styles = StyleSheet.create({
     padding: responsiveWidth(16),
   },
   centerText: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     fontSize: responsiveFont(16),
     color: "#6b7280",
     textAlign: "center",
@@ -1454,7 +1644,8 @@ const styles = StyleSheet.create({
     borderRadius: responsiveWidth(8),
   },
   createEventButtonText: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     color: "white",
     fontSize: responsiveFont(16),
   },

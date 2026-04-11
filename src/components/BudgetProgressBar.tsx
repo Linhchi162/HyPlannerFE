@@ -131,7 +131,8 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: responsiveFont(14),
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     color: "#333",
     marginBottom: responsiveHeight(10),
   },
@@ -143,7 +144,8 @@ const styles = StyleSheet.create({
   },
   progressText: {
     fontSize: responsiveFont(12),
-    fontFamily: "Montserrat-Regular",
+    fontFamily: "Roboto",
+    fontWeight: "400",
     color: "#6B7280",
     marginBottom: responsiveHeight(10),
   },

@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -161,12 +161,7 @@ const CommunityScreen = () => {
 
   return (
     <SafeAreaView style={[styles.container, { paddingTop: topPad }]}>
-      <StatusBar
-        barStyle="light-content"
-        backgroundColor="#f7577c"
-        translucent={false}
-      />
-      {/* StatusBar thực tế được set trong useFocusEffect để tránh ghi đè lên Home khi đổi tab */}
+      {/* StatusBar chỉ cấu hình qua useFocusEffect — không render component để tránh ghi đè Trang chủ */}
 
       {/* Top panel giống Tủ đồ */}
       <View style={styles.header}>
@@ -320,7 +315,8 @@ const styles = StyleSheet.create({
     marginTop: responsiveHeight(-38),
   },
   headerTitle: {
-    fontFamily: "MavenPro",
+    fontFamily: "Roboto",
+    fontWeight: "400",
     fontSize: responsiveFont(20),
     fontWeight: "700",
     color: "#ffffff",
@@ -353,7 +349,8 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     fontSize: responsiveFont(14),
     color: "#1f2937",
   },
@@ -391,7 +388,8 @@ const styles = StyleSheet.create({
     borderRadius: responsiveWidth(8),
   },
   savedMenuText: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(14),
     color: "#1f2937",
   },
@@ -420,7 +418,8 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   quickAccessText: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(13),
     color: "#1f2937",
   },
@@ -443,14 +442,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: responsiveWidth(32),
   },
   emptyTitle: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(20),
     color: "#1f2937",
     textAlign: "center",
     marginBottom: responsiveHeight(8),
   },
   emptyText: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     fontSize: responsiveFont(14),
     color: "#6b7280",
     textAlign: "center",

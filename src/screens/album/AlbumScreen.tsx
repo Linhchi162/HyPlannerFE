@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   StyleSheet,
@@ -110,7 +110,6 @@ const AlbumScreen = () => {
 
   return (
     <SafeAreaView style={[styles.container, { paddingTop: topPad }]}>
-      <StatusBar backgroundColor="#f7577c" barStyle="light-content" translucent={false} />
       <View style={styles.header}>
         <View style={styles.headerRow}>
           <TouchableOpacity
@@ -203,7 +202,8 @@ const styles = StyleSheet.create({
     marginTop: responsiveHeight(-38),
   },
   headerTitle: {
-    fontFamily: "MavenPro",
+    fontFamily: "Roboto",
+    fontWeight: "400",
     fontSize: responsiveFont(20),
     fontWeight: "700",
     color: "#ffffff",

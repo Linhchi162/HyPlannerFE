@@ -1,4 +1,5 @@
 import {
+  Alert,
   FlatList,
   KeyboardAvoidingView,
   Platform,
@@ -29,6 +30,7 @@ import {
 import {
   NavigationProp,
   RouteProp,
+  useFocusEffect,
   useNavigation,
   useRoute,
 } from "@react-navigation/native";
@@ -38,6 +40,7 @@ import { AppDispatch, RootState } from "../../store";
 import { createActivity } from "../../service/activityService";
 import { getGroupActivities } from "../../service/groupActivityService";
 import { MixpanelService } from "../../service/mixpanelService";
+import { useWeddingPermissions } from "../../hooks/useWeddingPermissions";
 type CreateTaskAppbarProps = {
   onBack: () => void;
   onCheck: () => void;
@@ -85,6 +88,17 @@ export default function CreateNewBudgetScreen() {
   const { groupActivityId } = route.params;
   const { eventId } = route.params;
   const [actionLoading, setActionLoading] = useState(false);
+  const perm = useWeddingPermissions();
+
+  useFocusEffect(
+    useCallback(() => {
+      if (perm.isObserver) {
+        Alert.alert("Chỉ xem", "Vai trò Observer không thể thêm ngân sách.", [
+          { text: "OK", onPress: () => navigation.goBack() },
+        ]);
+      }
+    }, [perm.isObserver, navigation])
+  );
   // const eventId = "68c29283931d7e65bd3ad689"; // lưu ý đây là fix cứng tạm thời sau khi hoàn thành login và chọn sự kiện
   // const userId = "6892b8a2aa0f1640e5c173f2"; //fix cứng tạm thời
   // const creatorId = useSelector((state: RootState) => state.weddingEvent.getWeddingEvent.weddingEvent.creatorId);
@@ -109,7 +123,15 @@ export default function CreateNewBudgetScreen() {
         payer: payer,
       };
       setActionLoading(true);
-      await createActivity(groupActivityId, activityData, dispatch);
+      const created = await createActivity(
+        groupActivityId,
+        activityData,
+        dispatch
+      );
+      const aid = (created as { _id?: string } | undefined)?._id;
+      if (aid) {
+        await perm.noteAssistantCreated("activity", String(aid));
+      }
       await getGroupActivities(eventId, dispatch);
       setActionLoading(false);
       MixpanelService.track("Added Budget Item", {
@@ -359,7 +381,8 @@ const styles = StyleSheet.create({
   },
   appbarTitle: {
     color: "#333",
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(16),
     fontWeight: "700",
     textAlign: "center",
@@ -380,14 +403,16 @@ const styles = StyleSheet.create({
     marginBottom: responsiveHeight(10),
   },
   sectionTitle: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(13),
     color: "#831843",
     marginLeft: 8,
   },
   textInput: {
     backgroundColor: "#FFFFFF",
-    fontFamily: "Montserrat-Regular",
+    fontFamily: "Roboto",
+    fontWeight: "400",
     color: "#000000",
   },
   textArea: {
@@ -412,12 +437,14 @@ const styles = StyleSheet.create({
     marginBottom: responsiveHeight(10),
   },
   memberTitle: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(13),
     color: "#333333",
   },
   memberDescription: {
-    fontFamily: "Montserrat-Regular",
+    fontFamily: "Roboto",
+    fontWeight: "400",
     fontSize: responsiveFont(10),
     color: "#6B7280",
   },

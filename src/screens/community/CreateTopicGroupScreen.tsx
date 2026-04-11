@@ -149,7 +149,8 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   headerTitle: {
-    fontFamily: "MavenPro",
+    fontFamily: "Roboto",
+    fontWeight: "400",
     fontSize: responsiveFont(18),
     color: "#1f2937",
   },
@@ -158,7 +159,8 @@ const styles = StyleSheet.create({
     paddingBottom: responsiveHeight(40),
   },
   label: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(13),
     color: "#111827",
     marginTop: responsiveHeight(12),
@@ -197,7 +199,8 @@ const styles = StyleSheet.create({
     borderColor: "#f7577c",
   },
   categoryText: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     fontSize: responsiveFont(12),
     color: "#374151",
   },
@@ -215,7 +218,8 @@ const styles = StyleSheet.create({
   },
   primaryBtnText: {
     color: "#ffffff",
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(13),
   },
 });

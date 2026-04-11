@@ -1,9 +1,8 @@
-﻿import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   TouchableOpacity,
   ScrollView,
   TextInput,
@@ -11,10 +10,13 @@ import {
   Alert,
   Image,
   Modal,
+  Platform,
+  StatusBar,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { ChevronLeft, ImagePlus, Send } from "lucide-react-native";
 import * as ImagePicker from "expo-image-picker";
-import { useNavigation, useRoute } from "@react-navigation/native";
+import { useFocusEffect, useNavigation, useRoute } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../../navigation/types";
 import {
@@ -256,8 +258,17 @@ export default function ChatDetailScreen() {
     return date.toLocaleString("vi-VN");
   };
 
+  useFocusEffect(
+    useCallback(() => {
+      StatusBar.setBarStyle("light-content");
+      StatusBar.setBackgroundColor("#f7577c");
+      if (Platform.OS === "android") StatusBar.setTranslucent(false);
+      return () => {};
+    }, [])
+  );
+
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <ChevronLeft size={24} color="#ffffff" />
@@ -266,7 +277,10 @@ export default function ChatDetailScreen() {
         <View style={{ width: 24 }} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView
+        style={styles.scrollMain}
+        contentContainerStyle={styles.content}
+      >
         {loading ? (
           <View style={styles.loadingBox}>
             <ActivityIndicator size="small" color="#f7577c" />
@@ -373,19 +387,23 @@ export default function ChatDetailScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#f8f9fa",
+    backgroundColor: "#f7577c",
   },
   header: {
     backgroundColor: "#f7577c",
     paddingHorizontal: responsiveWidth(16),
-    paddingVertical: responsiveHeight(12),
-    height: responsiveHeight(56),
+    paddingVertical: responsiveHeight(10),
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
   },
+  scrollMain: {
+    flex: 1,
+    backgroundColor: "#f8f9fa",
+  },
   headerTitle: {
-    fontFamily: "MavenPro",
+    fontFamily: "Roboto",
+    fontWeight: "400",
     fontSize: responsiveFont(18),
     fontWeight: "700",
     color: "#ffffff",

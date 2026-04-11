@@ -3,11 +3,11 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   TouchableOpacity,
   ScrollView,
 } from "react-native";
-import { ChevronLeft, Package, User, LogOut } from "lucide-react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Package, Tag, User, LogOut } from "lucide-react-native";
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../../navigation/types";
@@ -44,7 +44,8 @@ export default function VendorDashboardScreen() {
   }, [vendorId]);
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeAreaTop} edges={["top"]}>
+      <View style={styles.safeArea}>
       <View style={styles.header}>
         <View style={styles.headerSpacer} />
         <View style={pinkHeaderStyles.titleContainer}>
@@ -57,7 +58,7 @@ export default function VendorDashboardScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Hồ sơ doanh nghiệp</Text>
           <Text style={styles.cardSub}>
@@ -69,6 +70,21 @@ export default function VendorDashboardScreen() {
           >
             <User size={18} color="#ffffff" />
             <Text style={styles.primaryBtnText}>Chỉnh sửa hồ sơ</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Khuyến mãi</Text>
+          <Text style={styles.cardSub}>
+            Tạo ưu đãi hiển thị trên màn Ưu đãi của khách (liên kết tới hồ sơ
+            của bạn).
+          </Text>
+          <TouchableOpacity
+            style={styles.outlineBtn}
+            onPress={() => navigation.navigate("VendorPromotions")}
+          >
+            <Tag size={18} color="#f7577c" />
+            <Text style={styles.outlineBtnText}>Quản lý khuyến mãi</Text>
           </TouchableOpacity>
         </View>
 
@@ -86,27 +102,36 @@ export default function VendorDashboardScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
+      </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeAreaTop: {
+    flex: 1,
+    backgroundColor: "#f7577c",
+  },
   safeArea: {
     flex: 1,
     backgroundColor: "#f8f9fa",
+  },
+  scroll: {
+    flex: 1,
   },
   header: {
     backgroundColor: "#f7577c",
     paddingHorizontal: responsiveWidth(16),
     paddingVertical: responsiveHeight(12),
-    height: responsiveHeight(56),
+    minHeight: responsiveHeight(56),
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
   },
   headerTitle: {
     color: "#ffffff",
-    fontFamily: "MavenPro",
+    fontFamily: "Roboto",
+    fontWeight: "400",
     fontSize: responsiveFont(16),
     fontWeight: "700",
     textAlign: "center",
@@ -128,7 +153,8 @@ const styles = StyleSheet.create({
     borderColor: "#f3f4f6",
   },
   cardTitle: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(15),
     color: "#111827",
   },
@@ -149,7 +175,8 @@ const styles = StyleSheet.create({
   },
   primaryBtnText: {
     color: "#ffffff",
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(13),
   },
   outlineBtn: {
@@ -165,7 +192,8 @@ const styles = StyleSheet.create({
   },
   outlineBtnText: {
     color: "#f7577c",
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(13),
   },
 });

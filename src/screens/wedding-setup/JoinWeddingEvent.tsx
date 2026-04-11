@@ -1,4 +1,5 @@
 import {
+  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -15,13 +16,21 @@ import {
   responsiveHeight,
   responsiveWidth,
 } from "../../../assets/styles/utils/responsive";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { NavigationProp, useNavigation } from "@react-navigation/native";
-import { joinWeddingEvent } from "../../service/weddingEventService";
 import { useDispatch, useSelector } from "react-redux";
-import { AppDispatch } from "../../store";
+import type { AppDispatch } from "../../store";
 import type { RootStackParamList } from "../../navigation/types";
 import { selectCurrentUser } from "../../store/authSlice";
+import { getWeddingEvent } from "../../service/weddingEventService";
+import { auth, db } from "../../service/firebase";
+import {
+  decodeEventIdFromInviteCode,
+  getJoinRequestNotifierUserIds,
+  submitWeddingJoinRequest,
+  subscribeMyJoinRequest,
+} from "../../service/weddingJoinRequestFirestore";
+import { sendExpoPushToUsers } from "../../service/joinRequestExpoPush";
 
 interface JoinWeddingAppBarProps {
   onBack: () => void;
@@ -42,35 +51,116 @@ export default function JoinWeddingEvent() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [error, setError] = useState<string>("");
   const [showError, setShowError] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [phase, setPhase] = useState<"form" | "waiting">("form");
+  const waitingEventIdRef = useRef<string | null>(null);
+  const unsubRef = useRef<(() => void) | null>(null);
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const dispatch = useDispatch<AppDispatch>();
 
-  // Lấy userId từ Redux store
   const user = useSelector(selectCurrentUser);
   const userId = user?.id || user?._id;
+
+  useEffect(() => {
+    return () => {
+      unsubRef.current?.();
+    };
+  }, []);
 
   const handleJoinEvent = async () => {
     setShowConfirm(false);
 
-    if (!userId) {
+    if (!userId || !user) {
       setError("Không tìm thấy thông tin người dùng. Vui lòng đăng nhập lại.");
       setShowError(true);
       return;
     }
 
-    try {
-      await joinWeddingEvent(code, userId, dispatch);
-
-      // Navigate về màn hình Main sau khi join thành công
-      navigation.reset({
-        index: 0,
-        routes: [{ name: "Main" }],
-      });
-    } catch (error: any) {
-      setError(error);
+    const eventId = decodeEventIdFromInviteCode(code);
+    if (!eventId) {
+      setError(
+        "Mã mời không đúng hoặc không khớp cấu hình backend hiện tại. Hãy xin mã mới và gửi lại yêu cầu."
+      );
       setShowError(true);
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      await submitWeddingJoinRequest({
+        eventId,
+        inviteCode: code.trim(),
+        applicantUserId: String(userId),
+        fullName: user.fullName || "",
+        email: user.email || "",
+        picture: user.picture,
+      });
+
+      const notifiers = await getJoinRequestNotifierUserIds(eventId);
+      await sendExpoPushToUsers(
+        notifiers,
+        "HyPlanner",
+        `${user.fullName || "Có người"} đang xin tham gia kế hoạch cưới.`,
+        { type: "join_request", eventId }
+      );
+
+      waitingEventIdRef.current = eventId;
+      setPhase("waiting");
+      unsubRef.current?.();
+      unsubRef.current = subscribeMyJoinRequest(eventId, String(userId), (req) => {
+        if (!req) return;
+        if (req.status === "approved") {
+          void getWeddingEvent(String(userId), dispatch).then(() => {
+            navigation.reset({
+              index: 0,
+              routes: [{ name: "Main" }],
+            });
+          });
+        }
+        if (req.status === "rejected") {
+          setPhase("form");
+          setError("Yêu cầu tham gia của bạn chưa được chấp nhận.");
+          setShowError(true);
+          waitingEventIdRef.current = null;
+        }
+      });
+    } catch (e: unknown) {
+      console.error("[JoinWeddingEvent] submit request failed", e);
+      const code =
+        e && typeof e === "object" && "code" in e
+          ? String((e as { code: string }).code)
+          : "";
+      const apiMessage =
+        e &&
+        typeof e === "object" &&
+        "response" in e &&
+        (e as { response?: { data?: { message?: string } } }).response?.data
+          ?.message
+          ? String(
+              (e as { response?: { data?: { message?: string } } }).response?.data
+                ?.message
+            )
+          : "";
+      const raw =
+        e && typeof e === "object" && "message" in e
+          ? String((e as { message: string }).message)
+          : "";
+      const rawLower = raw.toLowerCase();
+      const projectId = db.app.options.projectId || "unknown_project";
+      const firebaseUid = auth.currentUser?.uid || "null";
+      const msg =
+        code.includes("permission-denied") ||
+        rawLower.includes("permission-denied") ||
+        rawLower.includes("missing or insufficient permissions")
+          ? `Không có quyền ghi Firestore cho luồng duyệt tham gia.\n\nKiểm tra nhanh:\n1) Rules đã publish trên đúng project ${projectId}\n2) Firebase Auth Anonymous đã bật\n3) firebaseUid hiện tại không được null (hiện: ${firebaseUid})\n\nCollection cần quyền: weddingJoinRequests / weddingPublicMeta / weddingRoleAssignments.`
+          : apiMessage || raw || "Không gửi được yêu cầu. Kiểm tra mạng và quyền Firestore.";
+      setError(msg);
+      setShowError(true);
+    } finally {
+      setSubmitting(false);
     }
   };
+
   return (
     <View style={styles.container}>
       <JoinWeddingAppBar onBack={() => navigation.goBack()} />
@@ -83,60 +173,94 @@ export default function JoinWeddingEvent() {
           contentContainerStyle={styles.contentContainer}
           keyboardShouldPersistTaps="handled"
         >
-          <Text style={styles.title}>Tham Gia Vào Kế Hoạch Cưới</Text>
-          <Text style={styles.description}>
-            Hãy nhập mã mời để tham gia vào kế hoạch cưới của người thân hoặc
-            bạn bè. Cùng nhau đóng góp ý tưởng và hỗ trợ chuẩn bị cho ngày trọng
-            đại trở nên hoàn hảo và ý nghĩa hơn!
+          <Text style={styles.title}>
+            {phase === "waiting" ? "Đang chờ duyệt" : "Tham Gia Vào Kế Hoạch Cưới"}
           </Text>
-          <View style={styles.inputWrapper}>
-            <Text style={styles.label}>Hãy nhập mã mời của bạn*</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Nhập mã mời"
-              value={code}
-              onChangeText={setCode}
-              autoCapitalize="none"
-              autoCorrect={false}
-              keyboardType="default"
-              returnKeyType="done"
-              placeholderTextColor="#B0B0B0"
-            />
-          </View>
-          <TouchableOpacity
-            style={styles.submitButton}
-            disabled={!isFormValid}
-            onPress={() => setShowConfirm(true)}
-          >
-            <Text
-              style={[
-                styles.submitButtonText,
-                { opacity: isFormValid ? 1 : 0.7 },
-              ]}
-            >
-              Tham Gia
-            </Text>
-          </TouchableOpacity>
+          {phase === "waiting" ? (
+            <>
+              <Text style={styles.description}>
+                Bạn đã gửi yêu cầu tham gia. Chủ kế hoạch hoặc Hỷ Partner sẽ duyệt.
+                Khi được chấp nhận, app sẽ tự chuyển vào trang chính.{"\n\n"}
+                Bạn vẫn có thể nhận thông báo (push) khi có quyết định — giữ cho phép
+                thông báo bật.
+              </Text>
+              <ActivityIndicator size="large" color="#831843" style={{ marginTop: 24 }} />
+            </>
+          ) : (
+            <>
+              <Text style={styles.description}>
+                Nhập mã mời — yêu cầu của bạn sẽ được gửi để chủ kế hoạch / Hỷ Partner
+                duyệt trước khi bạn vào được kế hoạch.
+              </Text>
+              <View style={styles.inputWrapper}>
+                <Text style={styles.label}>Hãy nhập mã mời của bạn*</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Nhập mã mời"
+                  value={code}
+                  onChangeText={setCode}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  keyboardType="default"
+                  returnKeyType="done"
+                  placeholderTextColor="#B0B0B0"
+                />
+              </View>
+              <TouchableOpacity
+                style={styles.submitButton}
+                disabled={!isFormValid || submitting}
+                onPress={() => setShowConfirm(true)}
+              >
+                {submitting ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text
+                    style={[
+                      styles.submitButtonText,
+                      { opacity: isFormValid ? 1 : 0.7 },
+                    ]}
+                  >
+                    Gửi yêu cầu tham gia
+                  </Text>
+                )}
+              </TouchableOpacity>
+            </>
+          )}
         </ScrollView>
         <Portal>
-          <Dialog visible={showConfirm} onDismiss={() => setShowConfirm(false)}>
-            <Dialog.Title>Xác nhận tham gia</Dialog.Title>
+          <Dialog
+            visible={showConfirm}
+            onDismiss={() => setShowConfirm(false)}
+            style={styles.dialogSurface}
+          >
+            <Dialog.Title style={styles.dialogTitle}>Xác nhận</Dialog.Title>
             <Dialog.Content>
-              <Text>Bạn có chắc chắn muốn tham gia vào kế hoạch cưới này?</Text>
+              <Text style={styles.dialogText}>
+                Gửi yêu cầu tham gia? Bạn sẽ vào kế hoạch sau khi được duyệt.
+              </Text>
             </Dialog.Content>
             <Dialog.Actions>
-              <Button onPress={() => setShowConfirm(false)}>Hủy</Button>
-              <Button onPress={handleJoinEvent}>Xác nhận</Button>
+              <Button textColor="#6b7280" onPress={() => setShowConfirm(false)}>
+                Hủy
+              </Button>
+              <Button textColor="#f7577c" onPress={handleJoinEvent}>
+                Gửi
+              </Button>
             </Dialog.Actions>
           </Dialog>
-          {/* Dialog báo lỗi */}
-          <Dialog visible={showError} onDismiss={() => setShowError(false)}>
-            <Dialog.Title>Thông báo</Dialog.Title>
+          <Dialog
+            visible={showError}
+            onDismiss={() => setShowError(false)}
+            style={styles.dialogSurface}
+          >
+            <Dialog.Title style={styles.dialogTitle}>Thông báo</Dialog.Title>
             <Dialog.Content>
-              <Text>{error}</Text>
+              <Text style={styles.dialogText}>{error}</Text>
             </Dialog.Content>
             <Dialog.Actions>
-              <Button onPress={() => setShowError(false)}>Đóng</Button>
+              <Button textColor="#f7577c" onPress={() => setShowError(false)}>
+                Đóng
+              </Button>
             </Dialog.Actions>
           </Dialog>
         </Portal>
@@ -207,12 +331,25 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingVertical: 13,
     alignItems: "center",
-    opacity: 0.7,
+    opacity: 0.9,
     marginTop: responsiveHeight(22),
     width: "100%",
   },
   submitButtonText: {
     fontSize: responsiveFont(14),
     fontWeight: "700",
+    color: "#fff",
+  },
+  dialogSurface: {
+    backgroundColor: "#fff",
+    borderRadius: 16,
+  },
+  dialogTitle: {
+    color: "#111827",
+    fontFamily: "Roboto",
+    fontWeight: "600",
+  },
+  dialogText: {
+    color: "#374151",
   },
 });

@@ -113,10 +113,15 @@ export default function AddWeddingInfo() {
         index: 0,
         routes: [{ name: "Main" }], // Điều hướng đến 'Main', tự động hiển thị tab Home
       });
-    } catch (error) {
+    } catch (error: any) {
       logger.error("Error creating wedding event:", error);
       // Hiển thị thông báo lỗi cho người dùng
-      setBudgetError("Không thể tạo kế hoạch. Vui lòng thử lại.");
+      const msg =
+        error?.message ||
+        error?.error ||
+        (typeof error === "string" ? error : "") ||
+        "Không thể tạo kế hoạch. Vui lòng thử lại.";
+      setBudgetError(msg);
     }
   };
   const formatNumber = (value: number): string => {

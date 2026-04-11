@@ -389,12 +389,14 @@ const styles = StyleSheet.create({
     borderRadius: responsiveWidth(20),
   },
   userName: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(14),
     color: "#1f2937",
   },
   timestamp: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     fontSize: responsiveFont(12),
     color: "#9ca3af",
   },
@@ -420,12 +422,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: responsiveWidth(12),
   },
   menuText: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     fontSize: responsiveFont(14),
     color: "#1f2937",
   },
   content: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     fontSize: responsiveFont(14),
     color: "#1f2937",
     lineHeight: responsiveHeight(20),
@@ -435,7 +439,8 @@ const styles = StyleSheet.create({
   linkText: {
     color: "#3b82f6",
     textDecorationLine: "underline",
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
   },
   // === Styles cho ảnh đơn ===
   singleImage: {
@@ -515,7 +520,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   moreImagesText: {
-    fontFamily: "Montserrat-Bold",
+    fontFamily: "Roboto",
+    fontWeight: "700",
     fontSize: responsiveFont(32),
     color: "#ffffff",
   },
@@ -537,7 +543,8 @@ const styles = StyleSheet.create({
     borderTopColor: "#f3f4f6",
   },
   statsText: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     fontSize: responsiveFont(12),
     color: "#6b7280",
   },
@@ -556,7 +563,8 @@ const styles = StyleSheet.create({
     paddingVertical: responsiveHeight(8),
   },
   actionText: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     fontSize: responsiveFont(14),
     color: "#6b7280",
   },

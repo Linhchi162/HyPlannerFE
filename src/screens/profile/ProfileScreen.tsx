@@ -1,9 +1,8 @@
-﻿import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   Image,
   TouchableOpacity,
   ScrollView,
@@ -13,6 +12,10 @@ import {
   Platform,
   StatusBar,
 } from "react-native";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import {
   ArrowLeft,
@@ -25,6 +28,8 @@ import {
   Cake,
   Pencil,
   CreditCard,
+  Users,
+  UserPlus,
 } from "lucide-react-native";
 import * as ImagePicker from "expo-image-picker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -44,6 +49,8 @@ import FeedbackModal from "../shared/FeedbackModal";
 import apiClient from "../../api/client";
 import { resetFeedback } from "../../store/feedbackSlice";
 import { MixpanelService } from "../../service/mixpanelService";
+import { useWeddingPermissions } from "../../hooks/useWeddingPermissions";
+import { usePendingJoinRequestsCount } from "../../hooks/usePendingJoinRequests";
 import { clearWeddingEvent } from "../../store/weddingEventSlice";
 import {
   leaveWeddingEvent,
@@ -56,7 +63,6 @@ import {
 } from "../../../assets/styles/utils/responsive";
 import { pinkHeaderStyles } from "../../styles/pinkHeader";
 import logger from "../../utils/logger";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 // ------------------------------------
 
 const COLORS = {
@@ -74,6 +80,7 @@ type ProfileItemProps = {
   label: string;
   value?: string;
   onPress?: () => void;
+  badgeCount?: number;
 };
 
 const ProfileItem: React.FC<ProfileItemProps> = ({
@@ -81,6 +88,7 @@ const ProfileItem: React.FC<ProfileItemProps> = ({
   label,
   value,
   onPress,
+  badgeCount,
 }) => {
   const IconComponent = icon;
   return (
@@ -93,7 +101,16 @@ const ProfileItem: React.FC<ProfileItemProps> = ({
         <IconComponent color={COLORS.iconColor} size={responsiveWidth(20)} />
       </View>
       <View style={styles.textContainer}>
-        <Text style={styles.itemLabel}>{label}</Text>
+        <View style={styles.labelRow}>
+          <Text style={styles.itemLabel}>{label}</Text>
+          {badgeCount != null && badgeCount > 0 ? (
+            <View style={styles.itemBadge}>
+              <Text style={styles.itemBadgeText}>
+                {badgeCount > 99 ? "99+" : String(badgeCount)}
+              </Text>
+            </View>
+          ) : null}
+        </View>
         {value && <Text style={styles.itemValue}>{value}</Text>}
       </View>
       {onPress && (
@@ -116,6 +133,10 @@ const ProfileScreen = () => {
   const weddingEvent = useAppSelector(
     (state) => state.weddingEvent.getWeddingEvent.weddingEvent
   );
+  const perm = useWeddingPermissions();
+  const joinPendingCount = usePendingJoinRequestsCount(weddingEvent?._id, {
+    notifyOnNew: false,
+  });
   // ----------------------------------------
 
   useFocusEffect(
@@ -123,7 +144,7 @@ const ProfileScreen = () => {
       StatusBar.setBackgroundColor("#f7577c");
       StatusBar.setBarStyle("light-content");
       if (Platform.OS === "android") StatusBar.setTranslucent(false);
-      return () => {};
+      return () => { };
     }, [])
   );
 
@@ -315,6 +336,10 @@ const ProfileScreen = () => {
   };
   // ----------------------------------------
   const userId = user?.id || user?._id;
+  const isWeddingCreator =
+    !!weddingEvent?._id &&
+    !!userId &&
+    String(weddingEvent.creatorId) === String(userId);
 
   // -------------------------Lấy feedback từ Redux store------------
   const feedback = useAppSelector(
@@ -342,8 +367,7 @@ const ProfileScreen = () => {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar backgroundColor="#f7577c" barStyle="light-content" translucent={false} />
+    <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <ArrowLeft size={responsiveWidth(24)} color="#ffffff" />
@@ -494,8 +518,7 @@ const ProfileScreen = () => {
             }
           />
           {/* Only show wedding info edit for creator */}
-          {weddingEvent &&
-            (user?.id || user?._id) === weddingEvent.creatorId && (
+          {weddingEvent && perm.isPrimaryCouple && (
               <>
                 <View style={styles.separator} />
                 <ProfileItem
@@ -514,6 +537,29 @@ const ProfileScreen = () => {
                 />
               </>
             )}
+          {weddingEvent && perm.canAssignRoles && (
+            <>
+              <View style={styles.separator} />
+              <ProfileItem
+                icon={Users}
+                label="Giao quyền trong app"
+                value="Partner · Assistant · Observer"
+                onPress={() => navigation.navigate("AssignWeddingRoles")}
+              />
+              <View style={styles.separator} />
+              <ProfileItem
+                icon={UserPlus}
+                label="Duyệt tham gia"
+                value={
+                  joinPendingCount > 0
+                    ? `${joinPendingCount} yêu cầu đang chờ`
+                    : "Không có yêu cầu chờ duyệt"
+                }
+                badgeCount={joinPendingCount}
+                onPress={() => navigation.navigate("WeddingJoinRequests")}
+              />
+            </>
+          )}
         </View>
 
         {/* Feedback */}
@@ -525,14 +571,21 @@ const ProfileScreen = () => {
           />
         </View>
 
-        <TouchableOpacity
-          style={styles.logoutButton}
-          onPress={() => setShowLeaveEventDialog(true)}
-        >
-          <Text style={styles.logoutButtonText}>
-            Tham gia với tư cách thành viên gia đình
-          </Text>
-        </TouchableOpacity>
+        {weddingEvent?._id ? (
+          <>
+            <TouchableOpacity
+              style={styles.logoutButton}
+              onPress={() => setShowLeaveEventDialog(true)}
+            >
+              <Text style={styles.logoutButtonText}>
+                {isWeddingCreator
+                  ? "Rời hoặc xóa kế hoạch cưới"
+                  : "Rời kế hoạch / tham gia kế hoạch khác"}
+              </Text>
+            </TouchableOpacity>
+            
+          </>
+        ) : null}
 
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
           <Text style={styles.logoutButtonText}>Đăng xuất</Text>
@@ -550,10 +603,9 @@ const ProfileScreen = () => {
           <View style={styles.dialogContainer}>
             <Text style={styles.dialogTitle}>Cảnh báo</Text>
             <Text style={styles.dialogMessage}>
-              {weddingEvent &&
-                (user?.id || user?._id) === weddingEvent.creatorId
-                ? "Bạn là người tạo sự kiện. Nếu rời khỏi, toàn bộ kế hoạch cưới sẽ bị xóa vĩnh viễn và tất cả thành viên sẽ bị loại khỏi kế hoạch này.\n\nĐể tránh làm mất kế hoạch cưới đã tạo trước đó, bạn nên sử dụng một tài khoản mới khi dùng tính năng này.\n\nHành động này không thể hoàn tác!"
-                : "Bạn có chắc chắn muốn rời khỏi kế hoạch cưới hiện tại?\n\nBạn sẽ mất quyền truy cập vào tất cả thông tin và công việc trong kế hoạch này."}
+              {weddingEvent && isWeddingCreator
+                ? "Bạn là người tạo sự kiện. Đây không phải lựa chọn «chỉ chuyển sang tham gia kế hoạch khác» — nếu tiếp tục, toàn bộ kế hoạch cưới sẽ bị xóa vĩnh viễn và mọi thành viên bị loại.\n\nMuốn giữ kế hoạch và chỉ hỗ trợ kế hoạch người khác, hãy dùng tài khoản phụ hoặc được mời bằng mã trên tài khoản khác.\n\nHành động này không thể hoàn tác!"
+                : "Bạn có chắc chắn muốn rời khỏi kế hoạch cưới hiện tại?\n\nSau khi rời, bạn có thể nhập mã mời để tham gia kế hoạch gia đình khác ở bước tiếp theo."}
             </Text>
             <View style={styles.dialogActions}>
               <TouchableOpacity
@@ -567,10 +619,9 @@ const ProfileScreen = () => {
                 onPress={handleLeaveWeddingEvent}
               >
                 <Text style={styles.dialogButtonTextConfirm}>
-                  {weddingEvent &&
-                    (user?.id || user?._id) === weddingEvent.creatorId
+                  {weddingEvent && isWeddingCreator
                     ? "Xóa kế hoạch"
-                    : "Đồng ý"}
+                    : "Rời kế hoạch"}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -599,11 +650,11 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: responsiveWidth(16),
     paddingVertical: responsiveHeight(12),
-    height: responsiveHeight(56),
     backgroundColor: "#f7577c",
   },
   headerTitle: {
-    fontFamily: "MavenPro",
+    fontFamily: "Roboto",
+    fontWeight: "400",
     fontSize: responsiveFont(20),
     fontWeight: "700",
     color: "#ffffff",
@@ -676,14 +727,38 @@ const styles = StyleSheet.create({
   textContainer: {
     flex: 1,
   },
+  labelRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: responsiveWidth(8),
+  },
+  itemBadge: {
+    minWidth: responsiveWidth(22),
+    height: responsiveWidth(22),
+    paddingHorizontal: responsiveWidth(6),
+    borderRadius: responsiveWidth(11),
+    backgroundColor: "#D95D74",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  itemBadgeText: {
+    fontFamily: "Roboto",
+    fontWeight: "600",
+    fontSize: responsiveFont(11),
+    color: "#fff",
+    fontWeight: "700",
+  },
   itemLabel: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     fontSize: responsiveFont(16),
     color: COLORS.textPrimary,
     fontWeight: "500",
   },
   itemValue: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     fontSize: responsiveFont(14),
     color: COLORS.textSecondary,
     marginTop: responsiveHeight(2),
@@ -703,7 +778,8 @@ const styles = StyleSheet.create({
     borderColor: "#FFA500",
   },
   leaveEventButtonText: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(16),
     color: "#D97706",
     fontWeight: "bold",
@@ -716,7 +792,8 @@ const styles = StyleSheet.create({
     marginTop: responsiveHeight(16),
   },
   logoutButtonText: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(16),
     color: COLORS.white,
     fontWeight: "bold",
@@ -746,14 +823,16 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   dialogTitle: {
-    fontFamily: "Montserrat-Bold",
+    fontFamily: "Roboto",
+    fontWeight: "700",
     fontSize: responsiveFont(20),
     color: COLORS.textPrimary,
     marginBottom: responsiveHeight(12),
     textAlign: "center",
   },
   dialogMessage: {
-    fontFamily: "Montserrat-Regular",
+    fontFamily: "Roboto",
+    fontWeight: "400",
     fontSize: responsiveFont(15),
     color: COLORS.textSecondary,
     lineHeight: responsiveHeight(22),
@@ -774,19 +853,32 @@ const styles = StyleSheet.create({
     backgroundColor: "#F3F4F6",
   },
   dialogButtonConfirm: {
-    backgroundColor: COLORS.iconColor,
+    backgroundColor: COLORS.primary,
   },
   dialogButtonTextCancel: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(15),
     color: COLORS.textSecondary,
     fontWeight: "600",
   },
   dialogButtonTextConfirm: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(15),
     color: COLORS.white,
     fontWeight: "600",
+  },
+  leavePlanHint: {
+    fontFamily: "Roboto",
+    fontWeight: "400",
+    fontSize: responsiveFont(12),
+    color: "rgba(255,255,255,0.92)",
+    textAlign: "center",
+    lineHeight: responsiveHeight(18),
+    marginTop: responsiveHeight(8),
+    marginBottom: responsiveHeight(4),
+    paddingHorizontal: responsiveWidth(12),
   },
 });
 

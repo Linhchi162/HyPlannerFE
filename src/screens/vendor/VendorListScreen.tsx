@@ -1,9 +1,8 @@
-﻿import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   TouchableOpacity,
   TextInput,
   ScrollView,
@@ -13,6 +12,8 @@ import {
   Image,
   StatusBar,
 } from "react-native";
+import * as Location from "expo-location";
+import { SafeAreaView } from "react-native-safe-area-context";
 import {
   ChevronLeft,
   Search,
@@ -27,6 +28,7 @@ import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../../navigation/types";
 import { useSelector } from "react-redux";
 import { selectCurrentUser } from "../../store/authSlice";
+import type { RootState } from "../../store";
 import {
   responsiveFont,
   responsiveHeight,
@@ -40,10 +42,72 @@ import {
 } from "../../service/vendorService";
 import { subscribeChatsByParticipant } from "../../service/chatService";
 
+function normalizeText(input: string): string {
+  return input
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function parsePrice(raw?: string): number | null {
+  if (!raw) return null;
+  const digits = raw.replace(/[^\d]/g, "");
+  if (!digits) return null;
+  const value = Number(digits);
+  return Number.isFinite(value) && value > 0 ? value : null;
+}
+
+function averageServicePrice(vendor: Vendor): number | null {
+  if (!Array.isArray(vendor.services) || vendor.services.length === 0) return null;
+  const nums = vendor.services
+    .map((s) => parsePrice(s?.price))
+    .filter((n): n is number => typeof n === "number");
+  if (nums.length === 0) return null;
+  const sum = nums.reduce((a, b) => a + b, 0);
+  return sum / nums.length;
+}
+
+function locationScore(vendorLocation: string, userLocation: string): number {
+  if (!userLocation.trim()) return 0.5;
+  const v = normalizeText(vendorLocation || "");
+  const u = normalizeText(userLocation || "");
+  if (!v || !u) return 0.3;
+  if (v === u) return 1;
+  if (v.includes(u) || u.includes(v)) return 0.9;
+  const vTokens = new Set(v.split(",").map((x) => x.trim()).filter(Boolean));
+  const uTokens = u.split(",").map((x) => x.trim()).filter(Boolean);
+  const overlap = uTokens.some((t) => vTokens.has(t));
+  return overlap ? 0.7 : 0.2;
+}
+
+function budgetScore(avgPrice: number | null, weddingBudget: number): number {
+  if (!avgPrice || !Number.isFinite(weddingBudget) || weddingBudget <= 0) return 0.5;
+  // Roughly assume one vendor package around 10% of total budget.
+  const target = Math.max(1, weddingBudget * 0.1);
+  const diff = Math.abs(Math.log(avgPrice) - Math.log(target));
+  const score = Math.exp(-diff);
+  return Math.max(0, Math.min(1, score));
+}
+
+function qualityScore(vendor: Vendor): number {
+  const rating = Math.max(0, Math.min(5, Number(vendor.rating || 0)));
+  const count = Math.max(0, Number(vendor.ratingCount || 0));
+  const confidence = Math.min(1, Math.log10(count + 1) / 2);
+  return (rating / 5) * confidence + (1 - confidence) * 0.5;
+}
+
 export default function VendorListScreen() {
   const navigation =
     useNavigation<StackNavigationProp<RootStackParamList>>();
   const currentUser = useSelector(selectCurrentUser);
+  const weddingBudget = useSelector(
+    (state: RootState) => state.weddingEvent.getWeddingEvent.weddingEvent.budget || 0
+  );
+  const weddingAddress = useSelector(
+    (state: RootState) => (state.weddingEvent.getWeddingEvent.weddingEvent as any).address || ""
+  );
   const [query, setQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("Tất cả");
   const [activeLocation, setActiveLocation] = useState("Tất cả");
@@ -55,6 +119,7 @@ export default function VendorListScreen() {
   const [sortModalVisible, setSortModalVisible] = useState(false);
   const [categoryQuery, setCategoryQuery] = useState("");
   const [locationQuery, setLocationQuery] = useState("");
+  const [gpsLocationHint, setGpsLocationHint] = useState("");
   const [sortOption, setSortOption] = useState<
     "" | "rating-asc" | "rating-desc" | "services-asc" | "services-desc"
   >("");
@@ -87,6 +152,35 @@ export default function VendorListScreen() {
     return () => {
       isMounted = false;
       if (cleanup) cleanup();
+    };
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    const loadCurrentLocation = async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== "granted") return;
+        const pos = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        });
+        const [geo] = await Location.reverseGeocodeAsync({
+          latitude: pos.coords.latitude,
+          longitude: pos.coords.longitude,
+        });
+        if (!geo) return;
+        const district = geo.district || geo.subregion || "";
+        const city = geo.city || geo.region || "";
+        const label = [district, city].filter(Boolean).join(", ").trim();
+        const fallback = geo.name || city || district || "";
+        if (mounted) setGpsLocationHint(label || fallback);
+      } catch {
+        // Ignore location failures and fallback to profile/wedding address.
+      }
+    };
+    void loadCurrentLocation();
+    return () => {
+      mounted = false;
     };
   }, []);
 
@@ -168,9 +262,55 @@ export default function VendorListScreen() {
     return arr;
   }, [filtered, sortOption]);
 
+  const userLocationHint = useMemo(() => {
+    if (gpsLocationHint.trim()) return gpsLocationHint.trim();
+    const fromUser =
+      (currentUser as any)?.location ||
+      (currentUser as any)?.address ||
+      (currentUser as any)?.city ||
+      "";
+    if (typeof fromUser === "string" && fromUser.trim()) return fromUser.trim();
+    if (typeof weddingAddress === "string" && weddingAddress.trim()) return weddingAddress.trim();
+    return "";
+  }, [gpsLocationHint, currentUser, weddingAddress]);
+
+  const recommendedVendors = useMemo(() => {
+    const canSuggest =
+      query.trim().length === 0 &&
+      activeCategory === "Tất cả" &&
+      activeLocation === "Tất cả";
+    if (!canSuggest) return [];
+    const scored = displayed.map((v) => {
+      const avg = averageServicePrice(v);
+      const loc = locationScore(v.location || "", userLocationHint);
+      const bud = budgetScore(avg, Number(weddingBudget || 0));
+      const qual = qualityScore(v);
+      const score = 0.45 * loc + 0.4 * bud + 0.15 * qual;
+      return { vendor: v, score };
+    });
+    return scored
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 4)
+      .map((x) => x.vendor);
+  }, [
+    displayed,
+    query,
+    activeCategory,
+    activeLocation,
+    userLocationHint,
+    weddingBudget,
+  ]);
+
+  const displayedList = useMemo(() => {
+    if (recommendedVendors.length === 0) return displayed;
+    const ids = new Set(recommendedVendors.map((v) => v.id));
+    return displayed.filter((v) => !ids.has(v.id));
+  }, [displayed, recommendedVendors]);
+
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar backgroundColor="#f7577c" barStyle="light-content" translucent={false} />
+    <SafeAreaView style={styles.safeAreaTop} edges={["top"]}>
+      <StatusBar backgroundColor="#f7577c" barStyle="light-content" />
+      <View style={styles.safeArea}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <ChevronLeft size={24} color="#ffffff" />
@@ -249,7 +389,7 @@ export default function VendorListScreen() {
         </TouchableOpacity>
       </ScrollView>
 
-      <ScrollView contentContainerStyle={styles.list}>
+      <ScrollView style={styles.listScroll} contentContainerStyle={styles.list}>
         {loading ? (
           <View style={styles.loadingBox}>
             <ActivityIndicator size="small" color="#f7577c" />
@@ -258,65 +398,127 @@ export default function VendorListScreen() {
         ) : displayed.length === 0 ? (
           <Text style={styles.emptyText}>Chưa có nhà cung cấp.</Text>
         ) : (
-          displayed.map((v) => (
-            <TouchableOpacity
-              key={v.id}
-              style={styles.card}
-              onPress={() =>
-                navigation.navigate("VendorDetail", { vendorId: v.id })
-              }
-            >
-              <View style={styles.cardRow}>
-                <View style={styles.cardImageWrapper}>
-                  {v.imageUrl ? (
-                    <Image
-                      source={{ uri: v.imageUrl }}
-                      style={styles.cardImage}
-                    />
-                  ) : (
-                    <View style={styles.cardImagePlaceholder}>
-                      <Text style={styles.cardImageText}>
-                        {(v.name || "?").slice(0, 1).toUpperCase()}
-                      </Text>
+          <>
+            {recommendedVendors.length > 0 ? (
+              <View style={styles.suggestWrap}>
+                <Text style={styles.suggestTitle}>Gợi ý cho bạn</Text>
+                <Text style={styles.suggestSubtitle}>
+                  Ưu tiên theo vị trí gần bạn
+                  {userLocationHint ? ` (${userLocationHint})` : ""}
+                  {" "}và mức giá phù hợp ngân sách cưới.
+                </Text>
+                {recommendedVendors.map((v) => (
+                  <TouchableOpacity
+                    key={`suggest-${v.id}`}
+                    style={[styles.card, styles.suggestCard]}
+                    onPress={() =>
+                      navigation.navigate("VendorDetail", { vendorId: v.id })
+                    }
+                  >
+                    <View style={styles.cardRow}>
+                      <View style={styles.cardImageWrapper}>
+                        {v.imageUrl ? (
+                          <Image
+                            source={{ uri: v.imageUrl }}
+                            style={styles.cardImage}
+                          />
+                        ) : (
+                          <View style={styles.cardImagePlaceholder}>
+                            <Text style={styles.cardImageText}>
+                              {(v.name || "?").slice(0, 1).toUpperCase()}
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                      <View style={styles.cardContent}>
+                        <View style={styles.cardHeader}>
+                          <View style={styles.cardHeaderLeft}>
+                            <Text style={styles.cardTitle}>{v.name}</Text>
+                          </View>
+                          <View style={styles.ratingRow}>
+                            <Star size={14} color="#f59e0b" />
+                            <Text style={styles.ratingText}>{v.rating ?? 0}</Text>
+                          </View>
+                        </View>
+                        <Text style={styles.cardCategory}>{v.category}</Text>
+                        <View style={styles.locationRow}>
+                          <MapPin size={14} color="#9ca3af" />
+                          <Text style={styles.locationText}>{v.location}</Text>
+                        </View>
+                        {Array.isArray(v.services) ? (
+                          <Text style={styles.cardMeta}>
+                            {v.services.length} dịch vụ đang cung cấp
+                          </Text>
+                        ) : null}
+                      </View>
                     </View>
-                  )}
-                </View>
-                <View style={styles.cardContent}>
-                  <View style={styles.cardHeader}>
-                    <View style={styles.cardHeaderLeft}>
-                      <Text style={styles.cardTitle}>{v.name}</Text>
-                    </View>
-                    <View style={styles.ratingRow}>
-                      <Star size={14} color="#f59e0b" />
-                      <Text style={styles.ratingText}>
-                        {v.rating ?? 0}
-                      </Text>
-                    </View>
-                  </View>
-                  <Text style={styles.cardCategory}>{v.category}</Text>
-                  <View style={styles.locationRow}>
-                    <MapPin size={14} color="#9ca3af" />
-                    <Text style={styles.locationText}>{v.location}</Text>
-                  </View>
-                  {v.description ? (
-                    <Text style={styles.cardDesc} numberOfLines={2}>
-                      {v.description}
-                    </Text>
-                  ) : null}
-                  {Array.isArray(v.services) ? (
-                    <Text style={styles.cardMeta}>
-                      {v.services.length} dịch vụ đang cung cấp
-                    </Text>
-                  ) : null}
-                </View>
+                  </TouchableOpacity>
+                ))}
               </View>
-            </TouchableOpacity>
-          ))
+            ) : null}
+
+            {displayedList.map((v) => (
+              <TouchableOpacity
+                key={v.id}
+                style={styles.card}
+                onPress={() =>
+                  navigation.navigate("VendorDetail", { vendorId: v.id })
+                }
+              >
+                <View style={styles.cardRow}>
+                  <View style={styles.cardImageWrapper}>
+                    {v.imageUrl ? (
+                      <Image
+                        source={{ uri: v.imageUrl }}
+                        style={styles.cardImage}
+                      />
+                    ) : (
+                      <View style={styles.cardImagePlaceholder}>
+                        <Text style={styles.cardImageText}>
+                          {(v.name || "?").slice(0, 1).toUpperCase()}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                  <View style={styles.cardContent}>
+                    <View style={styles.cardHeader}>
+                      <View style={styles.cardHeaderLeft}>
+                        <Text style={styles.cardTitle}>{v.name}</Text>
+                      </View>
+                      <View style={styles.ratingRow}>
+                        <Star size={14} color="#f59e0b" />
+                        <Text style={styles.ratingText}>
+                          {v.rating ?? 0}
+                        </Text>
+                      </View>
+                    </View>
+                    <Text style={styles.cardCategory}>{v.category}</Text>
+                    <View style={styles.locationRow}>
+                      <MapPin size={14} color="#9ca3af" />
+                      <Text style={styles.locationText}>{v.location}</Text>
+                    </View>
+                    {v.description ? (
+                      <Text style={styles.cardDesc} numberOfLines={2}>
+                        {v.description}
+                      </Text>
+                    ) : null}
+                    {Array.isArray(v.services) ? (
+                      <Text style={styles.cardMeta}>
+                        {v.services.length} dịch vụ đang cung cấp
+                      </Text>
+                    ) : null}
+                  </View>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </>
         )}
       </ScrollView>
 
+      </View>
+
       <Modal visible={categoryModalVisible} animationType="slide">
-        <SafeAreaView style={styles.modalSafeArea}>
+        <SafeAreaView style={styles.modalSafeArea} edges={["top", "bottom"]}>
           <View style={styles.modalHeader}>
             <TouchableOpacity onPress={() => setCategoryModalVisible(false)}>
               <ChevronLeft size={24} color="#111827" />
@@ -360,7 +562,7 @@ export default function VendorListScreen() {
       </Modal>
 
       <Modal visible={locationModalVisible} animationType="slide">
-        <SafeAreaView style={styles.modalSafeArea}>
+        <SafeAreaView style={styles.modalSafeArea} edges={["top", "bottom"]}>
           <View style={styles.modalHeader}>
             <TouchableOpacity onPress={() => setLocationModalVisible(false)}>
               <ChevronLeft size={24} color="#111827" />
@@ -405,7 +607,7 @@ export default function VendorListScreen() {
 
       {/* sort modal */}
       <Modal visible={sortModalVisible} animationType="slide">
-        <SafeAreaView style={styles.modalSafeArea}>
+        <SafeAreaView style={styles.modalSafeArea} edges={["top", "bottom"]}>
           <View style={styles.modalHeader}>
             <TouchableOpacity onPress={() => setSortModalVisible(false)}>
               <ChevronLeft size={24} color="#111827" />
@@ -447,21 +649,29 @@ export default function VendorListScreen() {
 }
 
 const styles = StyleSheet.create({
+  safeAreaTop: {
+    flex: 1,
+    backgroundColor: "#f7577c",
+  },
   safeArea: {
     flex: 1,
     backgroundColor: "#f8f9fa",
+  },
+  listScroll: {
+    flex: 1,
   },
   header: {
     backgroundColor: "#f7577c",
     paddingHorizontal: responsiveWidth(16),
     paddingVertical: responsiveHeight(12),
-    height: responsiveHeight(56),
+    minHeight: responsiveHeight(56),
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
   },
   headerTitle: {
-    fontFamily: "MavenPro",
+    fontFamily: "Roboto",
+    fontWeight: "400",
     fontSize: responsiveFont(18),
     fontWeight: "700",
     color: "#ffffff",
@@ -488,7 +698,8 @@ const styles = StyleSheet.create({
   },
   headerBadgeText: {
     fontSize: responsiveFont(9),
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     color: "#f7577c",
   },
   searchRow: {
@@ -506,7 +717,8 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     fontSize: responsiveFont(14),
     color: "#111827",
   },
@@ -529,7 +741,8 @@ const styles = StyleSheet.create({
     marginRight: responsiveWidth(6),
   },
   filterLabel: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     fontSize: responsiveFont(12),
     color: "#111827",
   },
@@ -537,6 +750,32 @@ const styles = StyleSheet.create({
     paddingHorizontal: responsiveWidth(16),
     paddingBottom: responsiveHeight(120),
     gap: responsiveHeight(12),
+  },
+  suggestWrap: {
+    backgroundColor: "#fff4f8",
+    borderWidth: 1,
+    borderColor: "#ffd6e3",
+    borderRadius: responsiveWidth(12),
+    padding: responsiveWidth(12),
+    marginBottom: responsiveHeight(10),
+  },
+  suggestTitle: {
+    fontFamily: "Roboto",
+    fontWeight: "600",
+    fontSize: responsiveFont(14),
+    color: "#d81b60",
+  },
+  suggestSubtitle: {
+    marginTop: responsiveHeight(4),
+    marginBottom: responsiveHeight(10),
+    fontFamily: "Roboto",
+    fontWeight: "500",
+    fontSize: responsiveFont(11),
+    color: "#6b7280",
+  },
+  suggestCard: {
+    marginBottom: responsiveHeight(8),
+    borderColor: "#ffd6e3",
   },
   modalSafeArea: {
     flex: 1,
@@ -553,7 +792,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
   },
   modalTitle: {
-    fontFamily: "MavenPro",
+    fontFamily: "Roboto",
+    fontWeight: "400",
     fontSize: responsiveFont(16),
     fontWeight: "700",
     color: "#111827",
@@ -573,7 +813,8 @@ const styles = StyleSheet.create({
   },
   modalSearchInput: {
     flex: 1,
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     fontSize: responsiveFont(13),
     color: "#111827",
   },
@@ -641,7 +882,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   cardImageText: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(18),
     color: "#f7577c",
   },
@@ -664,7 +906,8 @@ const styles = StyleSheet.create({
     marginRight: responsiveWidth(8),
   },
   cardTitle: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(15),
     color: "#111827",
   },

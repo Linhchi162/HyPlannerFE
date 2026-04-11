@@ -33,7 +33,9 @@
             "SKAdNetworkIdentifier": "n38lu8286q.skadnetwork"
           }
         ],
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSLocationWhenInUseUsageDescription": "HyPlanner cần vị trí để hiển thị ưu đãi theo khu vực của bạn.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "HyPlanner cần vị trí để hiển thị ưu đãi theo khu vực của bạn."
       },
       "bundleIdentifier": "com.yourcompany.hyplanner"
     },
@@ -48,7 +50,9 @@
         "android.permission.INTERNET",
         "android.permission.READ_MEDIA_IMAGES",
         "android.permission.CAMERA",
-        "android.permission.POST_NOTIFICATIONS"
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
       ],
       "package": "com.yourcompany.hyplanner"
     },
@@ -76,11 +80,19 @@
         }
       ],
       "expo-font",
-      "expo-asset"
+      "expo-asset",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "HyPlanner cần vị trí để hiển thị ưu đãi theo khu vực của bạn.",
+          "locationAlwaysAndWhenInUsePermission": "HyPlanner cần vị trí để hiển thị ưu đãi theo khu vực của bạn."
+        }
+      ]
     ],
+    "owner": "lychee162",
     "extra": {
       "eas": {
-        "projectId": "b643b066-9271-4b2d-ab45-d2e527bbfd3d"
+        "projectId": "35913a5d-e526-464d-8582-4f0485db0e38"
       }
     }
   }

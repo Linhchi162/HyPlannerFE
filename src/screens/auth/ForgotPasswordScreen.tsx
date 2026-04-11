@@ -99,7 +99,8 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   title: {
-    fontFamily: "MavenPro-Bold",
+    fontFamily: "Roboto",
+    fontWeight: "700",
     fontSize: 24,
     fontWeight: "500",
     color: "#e56e8a",
@@ -107,7 +108,8 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   subtitle: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: 16,
     color: "#1f2937",
     textAlign: "center",
@@ -117,7 +119,8 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   input: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     height: 48,
     borderWidth: 1,
     borderColor: "#ced4da",
@@ -135,7 +138,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   buttonText: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: 16,
     color: "#000000",
   },

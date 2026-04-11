@@ -1,4 +1,4 @@
-﻿import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   View,
   StyleSheet,
@@ -118,6 +118,8 @@ export default function WhoIsNextMarriedScreen() {
 
   const rotation = useRef(new Animated.Value(0)).current;
   const pointerAnim = useRef(new Animated.Value(0)).current;
+  /** Tổng góc đã quay (độ) — dùng để lần quay sau cộng dồn, tránh toValue tuyệt đối sai lệch */
+  const lastRotationRef = useRef(0);
 
   const radius = 150;
   const colors = [
@@ -141,21 +143,38 @@ export default function WhoIsNextMarriedScreen() {
     return "unknown";
   };
 
-  // (spinWheel, shuffleMembers, resetWheel, removeMember, getSlicePath không đổi)
+  // spinWheel: kim cố định ở 12h (270° trong hệ SVG: 0° = 3h, tăng theo chiều kim đồng hồ).
+  // Miếng i có tâm tại (i+0.5)*sliceAngle. Sau khi quay CW thêm R độ: (tâm_miếng + R) % 360 === 270.
+  // Công thức cũ (360*10 + angle - 270) không khớp → dừng sát vạch / hiện người đối diện.
   const spinWheel = () => {
     setHasStarted(true);
     if (spinning || !members || members.length === 0) return;
     setSpinning(true);
     const randomIndex = Math.floor(Math.random() * members.length);
     const sliceAngle = 360 / members.length;
-    const angleToWinnerMiddle = (randomIndex + 0.5) * sliceAngle;
-    const randomRotation = 360 * 10 + angleToWinnerMiddle - 270;
+    // Lệch nhẹ trong miếng (~±12% nửa cạnh) để hầu như không bao giờ dừng đúng vạch giữa hai tên
+    const jitter =
+      (Math.random() - 0.5) * 0.24 * sliceAngle;
+    const winnerCenterDeg = (randomIndex + 0.5) * sliceAngle + jitter;
+
+    const last = lastRotationRef.current;
+    const combined = winnerCenterDeg + last;
+    const combinedMod = ((combined % 360) + 360) % 360;
+    let delta = (270 - combinedMod + 360) % 360;
+    if (delta < 0.5) delta = 360;
+
+    const targetRotation = last + 360 * 10 + delta;
+
     Animated.timing(rotation, {
-      toValue: randomRotation,
+      toValue: targetRotation,
       duration: 4000,
       easing: Easing.out(Easing.exp),
       useNativeDriver: true,
     }).start(() => {
+      lastRotationRef.current = targetRotation;
+      rotation.setValue(targetRotation);
+      setWinner(members[randomIndex]);
+      setSpinning(false);
       Animated.sequence([
         Animated.timing(pointerAnim, {
           toValue: 1,
@@ -172,11 +191,9 @@ export default function WhoIsNextMarriedScreen() {
           duration: 100,
           useNativeDriver: true,
         }),
-      ]).start();
-      setWinner(members[randomIndex]);
-      setDialogVisible(true);
-      rotation.setValue(randomRotation % 360);
-      setSpinning(false);
+      ]).start(() => {
+        setDialogVisible(true);
+      });
     });
   };
 
@@ -188,6 +205,7 @@ export default function WhoIsNextMarriedScreen() {
   const resetWheel = () => {
     setHasStarted(true);
     setMembers(member.filter((m: any) => m._id !== creatorId));
+    lastRotationRef.current = 0;
     rotation.setValue(0);
     setWinner(null);
     setDialogVisible(false);
@@ -249,7 +267,9 @@ export default function WhoIsNextMarriedScreen() {
             styles.container,
             {
               paddingBottom:
-                Platform.OS === "android" ? 40 + insets.bottom : 40,
+                Platform.OS === "android"
+                  ? responsiveHeight(32) + insets.bottom
+                  : responsiveHeight(28),
             },
           ]}
           showsVerticalScrollIndicator={false}
@@ -266,6 +286,7 @@ export default function WhoIsNextMarriedScreen() {
                       rotate: rotation.interpolate({
                         inputRange: [0, 360],
                         outputRange: ["0deg", "360deg"],
+                        extrapolate: "extend",
                       }),
                     },
                   ],
@@ -329,8 +350,9 @@ export default function WhoIsNextMarriedScreen() {
                     transform: [
                       {
                         rotate: pointerAnim.interpolate({
-                          inputRange: [-1, 1],
-                          outputRange: ["-15deg", "15deg"],
+                          inputRange: [-1, 0, 1],
+                          outputRange: ["-15deg", "0deg", "15deg"],
+                          extrapolate: "clamp",
                         }),
                       },
                     ],
@@ -395,35 +417,43 @@ export default function WhoIsNextMarriedScreen() {
           {visibleMembers && visibleMembers.length > 0 && (
             <View style={styles.memberListContainer}>
               <Text style={styles.listTitle}>Thành viên đang tham gia:</Text>
-              <View style={styles.list}>
-                {visibleMembers.map((item, index) => (
-                  <View
-                    key={getMemberId(item, index)}
-                    style={styles.memberItem}
-                  >
+              <ScrollView
+                nestedScrollEnabled
+                style={styles.listScroll}
+                contentContainerStyle={styles.listScrollContent}
+                showsVerticalScrollIndicator
+                keyboardShouldPersistTaps="handled"
+              >
+                <View style={styles.list}>
+                  {visibleMembers.map((item, index) => (
                     <View
-                      style={[
-                        styles.memberColorChip,
-                        { backgroundColor: colors[index % colors.length] },
-                      ]}
-                    />
-                    <Text style={styles.memberName}>
-                      {item.fullName || item.name || ""}
-                    </Text>
-                    <TouchableOpacity
-                      onPress={() => removeMember(getMemberId(item, index))}
-                      style={styles.deleteButton}
-                      disabled={spinning}
+                      key={getMemberId(item, index)}
+                      style={styles.memberItem}
                     >
-                      <Entypo
-                        name="circle-with-cross"
-                        size={20}
-                        color={spinning ? "#AAA" : "#E53935"}
+                      <View
+                        style={[
+                          styles.memberColorChip,
+                          { backgroundColor: colors[index % colors.length] },
+                        ]}
                       />
-                    </TouchableOpacity>
-                  </View>
-                ))}
-              </View>
+                      <Text style={styles.memberName}>
+                        {item.fullName || item.name || ""}
+                      </Text>
+                      <TouchableOpacity
+                        onPress={() => removeMember(getMemberId(item, index))}
+                        style={styles.deleteButton}
+                        disabled={spinning}
+                      >
+                        <Entypo
+                          name="circle-with-cross"
+                          size={20}
+                          color={spinning ? "#AAA" : "#E53935"}
+                        />
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </View>
+              </ScrollView>
             </View>
           )}
 
@@ -573,7 +603,8 @@ const styles = StyleSheet.create({
   },
   appbarTitle: {
     color: "#ffffff",
-    fontFamily: "MavenPro",
+    fontFamily: "Roboto",
+    fontWeight: "400",
     fontSize: responsiveFont(16),
     lineHeight: responsiveFont(24),
     textAlign: "center",
@@ -619,19 +650,22 @@ const styles = StyleSheet.create({
     elevation: 0,
   },
   addButtonLabel: {
-    fontFamily: "MavenPro",
+    fontFamily: "Roboto",
+    fontWeight: "400",
     fontSize: responsiveFont(14),
     fontWeight: "700",
   },
   outlinedButtonLabel: {
-    fontFamily: "MavenPro",
+    fontFamily: "Roboto",
+    fontWeight: "400",
     fontWeight: "700",
   },
 
   // ... (button styles)
   buttons: {
     width: "90%",
-    marginTop: responsiveHeight(30),
+    marginTop: responsiveHeight(16),
+    paddingTop: responsiveHeight(8),
   },
   primaryButtonRow: {
     width: "100%",
@@ -673,30 +707,36 @@ const styles = StyleSheet.create({
   },
   congratsText: {
     fontSize: responsiveFont(14),
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     color: "#333",
     textAlign: "center",
     fontWeight: "600",
   },
 
-  // ✅ CHỈNH SỬA: maxHeight để nút Quay luôn hiển thị trên màn hình
   memberListContainer: {
     width: "90%",
     marginTop: responsiveHeight(20),
-    maxHeight: responsiveHeight(180),
   },
-  // ... (list styles)
   listTitle: {
     fontSize: responsiveFont(14),
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     color: "#555",
     marginBottom: responsiveHeight(5),
     textAlign: "center",
+  },
+  listScroll: {
+    maxHeight: responsiveHeight(220),
+  },
+  listScrollContent: {
+    flexGrow: 1,
   },
   list: {
     borderWidth: 1,
     borderColor: "#EEE",
     borderRadius: responsiveWidth(8),
+    overflow: "hidden",
   },
   memberItem: {
     flexDirection: "row",
@@ -730,7 +770,8 @@ const styles = StyleSheet.create({
   },
   dialogTitle: {
     textAlign: "center",
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(22),
     color: "#f7577c",
     fontWeight: "700",
@@ -745,7 +786,8 @@ const styles = StyleSheet.create({
   },
   dialogText: {
     fontSize: responsiveFont(20),
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     color: "#ffffff",
     textAlign: "center",
     fontWeight: "600",

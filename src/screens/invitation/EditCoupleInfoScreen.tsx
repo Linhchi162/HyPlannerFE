@@ -838,7 +838,8 @@ const styles = StyleSheet.create({
     borderBottomColor: COLORS.card,
   },
   headerTitle: {
-    fontFamily: "MavenPro-Bold",
+    fontFamily: "Roboto",
+    fontWeight: "700",
     fontSize: responsiveFont(20),
     fontWeight: "700",
     color: COLORS.white,
@@ -936,7 +937,8 @@ const styles = StyleSheet.create({
     gap: responsiveWidth(8),
   },
   pickImageText: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(14),
     color: COLORS.accent,
   },

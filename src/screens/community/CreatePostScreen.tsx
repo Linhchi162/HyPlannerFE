@@ -60,11 +60,20 @@ const CreatePostScreen = () => {
   const { currentPost, isLoading } = useSelector(
     (state: RootState) => state.posts
   );
+  const currentUser = useSelector(selectCurrentUser);
 
   const [content, setContent] = useState("");
   const [images, setImages] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [uploadingImages, setUploadingImages] = useState(false);
+
+  const maxImagesPerPost = getMaxImagesPerPost(
+    currentUser?.accountType || "FREE"
+  );
+  const canAddMoreImages =
+    maxImagesPerPost === null
+      ? true
+      : images.length < maxImagesPerPost;
 
   useEffect(() => {
     if (isEditing) {
@@ -114,7 +123,10 @@ const CreatePostScreen = () => {
         return;
       }
 
-      const remainingSlots = maxImages - images.length;
+      const remainingSlots =
+        maxImages != null
+          ? maxImages - images.length
+          : Math.max(1, 30 - images.length);
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ["images"],
         allowsMultipleSelection: true,
@@ -290,7 +302,7 @@ const CreatePostScreen = () => {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Thêm ảnh</Text>
-              {images.length < 5 && (
+              {canAddMoreImages && (
                 <TouchableOpacity
                   style={styles.addImageButton}
                   onPress={handlePickImages}
@@ -325,7 +337,9 @@ const CreatePostScreen = () => {
             )}
 
             <Text style={styles.sectionSubtitle}>
-              Tối đa 5 ảnh • {images.length}/5
+              {maxImagesPerPost === null
+                ? `Không giới hạn số ảnh • ${images.length} ảnh đã chọn`
+                : `Tối đa ${maxImagesPerPost} ảnh • ${images.length}/${maxImagesPerPost}`}
             </Text>
           </View>
 
@@ -358,7 +372,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
   },
   loadingText: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     fontSize: responsiveFont(14),
     color: "#6b7280",
     marginTop: responsiveHeight(12),
@@ -373,7 +388,8 @@ const styles = StyleSheet.create({
     borderBottomColor: "#f3f4f6",
   },
   headerTitle: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(18),
     color: "#1f2937",
     flex: 1,
@@ -381,7 +397,8 @@ const styles = StyleSheet.create({
     marginHorizontal: responsiveWidth(8),
   },
   saveButton: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(16),
     color: "#ff6b9d",
   },
@@ -393,7 +410,8 @@ const styles = StyleSheet.create({
     padding: responsiveWidth(16),
   },
   contentInput: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     fontSize: responsiveFont(16),
     color: "#1f2937",
     minHeight: responsiveHeight(200),
@@ -409,12 +427,14 @@ const styles = StyleSheet.create({
     marginBottom: responsiveHeight(12),
   },
   sectionTitle: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(14),
     color: "#1f2937",
   },
   sectionSubtitle: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     fontSize: responsiveFont(12),
     color: "#6b7280",
     marginTop: responsiveHeight(8),
@@ -429,7 +449,8 @@ const styles = StyleSheet.create({
     gap: responsiveWidth(6),
   },
   addImageText: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(13),
     color: "#ff6b9d",
   },
@@ -458,7 +479,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   imageInput: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     fontSize: responsiveFont(14),
     color: "#1f2937",
     borderWidth: 1,
@@ -475,13 +497,15 @@ const styles = StyleSheet.create({
     borderRadius: responsiveWidth(12),
   },
   tipsTitle: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(14),
     color: "#92400e",
     marginBottom: responsiveHeight(8),
   },
   tipText: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     fontSize: responsiveFont(12),
     color: "#92400e",
     marginBottom: responsiveHeight(4),

@@ -340,7 +340,8 @@ const styles = StyleSheet.create({
   },
   appbarTitle: {
     color: "#333",
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(16),
     fontWeight: "700",
     textAlign: "center",
@@ -384,7 +385,8 @@ const styles = StyleSheet.create({
   },
   backTextWhite: {
     color: "#FFF",
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     fontWeight: "600",
     fontSize: responsiveFont(14),
   },
@@ -393,14 +395,16 @@ const styles = StyleSheet.create({
   },
   groupName: {
     fontSize: responsiveFont(16),
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     color: "#333",
     marginBottom: responsiveHeight(4),
     lineHeight: responsiveFont(22),
   },
   groupCount: {
     fontSize: responsiveFont(12),
-    fontFamily: "Montserrat-Regular",
+    fontFamily: "Roboto",
+    fontWeight: "400",
     color: "#6B7280",
     lineHeight: responsiveFont(18),
   },
@@ -417,7 +421,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: responsiveWidth(12),
     paddingVertical: responsiveHeight(8),
     fontSize: responsiveFont(16),
-    fontFamily: "Montserrat-Regular",
+    fontFamily: "Roboto",
+    fontWeight: "400",
   },
   editButtons: {
     flexDirection: "row",
@@ -453,7 +458,8 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: responsiveFont(14),
     color: "#888",
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     lineHeight: responsiveFont(20),
   },
 });

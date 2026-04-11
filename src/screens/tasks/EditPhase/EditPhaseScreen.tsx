@@ -418,7 +418,8 @@ const styles = StyleSheet.create({
   },
   appbarTitle: {
     color: "#333",
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(16),
     fontWeight: "700",
     textAlign: "center",
@@ -475,7 +476,8 @@ const styles = StyleSheet.create({
   backTextWhite: {
     color: "#FFF",
     fontSize: responsiveFont(10),
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
   },
   dialog: {
     backgroundColor: "white",
@@ -485,13 +487,14 @@ const styles = StyleSheet.create({
     color: "#333",
     fontSize: responsiveFont(14),
     fontWeight: "600",
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
   },
   dialogContent: {
     color: "#666",
     fontSize: responsiveFont(14),
     lineHeight: responsiveHeight(24),
-    fontFamily: "Montserrat-Regular",
+    fontFamily: "Roboto",
+    fontWeight: "400",
   },
   dialogActions: {
     paddingHorizontal: 8,

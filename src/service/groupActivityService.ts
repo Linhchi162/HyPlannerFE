@@ -41,10 +41,14 @@ export const createGroupActivity = async (
 ) => {
   dispatch(createGroupActivityStart());
   try {
-    await apiClient.post(`/groupActivities/createGroupActivity/${eventId}`, {
-      groupName,
-    });
+    const response = await apiClient.post(
+      `/groupActivities/createGroupActivity/${eventId}`,
+      {
+        groupName,
+      }
+    );
     dispatch(createGroupActivitySuccess());
+    return response.data as { _id?: string };
   } catch (error: any) {
     const message =
       error.response && error.response.data && error.response.data.message

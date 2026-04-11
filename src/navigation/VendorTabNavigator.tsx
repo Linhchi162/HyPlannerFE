@@ -1,16 +1,20 @@
 import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { LayoutTemplate, Users } from "lucide-react-native";
-import { Platform } from "react-native";
+import { ClipboardList, LayoutTemplate, Users } from "lucide-react-native";
+import { ActivityIndicator, Platform, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { VendorTabParamList } from "./types";
 import ChatListScreen from "../screens/chat/ChatListScreen";
 import VendorAuthScreen from "../screens/vendor/VendorAuthScreen";
 import VendorStackNavigator from "./VendorStackNavigator";
+import VendorRequestsScreen from "../screens/vendor/VendorRequestsScreen";
 import { onVendorAuthStateChanged } from "../service/vendorAuthService";
 import { subscribeChatsByParticipant } from "../service/chatService";
-import { getFcmTokenAsync } from "../utils/pushNotification";
-import { updateVendorFcmToken } from "../service/vendorService";
+import { registerForPushNotificationsAsync } from "../utils/pushNotification";
+import {
+  updateVendorFcmToken,
+  subscribeVendorRequests,
+} from "../service/vendorService";
 import {
   responsiveWidth,
   responsiveHeight,
@@ -26,6 +30,7 @@ export const VendorTabNavigator = () => {
     null
   );
   const [unreadCount, setUnreadCount] = React.useState(0);
+  const [openOrderCount, setOpenOrderCount] = React.useState(0);
 
   React.useEffect(() => {
     const unsub = onVendorAuthStateChanged((user) => {
@@ -48,9 +53,21 @@ export const VendorTabNavigator = () => {
   }, [vendorUser?.uid]);
 
   React.useEffect(() => {
+    if (!vendorUser?.uid) {
+      setOpenOrderCount(0);
+      return;
+    }
+    const unsub = subscribeVendorRequests(vendorUser.uid, (data) => {
+      const open = data.filter((r) => r.status !== "done").length;
+      setOpenOrderCount(open);
+    });
+    return () => unsub();
+  }, [vendorUser?.uid]);
+
+  React.useEffect(() => {
     if (!vendorUser?.uid) return;
     const registerToken = async () => {
-      const token = await getFcmTokenAsync();
+      const token = await registerForPushNotificationsAsync();
       if (token) {
         await updateVendorFcmToken(vendorUser.uid, token);
       }
@@ -58,7 +75,13 @@ export const VendorTabNavigator = () => {
     registerToken();
   }, [vendorUser?.uid]);
 
-  if (loading) return null;
+  if (loading) {
+    return (
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#f8f9fa" }}>
+        <ActivityIndicator size="large" color="#f7577c" />
+      </View>
+    );
+  }
   if (!vendorUser) return <VendorAuthScreen />;
 
   return (
@@ -68,6 +91,8 @@ export const VendorTabNavigator = () => {
           const iconSize = focused ? responsiveWidth(26) : responsiveWidth(22);
           if (route.name === "VendorHome")
             return <LayoutTemplate color={color} size={iconSize} />;
+          if (route.name === "VendorOrders")
+            return <ClipboardList color={color} size={iconSize} />;
           if (route.name === "VendorLeads")
             return <Users color={color} size={iconSize} />;
           return null;
@@ -75,7 +100,8 @@ export const VendorTabNavigator = () => {
         tabBarActiveTintColor: "#fd4166",
         tabBarInactiveTintColor: "#9ca3af",
         tabBarLabelStyle: {
-          fontFamily: "Montserrat-Medium",
+          fontFamily: "Roboto",
+          fontWeight: "500",
           fontSize: responsiveFont(10),
           fontWeight: "600",
           marginTop: responsiveHeight(4),
@@ -115,6 +141,19 @@ export const VendorTabNavigator = () => {
         name="VendorHome"
         component={VendorStackNavigator}
         options={{ tabBarLabel: "Bảng điều khiển" }}
+      />
+      <Tab.Screen
+        name="VendorOrders"
+        component={VendorRequestsScreen}
+        options={{
+          tabBarLabel: "Đơn hàng",
+          tabBarBadge:
+            openOrderCount > 0
+              ? openOrderCount > 99
+                ? "99+"
+                : openOrderCount
+              : undefined,
+        }}
       />
       <Tab.Screen
         name="VendorLeads"

@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   StyleSheet,
   Text,
@@ -36,6 +37,7 @@ import { Member } from "../../store/weddingEventSlice";
 import { RootStackParamList } from "../../navigation/types";
 import { MixpanelService } from "../../service/mixpanelService";
 import logger from "../../utils/logger";
+import { useWeddingPermissions } from "../../hooks/useWeddingPermissions";
 
 type CreateTaskAppbarProps = {
   onBack: () => void;
@@ -100,6 +102,8 @@ export default function EditTaskScreen() {
   const { eventId } = route.params;
   const [loadingTask, setLoadingTask] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+  const perm = useWeddingPermissions();
+  const permAlertRef = useRef(false);
   // const userId = "6892b8a2aa0f1640e5c173f2"; //fix cứng tạm thời
   // const creatorId = useSelector((state: RootState) => state.weddingEvent.getWeddingEvent.weddingEvent.creatorId);
   useEffect(() => {
@@ -137,6 +141,21 @@ export default function EditTaskScreen() {
       // setActualBudget(task.actualBudget || null);
     }
   }, [task]);
+
+  useEffect(() => {
+    if (!task || loadingTask || permAlertRef.current) return;
+    const createdBy = (task as { createdBy?: string }).createdBy;
+    if (!perm.canMutateResource("task", taskId, createdBy)) {
+      permAlertRef.current = true;
+      Alert.alert(
+        "Không có quyền",
+        perm.isObserver
+          ? "Vai trò Observer chỉ được xem dữ liệu."
+          : "Bạn chỉ có thể sửa công việc do chính bạn tạo.",
+        [{ text: "OK", onPress: () => navigation.goBack() }]
+      );
+    }
+  }, [task, loadingTask, taskId, navigation, perm]);
 
   const handleSave = async () => {
     try {
@@ -307,7 +326,8 @@ const styles = StyleSheet.create({
   },
   appbarTitle: {
     color: "#333",
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(16),
     fontWeight: "700",
     textAlign: "center",
@@ -328,14 +348,16 @@ const styles = StyleSheet.create({
     marginBottom: responsiveHeight(12),
   },
   sectionTitle: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(13),
     color: "#831843",
     marginLeft: 8,
   },
   textInput: {
     backgroundColor: "#FFFFFF",
-    fontFamily: "Montserrat-Regular",
+    fontFamily: "Roboto",
+    fontWeight: "400",
   },
   textArea: {
     textAlignVertical: "top",
@@ -359,12 +381,14 @@ const styles = StyleSheet.create({
     marginBottom: responsiveHeight(10),
   },
   memberTitle: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(13),
     color: "#333333",
   },
   memberDescription: {
-    fontFamily: "Montserrat-Regular",
+    fontFamily: "Roboto",
+    fontWeight: "400",
     fontSize: responsiveFont(10),
     color: "#6B7280",
   },
@@ -382,6 +406,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
     color: "#B0B0B0",
     fontSize: responsiveFont(13),
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
   },
 });

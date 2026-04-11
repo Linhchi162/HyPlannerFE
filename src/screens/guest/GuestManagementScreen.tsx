@@ -1,11 +1,10 @@
-﻿import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   View,
   Text,
   StyleSheet,
   FlatList,
   TouchableOpacity,
-  SafeAreaView,
   StatusBar,
   RefreshControl,
   ActivityIndicator,
@@ -17,7 +16,10 @@ import {
   Platform,
   ToastAndroid,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import { getAccountLimits, getUpgradeMessage } from "../../utils/accountLimits";
 import { selectCurrentUser } from "../../store/authSlice";
 import * as FileSystem from "expo-file-system";
@@ -69,6 +71,7 @@ import {
 import { pinkHeaderStyles } from "../../styles/pinkHeader";
 import { MixpanelService } from "../../service/mixpanelService";
 import * as guestService from "../../service/guestService";
+import { useWeddingPermissions } from "../../hooks/useWeddingPermissions";
 
 type GuestManagementScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -92,6 +95,7 @@ const GuestManagementScreen = () => {
   const weddingEvent = useSelector(
     (state: RootState) => state.weddingEvent?.getWeddingEvent?.weddingEvent
   );
+  const perm = useWeddingPermissions();
 
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -219,6 +223,10 @@ const GuestManagementScreen = () => {
   };
 
   const handleAddGuest = () => {
+    if (!perm.canAddPlanContent) {
+      Alert.alert("Chỉ xem", "Vai trò Observer không thể thêm khách mời.");
+      return;
+    }
     setShowAddModal(true);
   };
 
@@ -242,12 +250,16 @@ const GuestManagementScreen = () => {
     }
 
     try {
-      await dispatch(
+      const created = await dispatch(
         createNewGuest({
           weddingEventId: weddingEvent._id,
           ...formData,
         })
       ).unwrap();
+
+      if (created?._id) {
+        await perm.noteAssistantCreated("guest", String(created._id));
+      }
 
       // Reset form
       setFormData({
@@ -311,6 +323,19 @@ const GuestManagementScreen = () => {
 
     if (!selectedGuest?._id) {
       Alert.alert("Lỗi", "Không tìm thấy khách mời");
+      return;
+    }
+
+    const guestCreatedBy = (selectedGuest as { createdBy?: string }).createdBy;
+    if (
+      !perm.canMutateResource("guest", selectedGuest._id, guestCreatedBy)
+    ) {
+      Alert.alert(
+        "Không có quyền",
+        perm.isObserver
+          ? "Vai trò Observer không thể chỉnh sửa khách mời."
+          : "Bạn chỉ có thể sửa khách mời do chính bạn tạo."
+      );
       return;
     }
 
@@ -581,6 +606,10 @@ const GuestManagementScreen = () => {
   };
 
   const handleImportFromContacts = async () => {
+    if (!perm.canAddPlanContent) {
+      Alert.alert("Chỉ xem", "Bạn không có quyền import khách mời.");
+      return;
+    }
     try {
       // Request permissions
       const { status } = await Contacts.requestPermissionsAsync();
@@ -702,6 +731,16 @@ const GuestManagementScreen = () => {
   };
 
   const handleDeleteGuest = (guestId: string) => {
+    const g = guests.find((x: { _id: string }) => x._id === guestId) as
+      | { _id: string; createdBy?: string }
+      | undefined;
+    if (!perm.canMutateResource("guest", guestId, g?.createdBy)) {
+      Alert.alert(
+        "Không có quyền",
+        "Hỷ Assistant chỉ có thể xóa khách mời do chính bạn tạo."
+      );
+      return;
+    }
     Alert.alert("Xóa khách mời", "Bạn có chắc chắn muốn xóa khách mời này?", [
       { text: "Hủy", style: "cancel" },
       {
@@ -918,7 +957,7 @@ const GuestManagementScreen = () => {
   // Nếu chưa có wedding event, hiển thị loading hoặc message
   if (!weddingEvent?._id) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.screenSafe} edges={["top", "left", "right"]}>
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity
@@ -942,21 +981,23 @@ const GuestManagementScreen = () => {
         </View>
 
         {/* Loading State */}
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#ff6b9d" />
-          <Text style={styles.loadingText}>
-            Đang tải thông tin sự kiện cưới...
-          </Text>
-          <Text style={styles.emptyText}>
-            Vui lòng đảm bảo bạn đã tạo sự kiện cưới
-          </Text>
+        <View style={styles.bodyFill}>
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#ff6b9d" />
+            <Text style={styles.loadingText}>
+              Đang tải thông tin sự kiện cưới...
+            </Text>
+            <Text style={styles.emptyText}>
+              Vui lòng đảm bảo bạn đã tạo sự kiện cưới
+            </Text>
+          </View>
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.screenSafe} edges={["top", "left", "right"]}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
@@ -988,8 +1029,11 @@ const GuestManagementScreen = () => {
           </TouchableOpacity> */}
           <TouchableOpacity
             onPress={handleImportFromContacts}
-            disabled={isImporting}
-            style={styles.exportButton}
+            disabled={isImporting || !perm.canAddPlanContent}
+            style={[
+              styles.exportButton,
+              { opacity: perm.canAddPlanContent ? 1 : 0.45 },
+            ]}
           >
             {isImporting ? (
               <ActivityIndicator size="small" color="#ffffff" />
@@ -1022,34 +1066,43 @@ const GuestManagementScreen = () => {
               />
             )}
           </TouchableOpacity> */}
-          <TouchableOpacity onPress={handleAddGuest} style={styles.exportButton}>
+          <TouchableOpacity
+            onPress={handleAddGuest}
+            disabled={!perm.canAddPlanContent}
+            style={[
+              styles.exportButton,
+              { opacity: perm.canAddPlanContent ? 1 : 0.45 },
+            ]}
+          >
             <Plus size={24} color="#ffffff" />
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* Guest List with All Sections */}
-      {isLoading && !refreshing ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#ff6b9d" />
-          <Text style={styles.loadingText}>Đang tải danh sách...</Text>
-        </View>
-      ) : (
-        <FlatList
-          data={filteredGuests}
-          renderItem={renderGuestCard}
-          keyExtractor={(item) => item._id}
-          contentContainerStyle={[
-            styles.listContent,
-            {
-              paddingBottom:
-                Platform.OS === "android"
-                  ? responsiveHeight(16) + insets.bottom
-                  : responsiveHeight(16),
-            },
-          ]}
-          // ✅ OPTIMIZED: Performance improvements for large lists
-          windowSize={10}
+      <View style={styles.bodyFill}>
+        {/* Guest List with All Sections */}
+        {isLoading && !refreshing ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#ff6b9d" />
+            <Text style={styles.loadingText}>Đang tải danh sách...</Text>
+          </View>
+        ) : (
+          <FlatList
+            style={styles.listFlex}
+            data={filteredGuests}
+            renderItem={renderGuestCard}
+            keyExtractor={(item) => item._id}
+            contentContainerStyle={[
+              styles.listContent,
+              {
+                paddingBottom:
+                  Platform.OS === "android"
+                    ? responsiveHeight(16) + insets.bottom
+                    : responsiveHeight(16),
+              },
+            ]}
+            // ✅ OPTIMIZED: Performance improvements for large lists
+            windowSize={10}
           maxToRenderPerBatch={5}
           updateCellsBatchingPeriod={50}
           removeClippedSubviews={true}
@@ -1460,7 +1513,8 @@ const GuestManagementScreen = () => {
             </View>
           }
         />
-      )}
+        )}
+      </View>
 
       {/* Add Guest Modal */}
       <Modal
@@ -2688,16 +2742,23 @@ const GuestManagementScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
+  screenSafe: {
+    flex: 1,
+    backgroundColor: "#f7577c",
+  },
+  bodyFill: {
     flex: 1,
     backgroundColor: "#ffffff",
+  },
+  listFlex: {
+    flex: 1,
   },
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: responsiveWidth(20),
-    paddingVertical: responsiveHeight(18),
+    paddingHorizontal: responsiveWidth(16),
+    paddingVertical: responsiveHeight(10),
     backgroundColor: "#f7577c",
     borderBottomWidth: 0,
   },
@@ -2710,7 +2771,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   headerTitle: {
-    fontFamily: "MavenPro",
+    fontFamily: "Roboto",
+    fontWeight: "400",
     fontSize: responsiveFont(16),
     color: "#ffffff",
     fontWeight: "700",
@@ -2734,7 +2796,8 @@ const styles = StyleSheet.create({
     paddingBottom: responsiveHeight(8),
   },
   sectionTitle: {
-    fontFamily: "Montserrat-Bold",
+    fontFamily: "Roboto",
+    fontWeight: "700",
     fontSize: responsiveFont(18),
     color: "#1f2937",
     marginBottom: responsiveHeight(12),
@@ -2773,12 +2836,14 @@ const styles = StyleSheet.create({
     marginBottom: responsiveHeight(8),
   },
   statNumberNew: {
-    fontFamily: "Montserrat-Bold",
+    fontFamily: "Roboto",
+    fontWeight: "700",
     fontSize: responsiveFont(28),
     color: "#1f2937",
   },
   statLabelNew: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     fontSize: responsiveFont(13),
     color: "#6b7280",
   },
@@ -2802,12 +2867,14 @@ const styles = StyleSheet.create({
     backgroundColor: "#10b981",
   },
   invitationStatText: {
-    fontFamily: "Montserrat-Regular",
+    fontFamily: "Roboto",
+    fontWeight: "400",
     fontSize: responsiveFont(12),
     color: "#6b7280",
   },
   invitationStatNumber: {
-    fontFamily: "Montserrat-Bold",
+    fontFamily: "Roboto",
+    fontWeight: "700",
     color: "#1f2937",
   },
   progressSection: {
@@ -2824,12 +2891,14 @@ const styles = StyleSheet.create({
     marginBottom: responsiveHeight(8),
   },
   progressLabel: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(14),
     color: "#1f2937",
   },
   progressPercentage: {
-    fontFamily: "Montserrat-Bold",
+    fontFamily: "Roboto",
+    fontWeight: "700",
     fontSize: responsiveFont(16),
     color: "#f7577c",
   },
@@ -2878,13 +2947,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   tableSuggestionTitleNew: {
-    fontFamily: "Montserrat-Bold",
+    fontFamily: "Roboto",
+    fontWeight: "700",
     fontSize: responsiveFont(16),
     color: "#1f2937",
     marginBottom: responsiveHeight(2),
   },
   tableSuggestionSubtitle: {
-    fontFamily: "Montserrat-Regular",
+    fontFamily: "Roboto",
+    fontWeight: "400",
     fontSize: responsiveFont(12),
     color: "#6b7280",
   },
@@ -2899,7 +2970,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   tableConfigLabel: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     fontSize: responsiveFont(12),
     color: "#6b7280",
     marginBottom: responsiveHeight(8),
@@ -2924,7 +2996,8 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   tableConfigButtonText: {
-    fontFamily: "Montserrat-Bold",
+    fontFamily: "Roboto",
+    fontWeight: "700",
     fontSize: responsiveFont(24),
     color: "#ffffff",
   },
@@ -2936,18 +3009,21 @@ const styles = StyleSheet.create({
     minWidth: responsiveWidth(100),
   },
   tableConfigValue: {
-    fontFamily: "Montserrat-Bold",
+    fontFamily: "Roboto",
+    fontWeight: "700",
     fontSize: responsiveFont(32),
     color: "#f7577c",
     lineHeight: responsiveFont(36),
   },
   tableConfigUnit: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     fontSize: responsiveFont(12),
     color: "#6b7280",
   },
   tableConfigHint: {
-    fontFamily: "Montserrat-Regular",
+    fontFamily: "Roboto",
+    fontWeight: "400",
     fontSize: responsiveFont(11),
     color: "#9ca3af",
     textAlign: "center",
@@ -2959,7 +3035,8 @@ const styles = StyleSheet.create({
     borderBottomColor: "#f3f4f6",
   },
   tableSuggestionLabel: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     fontSize: responsiveFont(13),
     color: "#6b7280",
     marginBottom: responsiveHeight(8),
@@ -2971,18 +3048,21 @@ const styles = StyleSheet.create({
     marginBottom: responsiveHeight(8),
   },
   tableSuggestionNumberLarge: {
-    fontFamily: "Montserrat-Bold",
+    fontFamily: "Roboto",
+    fontWeight: "700",
     fontSize: responsiveFont(48),
     color: "#ff6b9d",
     lineHeight: responsiveFont(52),
   },
   tableSuggestionUnit: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(18),
     color: "#6b7280",
   },
   tableSuggestionDetail: {
-    fontFamily: "Montserrat-Regular",
+    fontFamily: "Roboto",
+    fontWeight: "400",
     fontSize: responsiveFont(13),
     color: "#6b7280",
     textAlign: "center",
@@ -2998,24 +3078,28 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   breakdownLabel: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     fontSize: responsiveFont(12),
     color: "#9ca3af",
     marginBottom: responsiveHeight(6),
   },
   breakdownValue: {
-    fontFamily: "Montserrat-Bold",
+    fontFamily: "Roboto",
+    fontWeight: "700",
     fontSize: responsiveFont(24),
     color: "#ff6b9d",
     marginBottom: responsiveHeight(4),
   },
   breakdownSubtext: {
-    fontFamily: "Montserrat-Regular",
+    fontFamily: "Roboto",
+    fontWeight: "400",
     fontSize: responsiveFont(11),
     color: "#9ca3af",
   },
   breakdownNote: {
-    fontFamily: "Montserrat-Regular",
+    fontFamily: "Roboto",
+    fontWeight: "400",
     fontSize: responsiveFont(10),
     color: "#9ca3af",
     marginTop: responsiveHeight(4),
@@ -3050,7 +3134,8 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   guestBreakdownText: {
-    fontFamily: "Montserrat-Regular",
+    fontFamily: "Roboto",
+    fontWeight: "400",
     fontSize: responsiveFont(13),
     color: "#6b7280",
   },
@@ -3063,7 +3148,8 @@ const styles = StyleSheet.create({
     marginTop: responsiveHeight(8),
   },
   confirmationRateText: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(13),
     color: "#ff6b9d",
   },
@@ -3081,13 +3167,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   statNumber: {
-    fontFamily: "Montserrat-Bold",
+    fontFamily: "Roboto",
+    fontWeight: "700",
     fontSize: responsiveFont(24),
     color: "#ff6b9d",
     marginBottom: responsiveHeight(4),
   },
   statLabel: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     fontSize: responsiveFont(12),
     color: "#6b7280",
   },
@@ -3107,18 +3195,21 @@ const styles = StyleSheet.create({
     marginBottom: responsiveHeight(8),
   },
   tableSuggestionTitle: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(14),
     color: "#1f2937",
   },
   tableSuggestionText: {
-    fontFamily: "Montserrat-Regular",
+    fontFamily: "Roboto",
+    fontWeight: "400",
     fontSize: responsiveFont(13),
     color: "#6b7280",
     lineHeight: responsiveHeight(20),
   },
   tableSuggestionHighlight: {
-    fontFamily: "Montserrat-Bold",
+    fontFamily: "Roboto",
+    fontWeight: "700",
     color: "#ff6b9d",
   },
   searchContainer: {
@@ -3139,7 +3230,8 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    fontFamily: "Montserrat-Regular",
+    fontFamily: "Roboto",
+    fontWeight: "400",
     fontSize: responsiveFont(14),
     color: "#1f2937",
     paddingVertical: responsiveHeight(12),
@@ -3158,7 +3250,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   loadingText: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     fontSize: responsiveFont(14),
     color: "#6b7280",
     marginTop: responsiveHeight(12),
@@ -3191,7 +3284,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   guestName: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(16),
     color: "#1f2937",
     marginBottom: responsiveHeight(4),
@@ -3202,7 +3296,8 @@ const styles = StyleSheet.create({
     gap: responsiveWidth(8),
   },
   groupBadge: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     fontSize: responsiveFont(12),
     color: "#ff6b9d",
     backgroundColor: "#fef3f2",
@@ -3211,7 +3306,8 @@ const styles = StyleSheet.create({
     borderRadius: responsiveWidth(6),
   },
   categoryText: {
-    fontFamily: "Montserrat-Regular",
+    fontFamily: "Roboto",
+    fontWeight: "400",
     fontSize: responsiveFont(12),
     color: "#6b7280",
   },
@@ -3225,12 +3321,14 @@ const styles = StyleSheet.create({
     gap: responsiveWidth(4),
   },
   guestDetailText: {
-    fontFamily: "Montserrat-Regular",
+    fontFamily: "Roboto",
+    fontWeight: "400",
     fontSize: responsiveFont(13),
     color: "#6b7280",
   },
   guestNotes: {
-    fontFamily: "Montserrat-Regular",
+    fontFamily: "Roboto",
+    fontWeight: "400",
     fontSize: responsiveFont(12),
     color: "#9ca3af",
     marginTop: responsiveHeight(8),
@@ -3249,7 +3347,8 @@ const styles = StyleSheet.create({
     borderRadius: responsiveWidth(6),
   },
   guestInfoTagText: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     fontSize: responsiveFont(11),
     color: "#4b5563",
   },
@@ -3259,7 +3358,8 @@ const styles = StyleSheet.create({
     paddingVertical: responsiveHeight(60),
   },
   emptyText: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     fontSize: responsiveFont(14),
     color: "#9ca3af",
     marginTop: responsiveHeight(12),
@@ -3272,7 +3372,8 @@ const styles = StyleSheet.create({
     borderRadius: responsiveWidth(12),
   },
   addButtonText: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(14),
     color: "#ffffff",
   },
@@ -3297,12 +3398,14 @@ const styles = StyleSheet.create({
     borderBottomColor: "#f3f4f6",
   },
   addModalTitle: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(18),
     color: "#1f2937",
   },
   cancelText: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     fontSize: responsiveFont(15),
     color: "#9ca3af",
   },
@@ -3313,7 +3416,8 @@ const styles = StyleSheet.create({
     paddingBottom: responsiveHeight(20),
   },
   label: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     fontSize: responsiveFont(14),
     color: "#1f2937",
     marginBottom: responsiveHeight(8),
@@ -3323,7 +3427,8 @@ const styles = StyleSheet.create({
     color: "#ef4444",
   },
   input: {
-    fontFamily: "Montserrat-Regular",
+    fontFamily: "Roboto",
+    fontWeight: "400",
     fontSize: responsiveFont(14),
     color: "#1f2937",
     backgroundColor: "#f9fafb",
@@ -3356,7 +3461,8 @@ const styles = StyleSheet.create({
     borderColor: "#ff6b9d",
   },
   groupButtonText: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     fontSize: responsiveFont(11),
     color: "#6b7280",
   },
@@ -3377,12 +3483,14 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   numberButtonText: {
-    fontFamily: "Montserrat-Bold",
+    fontFamily: "Roboto",
+    fontWeight: "700",
     fontSize: responsiveFont(20),
     color: "#ffffff",
   },
   numberValue: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(18),
     color: "#1f2937",
     minWidth: responsiveWidth(40),
@@ -3396,7 +3504,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   submitButtonText: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(16),
     color: "#ffffff",
   },
@@ -3407,7 +3516,8 @@ const styles = StyleSheet.create({
     padding: responsiveWidth(20),
   },
   menuModalTitle: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(18),
     color: "#1f2937",
     marginBottom: responsiveHeight(16),
@@ -3419,7 +3529,8 @@ const styles = StyleSheet.create({
     paddingVertical: responsiveHeight(16),
   },
   menuItemText: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     fontSize: responsiveFont(15),
     color: "#1f2937",
   },
@@ -3436,7 +3547,8 @@ const styles = StyleSheet.create({
     marginBottom: responsiveHeight(20),
   },
   filterModalTitle: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(18),
     color: "#1f2937",
   },
@@ -3444,7 +3556,8 @@ const styles = StyleSheet.create({
     gap: responsiveHeight(20),
   },
   filterSectionTitle: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(15),
     color: "#1f2937",
     marginBottom: responsiveHeight(12),
@@ -3458,7 +3571,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#ff6b9d",
   },
   filterButtonText: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     fontSize: responsiveFont(12),
     color: "#6b7280",
   },
@@ -3474,7 +3588,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   clearFilterText: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     fontSize: responsiveFont(14),
     color: "#6b7280",
   },
@@ -3494,7 +3609,8 @@ const styles = StyleSheet.create({
     borderBottomColor: "#f3f4f6",
   },
   importPreviewTitle: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(18),
     color: "#1f2937",
   },
@@ -3505,12 +3621,14 @@ const styles = StyleSheet.create({
     borderBottomColor: "#f3f4f6",
   },
   importPreviewInfoText: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     fontSize: responsiveFont(14),
     color: "#6b7280",
   },
   importPreviewCount: {
-    fontFamily: "Montserrat-Bold",
+    fontFamily: "Roboto",
+    fontWeight: "700",
     color: "#ff6b9d",
   },
   importPreviewList: {
@@ -3523,18 +3641,21 @@ const styles = StyleSheet.create({
     borderBottomColor: "#f3f4f6",
   },
   importPreviewItemName: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(15),
     color: "#1f2937",
     marginBottom: responsiveHeight(4),
   },
   importPreviewItemDetail: {
-    fontFamily: "Montserrat-Regular",
+    fontFamily: "Roboto",
+    fontWeight: "400",
     fontSize: responsiveFont(13),
     color: "#6b7280",
   },
   importPreviewMore: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     fontSize: responsiveFont(14),
     color: "#9ca3af",
     textAlign: "center",
@@ -3555,7 +3676,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   importCancelButtonText: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(15),
     color: "#6b7280",
   },
@@ -3567,7 +3689,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   importConfirmButtonText: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(15),
     color: "#ffffff",
   },
@@ -3604,13 +3727,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   thankYouTitle: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(16),
     color: "#1f2937",
     marginBottom: responsiveHeight(2),
   },
   thankYouSubtitle: {
-    fontFamily: "Montserrat-Regular",
+    fontFamily: "Roboto",
+    fontWeight: "400",
     fontSize: responsiveFont(13),
     color: "#6b7280",
   },
@@ -3621,7 +3746,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   thankYouButtonText: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(15),
     color: "#ffffff",
   },
@@ -3633,7 +3759,8 @@ const styles = StyleSheet.create({
     borderRadius: responsiveWidth(6),
   },
   invitationBadgeText: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(10),
     color: "#1e40af",
   },
@@ -3648,7 +3775,8 @@ const styles = StyleSheet.create({
     borderTopColor: "#f3f4f6",
   },
   emailText: {
-    fontFamily: "Montserrat-Regular",
+    fontFamily: "Roboto",
+    fontWeight: "400",
     fontSize: responsiveFont(12),
     color: "#6b7280",
   },
@@ -3662,7 +3790,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#fffbeb",
   },
   helperText: {
-    fontFamily: "Montserrat-Regular",
+    fontFamily: "Roboto",
+    fontWeight: "400",
     fontSize: responsiveFont(12),
     color: "#6b7280",
     marginTop: responsiveHeight(6),
@@ -3681,13 +3810,15 @@ const styles = StyleSheet.create({
     marginBottom: responsiveHeight(16),
   },
   giftSectionTitle: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(16),
     color: "#1f2937",
     marginLeft: responsiveWidth(8),
   },
   amountPreview: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(13),
     color: "#059669",
     marginTop: responsiveHeight(6),
@@ -3704,7 +3835,8 @@ const styles = StyleSheet.create({
     marginTop: responsiveHeight(8),
   },
   datePickerText: {
-    fontFamily: "Montserrat-Regular",
+    fontFamily: "Roboto",
+    fontWeight: "400",
     fontSize: responsiveFont(14),
     color: "#1f2937",
     marginLeft: responsiveWidth(8),
@@ -3726,7 +3858,8 @@ const styles = StyleSheet.create({
     borderColor: "#ff6b9d",
   },
   methodButtonText: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     fontSize: responsiveFont(13),
     color: "#6b7280",
   },
@@ -3739,14 +3872,16 @@ const styles = StyleSheet.create({
     marginTop: responsiveHeight(16),
   },
   checkboxLabel: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     fontSize: responsiveFont(14),
     color: "#1f2937",
     flex: 1,
     marginLeft: responsiveWidth(8),
   },
   checkboxHint: {
-    fontFamily: "Montserrat-Regular",
+    fontFamily: "Roboto",
+    fontWeight: "400",
     fontSize: responsiveFont(12),
     color: "#6b7280",
     marginTop: responsiveHeight(4),
@@ -3762,7 +3897,8 @@ const styles = StyleSheet.create({
     marginTop: responsiveHeight(12),
   },
   giftInfoText: {
-    fontFamily: "Montserrat-Regular",
+    fontFamily: "Roboto",
+    fontWeight: "400",
     fontSize: responsiveFont(12),
     color: "#1e40af",
     flex: 1,

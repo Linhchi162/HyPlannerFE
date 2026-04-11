@@ -1,4 +1,4 @@
-﻿import React, { memo, useCallback, useEffect, useState } from "react";
+import React, { memo, useCallback, useEffect, useState } from "react";
 import {
   StyleSheet,
   View,
@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   SafeAreaView,
   Platform,
+  Alert,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
@@ -47,12 +48,17 @@ import {
   getWeddingEvent,
   leaveWeddingEvent,
 } from "../../service/weddingEventService";
-import Hashids from "hashids";
+import { encodeEventIdToInviteCode } from "../../service/weddingJoinRequestFirestore";
 import { selectCurrentUser } from "../../store/authSlice";
 import SuccessDialog from "../../components/SuccessDialog";
 import ErrorDialog from "../../components/ErrorDialog";
 import { MixpanelService } from "../../service/mixpanelService";
 import logger from "../../utils/logger";
+import {
+  getAccountLimits,
+  getUpgradeMessage,
+} from "../../utils/accountLimits";
+import { useWeddingPermissions } from "../../hooks/useWeddingPermissions";
 
 type ListFooterProps = {
   modalVisible: boolean;
@@ -72,6 +78,8 @@ type ListFooterProps = {
   phases?: any[];
   eventId?: string;
   createdAt?: Date;
+  canAddPhase?: boolean;
+  canOpenPhaseEditor?: boolean;
 };
 
 const ListFooter = memo(
@@ -93,12 +101,15 @@ const ListFooter = memo(
     phases,
     eventId,
     createdAt,
+    canAddPhase = true,
+    canOpenPhaseEditor = true,
   }: ListFooterProps) => {
     const navigation = useNavigation<NavigationProp<RootStackParamList>>();
     return (
       <>
         {phases && phases.length > 0 && (
           <>
+            {canAddPhase && (
             <TouchableOpacity
               onPress={() => setModalVisible(true)}
               style={styles.addStageButton}
@@ -114,6 +125,8 @@ const ListFooter = memo(
                 <Text style={styles.addStageButtonLabel}>Thêm giai đoạn</Text>
               </View>
             </TouchableOpacity>
+            )}
+            {canOpenPhaseEditor && (
             <TouchableOpacity
               onPress={() =>
                 navigation.navigate("EditPhaseScreen", {
@@ -136,6 +149,7 @@ const ListFooter = memo(
                 </Text>
               </View>
             </TouchableOpacity>
+            )}
           </>
         )}
         <Modal
@@ -263,6 +277,7 @@ export default function TaskListScreen() {
   const [errorDialogVisible, setErrorDialogVisible] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const dispatch = useDispatch<AppDispatch>();
+  const perm = useWeddingPermissions();
 
   useEffect(() => {
     MixpanelService.track("Viewed Task List");
@@ -294,10 +309,6 @@ export default function TaskListScreen() {
     );
   }
   const userId = user.id || user._id;
-  const creatorId = useSelector(
-    (state: RootState) =>
-      state.weddingEvent.getWeddingEvent.weddingEvent.creatorId
-  );
 
   // ❌ REMOVED: Duplicate API call - data now fetched centrally in App.tsx via useAppInitialization
   // Phần này sẽ bỏ vào trang home để fetch data về wedding info trước khi vào trang tasklist
@@ -346,6 +357,9 @@ export default function TaskListScreen() {
         completed: task.completed,
         note: task.taskNote,
         assignee: task.member,
+        createdBy: task.createdBy
+          ? String(task.createdBy)
+          : undefined,
         // expectedBudget: task.expectedBudget,
         // actualBudget: task.actualBudget,
       })),
@@ -393,15 +407,30 @@ export default function TaskListScreen() {
   const handleTaskToggle = useCallback(
     async (taskId: string) => {
       try {
+        if (perm.isObserver) {
+          Alert.alert("Chỉ xem", "Vai trò Observer không thể cập nhật trạng thái công việc.");
+          return;
+        }
         let currentCompleted = false;
         let taskName = "";
+        let createdBy: string | undefined;
         for (const stage of stages) {
           const found = stage.tasks.find((task: any) => task.id === taskId);
           if (found) {
             currentCompleted = found.completed;
             taskName = found.text;
+            createdBy = found.createdBy;
             break;
           }
+        }
+        if (
+          !perm.canMutateResource("task", taskId, createdBy)
+        ) {
+          Alert.alert(
+            "Không có quyền",
+            "Hỷ Assistant chỉ có thể đánh dấu hoàn thành công việc do chính bạn tạo."
+          );
+          return;
         }
         await markTaskCompleted(taskId, !currentCompleted, dispatch);
         if (!currentCompleted) {
@@ -420,7 +449,7 @@ export default function TaskListScreen() {
         setErrorDialogVisible(true);
       }
     },
-    [stages, eventId, dispatch]
+    [stages, eventId, dispatch, perm]
   );
 
   // ✅ FIXED: Wrap in useCallback to prevent re-creation
@@ -428,7 +457,7 @@ export default function TaskListScreen() {
     if (!startDate || !endDate) return;
     try {
       setActionLoading(true);
-      await createPhase(
+      const created = await createPhase(
         eventId,
         {
           phaseTimeStart: startDate.toISOString(),
@@ -436,6 +465,10 @@ export default function TaskListScreen() {
         },
         dispatch
       );
+      const pid = created && (created as { phase?: { _id?: string } }).phase?._id;
+      if (pid) {
+        await perm.noteAssistantCreated("phase", String(pid));
+      }
 
       MixpanelService.track("Created Checklist", {
         "Checklist Name": `Phase ${phases.length + 1}`, // Tên chung
@@ -454,7 +487,31 @@ export default function TaskListScreen() {
       // Xử lý lỗi nếu cần
       logger.error("Error creating phase:", error);
     }
-  }, [startDate, endDate, eventId, phases.length, dispatch]);
+  }, [startDate, endDate, eventId, phases.length, dispatch, perm]);
+
+  const handleOpenChecklistAi = useCallback(() => {
+    if (perm.isObserver) {
+      Alert.alert("Chỉ xem", "Vai trò Observer không dùng được trợ lý AI checklist.");
+      return;
+    }
+    const limits = getAccountLimits(user?.accountType);
+    if (!limits.canAccessChecklistAi) {
+      Alert.alert(
+        "Nâng cấp tài khoản",
+        getUpgradeMessage("checklistAi"),
+        [
+          { text: "Hủy", style: "cancel" },
+          {
+            text: "Nâng cấp",
+            onPress: () => navigation.navigate("UpgradeAccountScreen"),
+          },
+        ]
+      );
+      return;
+    }
+    navigation.navigate("ChecklistAiInsight");
+  }, [user?.accountType, navigation, perm.isObserver]);
+
   const eventCreatedDate = new Date(
     useSelector(
       (state: RootState) =>
@@ -513,6 +570,10 @@ export default function TaskListScreen() {
       : new Date();
 
   const renderHiddenItem = (data: any, rowMap: any) => {
+    const row = data.item;
+    if (!perm.canMutateResource("task", row.id, row.createdBy)) {
+      return <View style={{ flex: 1, backgroundColor: "transparent" }} />;
+    }
     const showConfirm = (taskId: string) => {
       setSelectedTaskId(taskId);
       setConfirmVisible(true);
@@ -617,13 +678,14 @@ export default function TaskListScreen() {
                 status={task.completed ? "checked" : "unchecked"}
                 onPress={() => handleTaskToggle(task.id)}
                 color="#E9D0CB"
+                disabled={perm.isObserver}
               />
             )}
           />
         </View>
       );
     },
-    [handleTaskToggle] // ✅ FIXED: Removed stable setState functions from deps
+    [handleTaskToggle, perm.isObserver] // ✅ FIXED: Removed stable setState functions from deps
   );
   // Modal hiển thị chi tiết công việc
   const RenderTaskDetailModal = () => {
@@ -698,8 +760,18 @@ export default function TaskListScreen() {
     onBack: () => void;
     onAdd: () => void;
     onLeave?: () => void;
+    onAiInsight: () => void;
+    showInviteMembers: boolean;
+    showAiInsight: boolean;
   };
-  const TaskListAppbar = ({ onBack, onAdd, onLeave }: TaskListAppbarProps) => {
+  const TaskListAppbar = ({
+    onBack,
+    onAdd,
+    onLeave,
+    onAiInsight,
+    showInviteMembers,
+    showAiInsight,
+  }: TaskListAppbarProps) => {
     return (
       <Appbar.Header style={styles.appbarHeader}>
         <TouchableOpacity
@@ -719,39 +791,48 @@ export default function TaskListScreen() {
             Danh sách công việc
           </Text>
         </View>
-        {userId === creatorId ? (
-          <TouchableOpacity
-            onPress={onAdd}
-            style={{ padding: 8, marginRight: 8 }}
-          >
-            <Feather
-              name="user-plus"
-              size={24}
-              color="#ffffff"
-              style={{
-                backgroundColor: "#f7577c",
-                borderRadius: 8,
-                padding: 7,
-              }}
-            />
-          </TouchableOpacity>
-        ) : (
-          <TouchableOpacity
-            onPress={onLeave}
-            style={{ padding: 8, marginRight: 8 }}
-          >
-            <MaterialIcons
-              name="exit-to-app"
-              size={24}
-              color="#000000"
-              style={{
-                backgroundColor: "#f7577c",
-                borderRadius: 8,
-                padding: 7,
-              }}
-            />
-          </TouchableOpacity>
-        )}
+        <View style={{ flexDirection: "row", alignItems: "center" }}>
+          {showAiInsight ? (
+            <TouchableOpacity
+              onPress={onAiInsight}
+              style={styles.aiHeaderCircleBtn}
+              accessibilityLabel="Trợ lý AI checklist"
+            >
+              <Image
+                source={require("../../../assets/images/icon khỉ trợ lý.png")}
+                style={styles.aiHeaderMonkeyIcon}
+                resizeMode="contain"
+              />
+            </TouchableOpacity>
+          ) : null}
+          {showInviteMembers ? (
+            <TouchableOpacity onPress={onAdd} style={{ padding: 8 }}>
+              <Feather
+                name="user-plus"
+                size={24}
+                color="#ffffff"
+                style={{
+                  backgroundColor: "#f7577c",
+                  borderRadius: 8,
+                  padding: 7,
+                }}
+              />
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity onPress={onLeave} style={{ padding: 8 }}>
+              <MaterialIcons
+                name="exit-to-app"
+                size={24}
+                color="#000000"
+                style={{
+                  backgroundColor: "#f7577c",
+                  borderRadius: 8,
+                  padding: 7,
+                }}
+              />
+            </TouchableOpacity>
+          )}
+        </View>
       </Appbar.Header>
     );
   };
@@ -781,7 +862,7 @@ export default function TaskListScreen() {
           renderItem={(data, rowMap) => renderTaskItem(data, rowMap, stage.id)}
           renderHiddenItem={renderHiddenItem}
           rightOpenValue={-150}
-          disableRightSwipe
+          disableRightSwipe={perm.isObserver}
           keyExtractor={(item: { id: string }) => item.id}
           contentContainerStyle={{ paddingBottom: 10 }}
           scrollEnabled={false}
@@ -789,6 +870,10 @@ export default function TaskListScreen() {
         <TouchableOpacity
           style={{ backgroundColor: "#FFF" }}
           onPress={() => {
+            if (!perm.canAddPlanContent) {
+              Alert.alert("Chỉ xem", "Bạn không có quyền thêm công việc.");
+              return;
+            }
             MixpanelService.track("Clicked Add Task Button", {
               "Phase ID": stage.id,
               "Phase Name": stage.title,
@@ -799,7 +884,12 @@ export default function TaskListScreen() {
             });
           }}
         >
-          <View style={styles.addTaskButton}>
+          <View
+            style={[
+              styles.addTaskButton,
+              { opacity: perm.canAddPlanContent ? 1 : 0.45 },
+            ]}
+          >
             <Entypo name="plus" size={24} />
             <Text style={styles.addTaskButtonLabel}>Thêm công việc</Text>
           </View>
@@ -823,7 +913,7 @@ export default function TaskListScreen() {
           nhé!
         </Text>
         {/* just for creator */}
-        {userId === creatorId && (
+        {perm.isPrimaryCouple && (
           <TouchableOpacity
             style={styles.sampleChecklistButton}
             onPress={handleInsertSampleTasks}
@@ -869,9 +959,16 @@ export default function TaskListScreen() {
   ));
 
   const AddMemberModal = () => {
-    const hashids = new Hashids(process.env.SECRET_KEY_SALT, 6);
-    const inviteCode = hashids.encodeHex(eventId);
+    const inviteCode =
+      encodeEventIdToInviteCode(String(eventId)) ?? "";
     const copyToClipboard = async () => {
+      if (!inviteCode) {
+        Alert.alert(
+          "Không tạo được mã mời",
+          "Không tạo được mã mời từ dữ liệu hiện tại. Vui lòng thử lại sau."
+        );
+        return;
+      }
       await Clipboard.setStringAsync(inviteCode);
       MixpanelService.track("Invited Partner", {
         Method: "Copy Code",
@@ -902,14 +999,18 @@ export default function TaskListScreen() {
             <View style={styles.linkWrapper}>
               <Text
                 style={styles.inviteLinkText}
-                numberOfLines={1}
-                ellipsizeMode="tail" // Rút gọn ở cuối
+                numberOfLines={inviteCode ? 1 : 3}
+                ellipsizeMode="tail"
               >
-                {inviteCode}
+                {inviteCode ||
+                  "Chưa tạo được mã mời"}
               </Text>
               <TouchableOpacity
                 onPress={copyToClipboard}
-                style={styles.copyButton}
+                style={[
+                  styles.copyButton,
+                  !inviteCode ? { opacity: 0.45 } : null,
+                ]}
               >
                 <MaterialIcons name="content-copy" size={22} color="#fff" />
               </TouchableOpacity>
@@ -996,6 +1097,9 @@ export default function TaskListScreen() {
         onBack={() => navigation.goBack()}
         onAdd={() => setShowAddMemberModal(true)}
         onLeave={() => setShowLeaveModal(true)}
+        onAiInsight={handleOpenChecklistAi}
+        showInviteMembers={perm.showInviteMembersInChecklist}
+        showAiInsight={!perm.isObserver}
       />
       <AddMemberModal />
       <LeaveEventModal />
@@ -1034,6 +1138,8 @@ export default function TaskListScreen() {
               phases={phases}
               eventId={eventId}
               createdAt={eventCreatedDate}
+              canAddPhase={perm.canAddPlanContent}
+              canOpenPhaseEditor={perm.isPrimaryCouple}
             />
           }
           contentContainerStyle={[
@@ -1081,10 +1187,28 @@ const styles = StyleSheet.create({
   },
   appbarTitle: {
     color: "#ffffff",
-    fontFamily: "MavenPro",
+    fontFamily: "Roboto",
+    fontWeight: "400",
     fontSize: responsiveFont(16),
     fontWeight: "700",
     textAlign: "center",
+  },
+  aiHeaderCircleBtn: {
+    width: responsiveWidth(40),
+    height: responsiveWidth(40),
+    borderRadius: responsiveWidth(20),
+    backgroundColor: "#f7577c",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: responsiveWidth(4),
+    overflow: "visible",
+  },
+  aiHeaderMonkeyIcon: {
+    width: responsiveWidth(86),
+    height: responsiveWidth(86),
+    tintColor: "#ffffff",
+    marginLeft: responsiveWidth(2),
+    marginTop: responsiveHeight(2),
   },
   contentContainer: {
     padding: 16,
@@ -1097,7 +1221,8 @@ const styles = StyleSheet.create({
     marginVertical: responsiveHeight(13),
   },
   progressText: {
-    fontFamily: "MavenPro",
+    fontFamily: "Roboto",
+    fontWeight: "400",
     color: "#333333",
     fontSize: responsiveFont(12),
   },
@@ -1113,18 +1238,21 @@ const styles = StyleSheet.create({
     backgroundColor: "#fef3f2",
   },
   accordionTitle: {
-    fontFamily: "MavenPro",
+    fontFamily: "Roboto",
+    fontWeight: "400",
     fontSize: responsiveFont(14),
     fontWeight: "700",
     color: "#f7577c",
   },
   accordionDescription: {
-    fontFamily: "MavenPro",
+    fontFamily: "Roboto",
+    fontWeight: "400",
     fontSize: responsiveFont(10),
     color: "#000000",
   },
   taskText: {
-    fontFamily: "MavenPro",
+    fontFamily: "Roboto",
+    fontWeight: "400",
     color: "#000000",
   },
   taskTextCompleted: {
@@ -1140,7 +1268,8 @@ const styles = StyleSheet.create({
   addTaskButtonLabel: {
     fontSize: responsiveFont(14),
     marginLeft: responsiveWidth(4),
-    fontFamily: "MavenPro",
+    fontFamily: "Roboto",
+    fontWeight: "400",
     color: "#000000",
   },
   addStageButton: {
@@ -1154,7 +1283,8 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginLeft: 4,
     marginTop: responsiveHeight(5),
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     color: "#ffffff",
   },
   sampleChecklistButton: {
@@ -1172,7 +1302,8 @@ const styles = StyleSheet.create({
   },
   sampleChecklistButtonText: {
     fontSize: responsiveFont(15),
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     color: "#D95D74",
     marginLeft: responsiveWidth(8),
     fontWeight: "600",
@@ -1209,7 +1340,8 @@ const styles = StyleSheet.create({
   },
   backTextWhite: {
     color: "#FFF",
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     fontWeight: "600",
   },
   modalOverlay: {
@@ -1270,7 +1402,8 @@ const styles = StyleSheet.create({
   phaseEmptyText: {
     fontSize: responsiveFont(14),
     color: "#888",
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     marginTop: 8,
     textAlign: "center",
   },

@@ -1,6 +1,5 @@
-﻿import React, { useCallback, useState } from "react"; // --- THÊM useState
+import React, { useCallback, useState } from "react"; // --- THÊM useState
 import {
-  SafeAreaView,
   View,
   Text,
   TouchableOpacity,
@@ -13,6 +12,7 @@ import {
   Modal, // --- THÊM
   Platform,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import {
   ChevronLeft,
   Share2,
@@ -82,6 +82,10 @@ export default function WebsiteManagementScreen() {
   useFocusEffect(
     useCallback(() => {
       dispatch(fetchUserInvitation());
+      StatusBar.setBarStyle("light-content");
+      StatusBar.setBackgroundColor(COLORS.primary);
+      if (Platform.OS === "android") StatusBar.setTranslucent(false);
+      return () => {};
     }, [dispatch])
   );
 
@@ -95,7 +99,7 @@ export default function WebsiteManagementScreen() {
 
   if (!invitation) {
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
         <View style={styles.header}>
           <TouchableOpacity
             onPress={() => navigation.navigate("Main", { screen: "Home" })}
@@ -247,12 +251,7 @@ export default function WebsiteManagementScreen() {
   ];
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar
-        barStyle="light-content"
-        backgroundColor={COLORS.primary}
-        translucent={false}
-      />
+    <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
       <View style={styles.header}>
         <TouchableOpacity
           onPress={() => navigation.navigate("Main", { screen: "Home" })}
@@ -265,6 +264,7 @@ export default function WebsiteManagementScreen() {
         <View style={{ width: 24 }} />
       </View>
       <ScrollView
+        style={styles.scrollFlex}
         contentContainerStyle={[
           styles.container,
           {
@@ -391,7 +391,8 @@ export default function WebsiteManagementScreen() {
                 fontSize: responsiveFont(14),
                 color: "#555",
                 marginBottom: responsiveHeight(10),
-                fontFamily: "Montserrat-Medium",
+                fontFamily: "Roboto",
+                fontWeight: "500",
               }}
             >
               Hoặc sao chép đường dẫn:
@@ -434,7 +435,8 @@ export default function WebsiteManagementScreen() {
                   color: "#999",
                   textAlign: "center",
                   marginTop: responsiveHeight(20),
-                  fontFamily: "Montserrat-Medium",
+                  fontFamily: "Roboto",
+                  fontWeight: "500",
                 }}
               >
                 Chưa có lời chúc nào
@@ -472,19 +474,23 @@ export default function WebsiteManagementScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
+    backgroundColor: COLORS.primary,
+  },
+  scrollFlex: {
+    flex: 1,
     backgroundColor: COLORS.background,
   },
   header: {
     backgroundColor: COLORS.primary,
     paddingHorizontal: responsiveWidth(16),
     paddingVertical: responsiveHeight(12),
-    height: responsiveHeight(56),
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
   },
   headerTitle: {
-    fontFamily: "MavenPro",
+    fontFamily: "Roboto",
+    fontWeight: "400",
     fontSize: responsiveFont(20),
     fontWeight: "700",
     color: COLORS.white,
@@ -506,13 +512,15 @@ const styles = StyleSheet.create({
     marginBottom: responsiveHeight(16),
   },
   gridButtonText: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     color: COLORS.white,
     fontSize: responsiveFont(14),
     fontWeight: "bold",
   },
   gridButtonSubText: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     color: COLORS.white,
     fontSize: responsiveFont(12),
   },
@@ -530,7 +538,8 @@ const styles = StyleSheet.create({
     borderBottomColor: "#f0f0f0",
   },
   menuItemText: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     fontSize: responsiveFont(16),
     marginLeft: responsiveWidth(16),
     color: COLORS.textPrimary,
@@ -539,7 +548,8 @@ const styles = StyleSheet.create({
     color: COLORS.error,
     textAlign: "center",
     width: "100%",
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
   },
 
   // --- THÊM STYLES CHO MODAL ---
@@ -575,7 +585,8 @@ const styles = StyleSheet.create({
     marginBottom: responsiveHeight(20),
     textAlign: "center",
     fontSize: responsiveFont(20),
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     color: "#e07181",
   },
   modalLinkContainer: {
@@ -590,7 +601,8 @@ const styles = StyleSheet.create({
   modalLinkText: {
     flex: 1,
     fontSize: responsiveFont(14),
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     color: "#333",
     marginRight: responsiveWidth(10),
   },
@@ -610,17 +622,20 @@ const styles = StyleSheet.create({
   },
   messageName: {
     fontSize: responsiveFont(16),
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     color: "#e07181",
   },
   messageDate: {
     fontSize: responsiveFont(12),
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     color: "#999",
   },
   messageContent: {
     fontSize: responsiveFont(14),
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     color: "#333",
     lineHeight: responsiveFont(20),
   },

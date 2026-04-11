@@ -262,14 +262,16 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
   title: {
-    fontFamily: "MavenPro",
+    fontFamily: "Roboto",
+    fontWeight: "400",
     fontWeight: "800",
     fontSize: 44,
     color: COLORS.primary,
     marginBottom: 8,
   },
   subtitle: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     fontSize: 16,
     color: "rgb(179, 119, 134)",
     textAlign: "center",
@@ -290,13 +292,15 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   label: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     fontSize: 16,
     fontWeight: "500",
     color: COLORS.text,
   },
   input: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     height: 50,
     borderWidth: 1,
     borderColor: COLORS.border,
@@ -310,7 +314,8 @@ const styles = StyleSheet.create({
     position: "relative",
   },
   passwordInput: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     height: 50,
     borderWidth: 1,
     borderColor: COLORS.border,
@@ -336,7 +341,8 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   primaryButtonText: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     fontSize: 18,
     fontWeight: "700",
     color: "#ffffff",
@@ -353,7 +359,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#d1d5db",
   },
   dividerText: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     fontSize: 14,
     color: "#9ca3af",
     marginHorizontal: 16, // Thêm khoảng cách hai bên chữ
@@ -368,7 +375,8 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
   },
   guestButtonText: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     fontSize: 16,
     fontWeight: "500",
     color: "#1f2937",
@@ -380,12 +388,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   loginText: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     fontSize: 14,
     color: COLORS.muted,
   },
   loginLink: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     fontSize: 14,
     color: COLORS.primary,
     fontWeight: "500",

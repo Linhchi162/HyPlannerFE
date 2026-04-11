@@ -1,19 +1,20 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   TouchableOpacity,
   FlatList,
   TextInput,
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  StatusBar,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { ChevronLeft, Send } from "lucide-react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
-import { useNavigation } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { useAppSelector } from "../../store/hooks";
 import { selectCurrentUser } from "../../store/authSlice";
 import {
@@ -36,12 +37,22 @@ const INITIAL_MESSAGE: MessageItem = {
   id: "assistant-welcome",
   role: "assistant",
   content:
-    "Xin chào, mình là trợ lý HyPlanner. Bạn có thể hỏi về timeline cưới, ngân sách, khách mời, và ý tưởng tổ chức.",
+    "Xin chào, mình là trợ lý HyPlanner. Bạn có thể hỏi về timeline cưới, ngân sách, khách mời và ý tưởng tổ chức.",
 };
 
 export default function AssistantScreen() {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const currentUser = useAppSelector(selectCurrentUser);
+
+  useFocusEffect(
+    useCallback(() => {
+      StatusBar.setBarStyle("light-content");
+      StatusBar.setBackgroundColor("#f7577c");
+      if (Platform.OS === "android") StatusBar.setTranslucent(false);
+      return () => {};
+    }, [])
+  );
+
   const userId =
     (currentUser as any)?.id ||
     (currentUser as any)?._id ||
@@ -138,12 +149,14 @@ export default function AssistantScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <ChevronLeft size={24} color="#ffffff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Trợ lý AI</Text>
+        <View style={styles.headerCenter}>
+          <Text style={styles.headerTitle}>Trợ lý AI</Text>
+        </View>
         <View style={{ width: 24 }} />
       </View>
 
@@ -213,25 +226,31 @@ export default function AssistantScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#f8f9fa",
+    backgroundColor: "#f7577c",
   },
   header: {
     backgroundColor: "#f7577c",
     paddingHorizontal: responsiveWidth(16),
-    paddingVertical: responsiveHeight(12),
-    height: responsiveHeight(56),
+    paddingVertical: responsiveHeight(10),
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
   },
+  headerCenter: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   headerTitle: {
-    fontFamily: "MavenPro",
+    fontFamily: "Roboto",
+    fontWeight: "400",
     fontSize: responsiveFont(18),
     fontWeight: "700",
     color: "#ffffff",
   },
   body: {
     flex: 1,
+    backgroundColor: "#f8f9fa",
   },
   messagesContent: {
     padding: responsiveWidth(16),

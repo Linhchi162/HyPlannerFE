@@ -94,7 +94,8 @@ const styles = StyleSheet.create({
     paddingVertical: responsiveHeight(8),
   },
   text: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     fontSize: responsiveFont(14),
     color: "#6b7280",
   },

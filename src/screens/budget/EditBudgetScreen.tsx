@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   StyleSheet,
   Text,
@@ -37,6 +38,7 @@ import { RootStackParamList } from "../../navigation/types";
 import { editActivity, getActivity } from "../../service/activityService";
 import { getGroupActivities } from "../../service/groupActivityService";
 import { MixpanelService } from "../../service/mixpanelService";
+import { useWeddingPermissions } from "../../hooks/useWeddingPermissions";
 
 type EditBudgetAppbarProps = {
   onBack: () => void;
@@ -103,6 +105,8 @@ export default function EditBudgetScreen() {
   const { eventId } = route.params;
   const [loadingBudget, setLoadingBudget] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+  const perm = useWeddingPermissions();
+  const permAlertRef = useRef(false);
   useEffect(() => {
     const fetchBudget = async () => {
       setLoadingBudget(true);
@@ -129,6 +133,21 @@ export default function EditBudgetScreen() {
       setPayer(activity.payer || "");
     }
   }, [activity]);
+
+  useEffect(() => {
+    if (!activity || loadingBudget || permAlertRef.current) return;
+    const createdBy = (activity as { createdBy?: string }).createdBy;
+    if (!perm.canMutateResource("activity", activityId, createdBy)) {
+      permAlertRef.current = true;
+      Alert.alert(
+        "Không có quyền",
+        perm.isObserver
+          ? "Vai trò Observer chỉ được xem dữ liệu."
+          : "Bạn chỉ có thể sửa hạng mục do chính bạn tạo.",
+        [{ text: "OK", onPress: () => navigation.goBack() }]
+      );
+    }
+  }, [activity, loadingBudget, activityId, navigation, perm]);
 
   const handleSave = async () => {
     try {
@@ -398,7 +417,8 @@ const styles = StyleSheet.create({
   },
   appbarTitle: {
     color: "#333",
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(16),
     fontWeight: "700",
     textAlign: "center",
@@ -419,14 +439,16 @@ const styles = StyleSheet.create({
     marginBottom: responsiveHeight(12),
   },
   sectionTitle: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(13),
     color: "#831843",
     marginLeft: 8,
   },
   textInput: {
     backgroundColor: "#FFFFFF",
-    fontFamily: "Montserrat-Regular",
+    fontFamily: "Roboto",
+    fontWeight: "400",
   },
   textArea: {
     textAlignVertical: "top",
@@ -450,12 +472,14 @@ const styles = StyleSheet.create({
     marginBottom: responsiveHeight(10),
   },
   memberTitle: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(13),
     color: "#333333",
   },
   memberDescription: {
-    fontFamily: "Montserrat-Regular",
+    fontFamily: "Roboto",
+    fontWeight: "400",
     fontSize: responsiveFont(10),
     color: "#6B7280",
   },
@@ -473,6 +497,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
     color: "#B0B0B0",
     fontSize: responsiveFont(13),
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
   },
 });

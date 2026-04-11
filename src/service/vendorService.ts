@@ -17,6 +17,7 @@ import {
 } from "firebase/firestore";
 import { db } from "./firebase";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { sendExpoPushToTokens } from "./expoPushService";
 
 export type VendorServiceItem = {
   id: string;
@@ -42,6 +43,58 @@ export type Vendor = VendorPayload & {
   status?: "pending" | "active" | "inactive";
 };
 
+function normalizeVendorImageUrl(rawUrl: unknown): string {
+  if (typeof rawUrl !== "string") return "";
+  let value = rawUrl.trim();
+  if (!value) return "";
+  value = value.replace(/\\/g, "/");
+
+  if (value.startsWith("//")) return `https:${value}`;
+  if (value.startsWith("http://") || value.startsWith("https://")) {
+    const base = (process.env.EXPO_PUBLIC_BASE_URL || "").trim();
+    if (!base) return value;
+    try {
+      const target = new URL(value);
+      if (target.hostname === "localhost" || target.hostname === "127.0.0.1") {
+        const b = new URL(base);
+        target.protocol = b.protocol;
+        target.hostname = b.hostname;
+        target.port = b.port;
+        return target.toString();
+      }
+      return value;
+    } catch {
+      return value;
+    }
+  }
+
+  const base = (process.env.EXPO_PUBLIC_BASE_URL || "").trim();
+  if (!base) return value;
+  try {
+    const b = new URL(base);
+    const path = value.startsWith("/") ? value : `/${value}`;
+    return `${b.origin}${path}`;
+  } catch {
+    return value;
+  }
+}
+
+function mapVendorDocData(
+  id: string,
+  data: Omit<Vendor, "id">
+): Vendor {
+  return {
+    id,
+    ...data,
+    imageUrl: normalizeVendorImageUrl(data.imageUrl),
+    galleryUrls: Array.isArray(data.galleryUrls)
+      ? data.galleryUrls
+          .map((url) => normalizeVendorImageUrl(url))
+          .filter(Boolean)
+      : [],
+  };
+}
+
 export type VendorRequestPayload = {
   vendorId: string;
   vendorName: string;
@@ -50,6 +103,9 @@ export type VendorRequestPayload = {
   userEmail?: string;
   services: VendorServiceItem[];
   note?: string;
+  /** Khách chọn từ ưu đãi đã lưu của đúng vendor — khi đơn hoàn thành → đánh dấu đã dùng */
+  promotionId?: string;
+  promotionTitle?: string;
 };
 
 export type VendorRequest = VendorRequestPayload & {
@@ -60,6 +116,24 @@ export type VendorRequest = VendorRequestPayload & {
 
 const VENDOR_LIST_CACHE_KEY = "vendor:list";
 const vendorProfileCacheKey = (uid: string) => `vendor:profile:${uid}`;
+
+async function readPushTokens(
+  collectionName: "users" | "vendors",
+  id: string
+): Promise<string[]> {
+  if (!id) return [];
+  try {
+    const snap = await getDoc(doc(db, collectionName, id));
+    if (!snap.exists()) return [];
+    const raw = snap.data();
+    const arr = Array.isArray(raw?.fcmTokens) ? raw.fcmTokens : [];
+    const maybeSingle = typeof raw?.pushToken === "string" ? [raw.pushToken] : [];
+    return [...arr, ...maybeSingle];
+  } catch (error) {
+    console.error(`[vendorService] readPushTokens ${collectionName}/${id}`, error);
+    return [];
+  }
+}
 
 export const getCachedVendors = async (): Promise<Vendor[]> => {
   const raw = await AsyncStorage.getItem(VENDOR_LIST_CACHE_KEY);
@@ -83,10 +157,9 @@ export const setCachedVendorProfile = async (uid: string, vendor: Vendor) => {
 
 export const getVendors = async (): Promise<Vendor[]> => {
   const snapshot = await getDocs(collection(db, "vendors"));
-  const data = snapshot.docs.map((d) => ({
-    id: d.id,
-    ...(d.data() as Omit<Vendor, "id">),
-  }));
+  const data = snapshot.docs.map((d) =>
+    mapVendorDocData(d.id, d.data() as Omit<Vendor, "id">)
+  );
   await setCachedVendors(data);
   return data;
 };
@@ -95,10 +168,9 @@ export const subscribeVendors = (
   callback: (vendors: Vendor[]) => void
 ) => {
   const unsub = onSnapshot(collection(db, "vendors"), (snapshot) => {
-    const data = snapshot.docs.map((d) => ({
-      id: d.id,
-      ...(d.data() as Omit<Vendor, "id">),
-    }));
+    const data = snapshot.docs.map((d) =>
+      mapVendorDocData(d.id, d.data() as Omit<Vendor, "id">)
+    );
     setCachedVendors(data);
     callback(data);
   });
@@ -108,7 +180,7 @@ export const subscribeVendors = (
 export const getVendorDetail = async (vendorId: string): Promise<Vendor | null> => {
   const vendorDoc = await getDoc(doc(db, "vendors", vendorId));
   if (!vendorDoc.exists()) return null;
-  return { id: vendorDoc.id, ...(vendorDoc.data() as Omit<Vendor, "id">) };
+  return mapVendorDocData(vendorDoc.id, vendorDoc.data() as Omit<Vendor, "id">);
 };
 
 export const submitVendorApplication = async (payload: VendorPayload) => {
@@ -128,10 +200,7 @@ export const getVendorProfileByUid = async (
 ): Promise<Vendor | null> => {
   const vendorDoc = await getDoc(doc(db, "vendors", uid));
   if (!vendorDoc.exists()) return null;
-  const data = {
-    id: vendorDoc.id,
-    ...(vendorDoc.data() as Omit<Vendor, "id">),
-  };
+  const data = mapVendorDocData(vendorDoc.id, vendorDoc.data() as Omit<Vendor, "id">);
   await setCachedVendorProfile(uid, data);
   return data;
 };
@@ -145,10 +214,7 @@ export const subscribeVendorProfile = (
       callback(null);
       return;
     }
-    const data = {
-      id: vendorDoc.id,
-      ...(vendorDoc.data() as Omit<Vendor, "id">),
-    };
+    const data = mapVendorDocData(vendorDoc.id, vendorDoc.data() as Omit<Vendor, "id">);
     setCachedVendorProfile(uid, data);
     callback(data);
   });
@@ -187,11 +253,34 @@ export const updateVendorFcmToken = async (uid: string, token: string) => {
   });
 };
 
+/** Có ít nhất một yêu cầu dịch vụ đã hoàn thành (vendor đánh dấu xong) → user được đánh giá */
+export const userHasCompletedVendorRequest = async (
+  vendorId: string,
+  userId: string
+): Promise<boolean> => {
+  if (!vendorId || !userId) return false;
+  const q = query(
+    collection(db, "vendorRequests"),
+    where("vendorId", "==", vendorId),
+    where("userId", "==", userId)
+  );
+  const snap = await getDocs(q);
+  return snap.docs.some((d) => (d.data() as VendorRequest).status === "done");
+};
+
 export const rateVendor = async (
   vendorId: string,
   userId: string,
   rating: number
 ) => {
+  if (String(vendorId) === String(userId)) {
+    throw new Error("cannot-rate-self");
+  }
+  const eligible = await userHasCompletedVendorRequest(vendorId, userId);
+  if (!eligible) {
+    throw new Error("service-not-completed");
+  }
+
   const vendorRef = doc(db, "vendors", vendorId);
   const ratingRef = doc(db, "vendors", vendorId, "ratings", userId);
   await runTransaction(db, async (transaction) => {
@@ -229,11 +318,48 @@ export const getVendorUserRating = async (
 };
 
 export const submitVendorRequest = async (payload: VendorRequestPayload) => {
-  return addDoc(collection(db, "vendorRequests"), {
+  const ref = await addDoc(collection(db, "vendorRequests"), {
     ...payload,
     status: "new",
     createdAt: serverTimestamp(),
   });
+  const vendorTokens = await readPushTokens("vendors", payload.vendorId);
+  await sendExpoPushToTokens(vendorTokens, {
+    title: "Đơn dịch vụ mới",
+    body: `${payload.userName || "Khách hàng"} vừa gửi yêu cầu dịch vụ.`,
+    data: {
+      type: "vendor_request_new",
+      vendorId: payload.vendorId,
+      requestId: ref.id,
+    },
+  });
+  return ref;
+};
+
+export const updateVendorRequestStatus = async (
+  requestId: string,
+  status: VendorRequest["status"]
+) => {
+  const ref = doc(db, "vendorRequests", requestId);
+  const before = await getDoc(ref);
+  await updateDoc(doc(db, "vendorRequests", requestId), {
+    status,
+    updatedAt: serverTimestamp(),
+  });
+  const old = before.exists() ? (before.data() as VendorRequest) : null;
+  if (status === "done" && old?.userId) {
+    const userTokens = await readPushTokens("users", old.userId);
+    await sendExpoPushToTokens(userTokens, {
+      title: "Đơn dịch vụ đã hoàn thành",
+      body: `${old.vendorName || "Nhà cung cấp"} đã xác nhận hoàn thành dịch vụ.`,
+      data: {
+        type: "vendor_request_done",
+        requestId,
+        vendorId: old.vendorId,
+        promotionId: old.promotionId || null,
+      },
+    });
+  }
 };
 
 export const subscribeVendorRequests = (
@@ -245,12 +371,50 @@ export const subscribeVendorRequests = (
     where("vendorId", "==", vendorId),
     orderBy("createdAt", "desc")
   );
-  const unsub = onSnapshot(q, (snapshot) => {
-    const data = snapshot.docs.map((d) => ({
-      id: d.id,
-      ...(d.data() as Omit<VendorRequest, "id">),
-    }));
-    callback(data);
-  });
+  const unsub = onSnapshot(
+    q,
+    (snapshot) => {
+      const data = snapshot.docs.map((d) => ({
+        id: d.id,
+        ...(d.data() as Omit<VendorRequest, "id">),
+      }));
+      callback(data);
+    },
+    (error) => {
+      console.error("[vendorService] subscribeVendorRequests", error);
+      callback([]);
+    }
+  );
+  return unsub;
+};
+
+/** Đơn theo user (khách) — dùng đồng bộ trạng thái ưu đãi đã dùng */
+export const subscribeUserVendorRequests = (
+  userId: string,
+  callback: (requests: VendorRequest[]) => void
+) => {
+  const q = query(
+    collection(db, "vendorRequests"),
+    where("userId", "==", userId)
+  );
+  const unsub = onSnapshot(
+    q,
+    (snapshot) => {
+      const data = snapshot.docs.map((d) => ({
+        id: d.id,
+        ...(d.data() as Omit<VendorRequest, "id">),
+      }));
+      const millis = (c: unknown) => {
+        const t = c as { toMillis?: () => number };
+        return typeof t?.toMillis === "function" ? t.toMillis() : 0;
+      };
+      data.sort((a, b) => millis(b.createdAt) - millis(a.createdAt));
+      callback(data);
+    },
+    (error) => {
+      console.error("[vendorService] subscribeUserVendorRequests", error);
+      callback([]);
+    }
+  );
   return unsub;
 };

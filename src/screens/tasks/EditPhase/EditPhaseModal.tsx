@@ -340,7 +340,8 @@ const styles = StyleSheet.create({
     fontSize: responsiveFont(12),
     color: "#666",
     marginBottom: responsiveHeight(8),
-    fontFamily: "Montserrat-Regular",
+    fontFamily: "Roboto",
+    fontWeight: "400",
   },
   dateInput: {
     flexDirection: "row",
@@ -355,14 +356,16 @@ const styles = StyleSheet.create({
   dateText: {
     fontSize: responsiveFont(13),
     color: "#333",
-    fontFamily: "Montserrat-Regular",
+    fontFamily: "Roboto",
+    fontWeight: "400",
   },
   helperText: {
     fontSize: responsiveFont(10),
     color: "#666",
     marginTop: responsiveHeight(3),
     fontStyle: "italic",
-    fontFamily: "Montserrat-Regular",
+    fontFamily: "Roboto",
+    fontWeight: "400",
   },
   modalButtons: {
     flexDirection: "row",

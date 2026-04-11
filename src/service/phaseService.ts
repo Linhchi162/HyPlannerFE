@@ -48,6 +48,7 @@ export const createPhase = async (
       phaseData
     );
     dispatch(createPhaseSuccess(response.data as Phase[]));
+    return response.data as { phase?: { _id?: string } };
   } catch (error: any) {
     const message =
       error.response && error.response.data && error.response.data.message

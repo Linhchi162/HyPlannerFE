@@ -5,6 +5,7 @@ import {
   initializeAuth,
   getReactNativePersistence,
   getAuth,
+  signInAnonymously,
 } from "firebase/auth";
 import ReactNativeAsyncStorage from "@react-native-async-storage/async-storage";
 
@@ -32,3 +33,21 @@ try {
   authInstance = getAuth(app);
 }
 export const auth = authInstance;
+
+let pendingAnonymousSignIn: Promise<void> | null = null;
+
+/**
+ * Ensure Firestore rules using request.auth can pass on mobile app.
+ * Safe to call repeatedly before Firestore read/write operations.
+ */
+export async function ensureAnonymousFirebaseAuth(): Promise<void> {
+  if (auth.currentUser) return;
+  if (!pendingAnonymousSignIn) {
+    pendingAnonymousSignIn = signInAnonymously(auth)
+      .then(() => {})
+      .finally(() => {
+        pendingAnonymousSignIn = null;
+      });
+  }
+  await pendingAnonymousSignIn;
+}

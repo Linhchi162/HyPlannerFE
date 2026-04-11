@@ -145,7 +145,8 @@ const styles = StyleSheet.create({
     paddingVertical: responsiveHeight(6),
   },
   counterText: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(14),
     color: "#ffffff",
   },

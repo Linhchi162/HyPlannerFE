@@ -195,7 +195,8 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   pinkHeaderTitle: {
-    fontFamily: "MavenPro",
+    fontFamily: "Roboto",
+    fontWeight: "400",
     fontSize: responsiveFont(18),
     fontWeight: "700",
     color: "#ffffff",
@@ -220,7 +221,8 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     fontSize: responsiveFont(14),
     color: "#1f2937",
   },
@@ -232,12 +234,14 @@ const styles = StyleSheet.create({
     gap: responsiveWidth(8),
   },
   title: {
-    fontFamily: "Montserrat-Bold",
+    fontFamily: "Roboto",
+    fontWeight: "700",
     fontSize: responsiveFont(22),
     color: "#1f2937",
   },
   subtitle: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     fontSize: responsiveFont(13),
     color: "#6b7280",
     textAlign: "center",
@@ -272,7 +276,8 @@ const styles = StyleSheet.create({
     borderColor: "#ffc107",
   },
   tabText: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(14),
     color: "#1f2937",
   },

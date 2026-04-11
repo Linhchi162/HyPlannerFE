@@ -14,6 +14,9 @@ import WebsiteManagementScreen from "../screens/invitation/WebsiteManagementScre
 import ProfileScreen from "../screens/profile/ProfileScreen";
 import { useAppSelector } from "../store/hooks";
 import { selectUserInvitation } from "../store/invitationSlice";
+import { useSyncSavedPromotionsWithVendorRequests } from "../hooks/useSyncSavedPromotionsWithVendorRequests";
+import { useWeddingPermissions } from "../hooks/useWeddingPermissions";
+import { usePendingJoinRequestsCount } from "../hooks/usePendingJoinRequests";
 import { MainTabParamList, RootStackParamList } from "./types";
 import {
   responsiveWidth,
@@ -34,7 +37,23 @@ export const MainTabNavigator = () => {
     (state) => state.weddingEvent.getWeddingEvent.weddingEvent
   );
   const user = useAppSelector((state) => state.auth.user);
-  const isCreator = (user?.id || user?._id) === weddingEvent.creatorId;
+  const { isPrimaryCouple, canAssignRoles } = useWeddingPermissions();
+  usePendingJoinRequestsCount(weddingEvent?._id, {
+    notifyOnNew: canAssignRoles,
+  });
+  const candidateUserIds = React.useMemo(
+    () =>
+      Array.from(
+        new Set(
+          [user?.id, user?._id, (user as { uid?: string })?.uid]
+            .filter((x): x is string => typeof x === "string")
+            .map((x) => x.trim())
+            .filter((x) => x.length > 0)
+        )
+      ),
+    [user]
+  );
+  useSyncSavedPromotionsWithVendorRequests(candidateUserIds);
 
   return (
     <Tab.Navigator
@@ -70,7 +89,8 @@ export const MainTabNavigator = () => {
         tabBarInactiveTintColor: "#ef456d",
         tabBarPressColor: "#ffffff",
         tabBarLabelStyle: {
-          fontFamily: "Montserrat-Medium",
+          fontFamily: "Roboto",
+          fontWeight: "500",
           fontSize: responsiveFont(10),
           fontWeight: "600",
           marginTop: responsiveHeight(4),
@@ -121,7 +141,7 @@ export const MainTabNavigator = () => {
         component={CommunityScreen}
         options={{ tabBarLabel: "Cộng đồng" }}
       />
-      {isCreator && (
+      {isPrimaryCouple && (
         <Tab.Screen
           name="WebsiteTab"
           component={WebsiteManagementScreen}

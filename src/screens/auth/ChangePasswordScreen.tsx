@@ -224,7 +224,8 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   title: {
-    fontFamily: "MavenPro-Bold",
+    fontFamily: "Roboto",
+    fontWeight: "700",
     fontSize: 24,
     fontWeight: "600",
     color: "#f7577c",

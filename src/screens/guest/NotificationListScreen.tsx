@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import {
   View,
   Text,
@@ -22,8 +22,19 @@ import {
   Mail,
   Users,
   Trash2,
+  ClipboardList,
 } from "lucide-react-native";
-import { useNavigation, useRoute, useFocusEffect } from "@react-navigation/native";
+import {
+  useNavigation,
+  useRoute,
+  useFocusEffect,
+} from "@react-navigation/native";
+import { StackNavigationProp } from "@react-navigation/stack";
+import { useDispatch, useSelector } from "react-redux";
+import { AppDispatch, RootState } from "../../store";
+import { RootStackParamList } from "../../navigation/types";
+import { getPhases } from "../../service/phaseService";
+import { evaluateChecklistAutoAlerts } from "../../utils/checklistAutoAlerts";
 import { Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
@@ -52,10 +63,22 @@ interface NotificationData {
 }
 
 const NotificationListScreen = () => {
-  const navigation = useNavigation();
+  const navigation =
+    useNavigation<StackNavigationProp<RootStackParamList>>();
   const route = useRoute();
   const { weddingEventId } = route.params as { weddingEventId: string };
   const insets = useSafeAreaInsets();
+  const dispatch = useDispatch<AppDispatch>();
+  const phases = useSelector(
+    (s: RootState) => s.phases.getPhases.phases
+  );
+  const weddingEvent = useSelector(
+    (s: RootState) => s.weddingEvent.getWeddingEvent.weddingEvent
+  );
+
+  const [hiddenChecklistIds, setHiddenChecklistIds] = useState<
+    Set<string>
+  >(() => new Set());
 
   // Chỉ đặt StatusBar khi màn này focus; không reset trong cleanup để màn đích tự set
   useFocusEffect(
@@ -63,14 +86,42 @@ const NotificationListScreen = () => {
       StatusBar.setBackgroundColor("#f7577c");
       StatusBar.setBarStyle("light-content");
       if (Platform.OS === "android") StatusBar.setTranslucent(false);
-      return () => { };
-    }, [])
+      getPhases(weddingEventId, dispatch).catch(() => {});
+      return () => {};
+    }, [weddingEventId, dispatch])
   );
 
   const [notifications, setNotifications] = useState<NotificationData[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+
+  const checklistAlerts = useMemo(() => {
+    if (weddingEvent?._id !== weddingEventId) return [];
+    return evaluateChecklistAutoAlerts(
+      phases,
+      weddingEvent?.timeToMarried
+    );
+  }, [phases, weddingEvent, weddingEventId]);
+
+  const checklistNotifs: NotificationData[] = useMemo(
+    () =>
+      checklistAlerts.map((a) => ({
+        _id: `checklist-${a.key}`,
+        type: "checklist_auto",
+        title: a.title,
+        message: a.body,
+        isRead: true,
+        priority: "high",
+        createdAt: new Date().toISOString(),
+      })),
+    [checklistAlerts]
+  );
+
+  const mergedNotifications = useMemo(() => {
+    const cl = checklistNotifs.filter((n) => !hiddenChecklistIds.has(n._id));
+    return [...cl, ...notifications];
+  }, [checklistNotifs, notifications, hiddenChecklistIds]);
 
   const fetchNotifications = async () => {
     try {
@@ -98,6 +149,7 @@ const NotificationListScreen = () => {
   }, [weddingEventId]);
 
   const handleMarkAsRead = async (notificationId: string) => {
+    if (notificationId.startsWith("checklist-")) return;
     try {
       await notificationService.markAsRead(notificationId);
 
@@ -129,6 +181,11 @@ const NotificationListScreen = () => {
 
   const handleDeleteAll = async () => {
     try {
+      setHiddenChecklistIds(() => {
+        const next = new Set<string>();
+        checklistAlerts.forEach((a) => next.add(`checklist-${a.key}`));
+        return next;
+      });
       // Delete all without confirm: mark all read then delete read notifications
       await notificationService.markAllAsRead(weddingEventId);
       await notificationService.deleteReadNotifications(weddingEventId);
@@ -141,6 +198,10 @@ const NotificationListScreen = () => {
   };
 
   const handleDeleteNotification = async (notificationId: string) => {
+    if (notificationId.startsWith("checklist-")) {
+      setHiddenChecklistIds((prev) => new Set(prev).add(notificationId));
+      return;
+    }
     try {
       const notif = notifications.find((n) => n._id === notificationId);
       await notificationService.deleteNotification(notificationId);
@@ -173,6 +234,8 @@ const NotificationListScreen = () => {
         return <Mail size={24} color="#3b82f6" />;
       case "gift_received":
         return <Gift size={24} color="#ec4899" />;
+      case "checklist_auto":
+        return <ClipboardList size={24} color="#f59e0b" />;
       default:
         return <Bell size={24} color={iconColor} />;
     }
@@ -193,13 +256,21 @@ const NotificationListScreen = () => {
     return date.toLocaleDateString("vi-VN");
   };
 
+  const onNotificationPress = (item: NotificationData) => {
+    if (item._id.startsWith("checklist-")) {
+      navigation.navigate("ChecklistAiInsight");
+      return;
+    }
+    handleMarkAsRead(item._id);
+  };
+
   const renderNotificationItem = ({ item }: { item: NotificationData }) => (
     <TouchableOpacity
       style={[
         styles.notificationCard,
         !item.isRead && styles.notificationUnread,
       ]}
-      onPress={() => handleMarkAsRead(item._id)}
+      onPress={() => onNotificationPress(item)}
       activeOpacity={0.7}
     >
       <View style={styles.notificationIconContainer}>
@@ -212,7 +283,9 @@ const NotificationListScreen = () => {
           {item.message}
         </Text>
         <Text style={styles.notificationTime}>
-          {getTimeAgo(item.createdAt)}
+          {item.type === "checklist_auto"
+            ? "Theo tiến độ checklist"
+            : getTimeAgo(item.createdAt)}
         </Text>
       </View>
 
@@ -232,8 +305,8 @@ const NotificationListScreen = () => {
       <Bell size={64} color="#d1d5db" />
       <Text style={styles.emptyTitle}>Không có thông báo</Text>
       <Text style={styles.emptyMessage}>
-        Bạn sẽ nhận được thông báo khi khách mời phản hồi hoặc có cập nhật quan
-        trọng
+        Bạn sẽ nhận thông báo khi khách mời phản hồi, có cập nhật quan trọng,
+        hoặc khi checklist cần chú ý (hiển thị ở đây).
       </Text>
     </View>
   );
@@ -242,9 +315,9 @@ const NotificationListScreen = () => {
     return (
       <SafeAreaView style={styles.container}>
         <StatusBar
-          barStyle="dark-content"
-          backgroundColor="transparent"
-          translucent={true}
+          barStyle="light-content"
+          backgroundColor="#f7577c"
+          translucent={false}
         />
         <View
           style={[
@@ -253,7 +326,7 @@ const NotificationListScreen = () => {
           ]}
         >
           <TouchableOpacity onPress={() => navigation.goBack()}>
-            <ChevronLeft size={24} color="#1f2937" />
+            <ChevronLeft size={24} color="#ffffff" />
           </TouchableOpacity>
           <View style={pinkHeaderStyles.titleContainer}>
             <Text style={[styles.headerTitle, pinkHeaderStyles.title]}>
@@ -298,7 +371,7 @@ const NotificationListScreen = () => {
           </Text>
         </View>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-          {notifications.length > 0 ? (
+          {mergedNotifications.length > 0 ? (
             <TouchableOpacity
               style={styles.headerIconBtn}
               onPress={handleDeleteAll}
@@ -319,11 +392,11 @@ const NotificationListScreen = () => {
 
       {/* Notification List */}
       <FlatList
-        data={notifications}
+        data={mergedNotifications}
         renderItem={renderNotificationItem}
         keyExtractor={(item) => item._id}
         contentContainerStyle={
-          notifications.length === 0
+          mergedNotifications.length === 0
             ? styles.emptyListContainer
             : styles.listContainer
         }
@@ -357,12 +430,14 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: responsiveFont(20),
-    fontFamily: "MavenPro",
+    fontFamily: "Roboto",
+    fontWeight: "400",
     fontWeight: "800",
     color: "#ffffff",
   },
   markAllReadText: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(14),
     color: "#ffffff",
   },
@@ -409,20 +484,23 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   notificationTitle: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(15),
     color: "#1f2937",
     marginBottom: responsiveHeight(4),
   },
   notificationMessage: {
-    fontFamily: "Montserrat-Regular",
+    fontFamily: "Roboto",
+    fontWeight: "400",
     fontSize: responsiveFont(13),
     color: "#6b7280",
     lineHeight: responsiveHeight(20),
     marginBottom: responsiveHeight(6),
   },
   notificationTime: {
-    fontFamily: "Montserrat-Regular",
+    fontFamily: "Roboto",
+    fontWeight: "400",
     fontSize: responsiveFont(12),
     color: "#9ca3af",
   },
@@ -445,14 +523,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: responsiveWidth(40),
   },
   emptyTitle: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(18),
     color: "#1f2937",
     marginTop: responsiveHeight(16),
     marginBottom: responsiveHeight(8),
   },
   emptyMessage: {
-    fontFamily: "Montserrat-Regular",
+    fontFamily: "Roboto",
+    fontWeight: "400",
     fontSize: responsiveFont(14),
     color: "#6b7280",
     textAlign: "center",

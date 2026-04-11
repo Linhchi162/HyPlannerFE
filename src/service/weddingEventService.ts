@@ -66,6 +66,17 @@ export const createWeddingEvent = async (
   }
 };
 
+/** Gọi API thêm thành viên bằng mã mời (dùng khi duyệt yêu cầu — user đăng nhập là người duyệt). */
+export const addMemberToWeddingByCode = async (
+  code: string,
+  targetUserId: string
+): Promise<void> => {
+  await apiClient.post(`/weddingEvents/addMember`, {
+    code,
+    userId: targetUserId,
+  });
+};
+
 export const joinWeddingEvent = async (
   code: string,
   userId: string,
@@ -73,7 +84,7 @@ export const joinWeddingEvent = async (
 ) => {
   dispatch(joinWeddingEventStart());
   try {
-    await apiClient.post(`/weddingEvents/addMember`, { code, userId });
+    await addMemberToWeddingByCode(code, userId);
     dispatch(joinWeddingEventSuccess());
 
     // Sau khi join thành công, fetch lại wedding event để lưu vào Redux

@@ -43,6 +43,8 @@ export interface Guest {
   invitationConfirmDate?: string;
   createdAt: string;
   updatedAt: string;
+  /** Nếu BE trả về — phân quyền Assistant */
+  createdBy?: string;
 }
 
 export interface GuestStats {

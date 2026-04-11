@@ -1,4 +1,4 @@
-﻿import React, { useState } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -24,6 +24,7 @@ import { useDispatch } from "react-redux";
 import { setCredentials } from "../../store/authSlice";
 import { MixpanelService } from "../../service/mixpanelService";
 import { registerForPushNotificationsAsync } from "../../utils/pushNotification";
+import { updateUserFcmToken } from "../../service/userPushService";
 import logger from "../../utils/logger";
 import { responsiveHeight } from "../../../assets/styles/utils/responsive";
 
@@ -85,6 +86,12 @@ const LoginScreen = () => {
         const pushToken = await registerForPushNotificationsAsync();
         if (pushToken) {
           await apiClient.post("/auth/push-token", { pushToken });
+          const candidateIds = [user.id, user._id, user.uid].filter(
+            (x): x is string => typeof x === "string" && x.trim().length > 0
+          );
+          for (const uid of Array.from(new Set(candidateIds))) {
+            await updateUserFcmToken(uid, pushToken);
+          }
         }
       } catch (error) {
         logger.error("Failed to register push token:", error);
@@ -104,8 +111,12 @@ const LoginScreen = () => {
         index: 0,
         routes: [{ name: isVendor ? "VendorMain" : "InviteOrCreate" }],
       });
-    } catch (error) {
-      const message = "Đã có lỗi xảy ra.";
+    } catch (error: any) {
+      const message =
+        error?.message ||
+        error?.error ||
+        (typeof error === "string" ? error : "") ||
+        "Đã có lỗi xảy ra.";
       Alert.alert("Đăng nhập thất bại", message);
     } finally {
       setLoading(false);
@@ -262,7 +273,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   title: {
-    fontFamily: "MavenPro",
+    fontFamily: "Roboto",
+    fontWeight: "400",
     fontWeight: "800",
     fontSize: 44,
     color: COLORS.primary,
@@ -282,14 +294,16 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   label: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     fontSize: 16,
     fontWeight: "500",
     color: COLORS.text,
     marginBottom: 4,
   },
   input: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     height: 50,
     borderWidth: 1,
     borderColor: COLORS.border,
@@ -312,7 +326,8 @@ const styles = StyleSheet.create({
   },
   inputPassword: {
     flex: 1,
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     fontSize: 16,
     color: COLORS.text,
     paddingHorizontal: 16,
@@ -337,12 +352,14 @@ const styles = StyleSheet.create({
     borderColor: "#D1D5DB",
   },
   checkboxLabel: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     fontSize: 14,
     color: "#6B7280",
   },
   forgotPassword: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     fontSize: 14,
     color: COLORS.primary,
     fontWeight: "600",
@@ -361,7 +378,8 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   primaryButtonText: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     fontSize: 18,
     fontWeight: "700",
     color: "#FFFFFF",
@@ -374,12 +392,14 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   inlineLinkText: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     fontSize: 14,
     color: COLORS.muted,
   },
   inlineLinkTextStrong: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     fontSize: 14,
     color: COLORS.primary,
     fontWeight: "700",
@@ -396,17 +416,20 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   signupText: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     fontSize: 14,
     color: COLORS.muted,
   },
   signupLink: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     color: COLORS.primary,
     fontWeight: "600",
   },
   vendorLoginText: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: 14,
     color: COLORS.primary,
     fontWeight: "600",

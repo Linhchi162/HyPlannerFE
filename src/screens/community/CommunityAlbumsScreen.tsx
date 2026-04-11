@@ -279,7 +279,8 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   headerTitle: {
-    fontFamily: "MavenPro-Bold",
+    fontFamily: "Roboto",
+    fontWeight: "700",
     fontSize: responsiveFont(20),
     color: COLORS.white,
     position: "absolute",
@@ -288,7 +289,8 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   logo: {
-    fontFamily: "MavenPro-Bold",
+    fontFamily: "Roboto",
+    fontWeight: "700",
     fontSize: responsiveFont(24),
     color: COLORS.white,
     flex: 1,
@@ -302,12 +304,14 @@ const styles = StyleSheet.create({
     gap: responsiveWidth(8),
   },
   title: {
-    fontFamily: "Montserrat-Bold",
+    fontFamily: "Roboto",
+    fontWeight: "700",
     fontSize: responsiveFont(22),
     color: "#1f2937",
   },
   subtitle: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     fontSize: responsiveFont(13),
     color: COLORS.textMuted,
     textAlign: "center",
@@ -342,7 +346,8 @@ const styles = StyleSheet.create({
     borderColor: COLORS.primary,
   },
   filterText: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(14),
     color: COLORS.textDark,
   },
@@ -375,12 +380,14 @@ const styles = StyleSheet.create({
   },
   statText: {
     fontSize: responsiveFont(14),
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     color: COLORS.textDark,
   },
   ratingText: {
     fontSize: responsiveFont(14),
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     color: "#ffc107",
   },
   loadingContainer: {

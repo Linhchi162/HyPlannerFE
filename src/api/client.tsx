@@ -22,6 +22,18 @@ apiClient.interceptors.request.use(
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
+      // FormData: không set Content-Type (kể cả multipart thủ công) — thiếu boundary
+      // khiến multer báo "Unexpected field". Để adapter tự gắn multipart + boundary.
+      if (
+        typeof FormData !== "undefined" &&
+        config.data instanceof FormData
+      ) {
+        if (config.headers instanceof AxiosHeaders) {
+          config.headers.delete("Content-Type");
+        } else {
+          delete (config.headers as Record<string, unknown>)["Content-Type"];
+        }
+      }
       return config;
     } catch (error) {
       return Promise.reject(error);

@@ -9,6 +9,8 @@ export interface Task {
   // actualBudget?: number;
   member: Member[];
   completed: boolean;
+  /** Nếu BE trả về — dùng cho phân quyền Assistant */
+  createdBy?: string;
 }
 interface GetTasksState {
   tasks?: Task[];

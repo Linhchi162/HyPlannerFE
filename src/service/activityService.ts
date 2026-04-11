@@ -55,6 +55,7 @@ export const createActivity = async (
       activityData
     );
     dispatch(createActivitySuccess(response.data as any));
+    return response.data as { _id?: string };
   } catch (error: any) {
     const message =
       error.response && error.response.data && error.response.data.message

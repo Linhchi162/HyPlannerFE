@@ -1,9 +1,12 @@
 import { useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { getWeddingEvent } from "../service/weddingEventService";
+import { getPhases } from "../service/phaseService";
 import { signInAnonymously } from "firebase/auth";
 import { auth } from "../service/firebase";
 import { selectCurrentUser } from "../store/authSlice";
+import { store } from "../store/store";
+import { setWeddingPublicMeta } from "../service/weddingJoinRequestFirestore";
 
 /**
  * ✅ Centralized hook to initialize app data
@@ -22,9 +25,22 @@ export const useAppInitialization = () => {
       const userId = user.id || user._id;
 
       if (userId) {
-        getWeddingEvent(userId, dispatch).catch((error) => {
-          console.error("Failed to initialize app data:", error);
-        });
+        getWeddingEvent(userId, dispatch)
+          .then(() => {
+            const we =
+              store.getState().weddingEvent.getWeddingEvent.weddingEvent;
+            const eventId = we._id;
+            const creatorId = we.creatorId;
+            if (eventId && creatorId) {
+              setWeddingPublicMeta(eventId, creatorId).catch(() => {});
+            }
+            if (eventId) {
+              getPhases(eventId, dispatch).catch(() => {});
+            }
+          })
+          .catch((error) => {
+            console.error("Failed to initialize app data:", error);
+          });
       }
 
       // Ensure Firebase Auth for Firestore actions (chat/request)

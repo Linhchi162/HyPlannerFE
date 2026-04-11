@@ -1,4 +1,5 @@
 import {
+  Alert,
   FlatList,
   KeyboardAvoidingView,
   Platform,
@@ -29,6 +30,7 @@ import { pinkHeaderStyles } from "../../styles/pinkHeader";
 import {
   NavigationProp,
   RouteProp,
+  useFocusEffect,
   useNavigation,
   useRoute,
 } from "@react-navigation/native";
@@ -41,6 +43,7 @@ import { EmptyMemberComponent } from "./EditTaskScreen";
 import { Member } from "../../store/weddingEventSlice";
 import { MixpanelService } from "../../service/mixpanelService";
 import logger from "../../utils/logger";
+import { useWeddingPermissions } from "../../hooks/useWeddingPermissions";
 type CreateTaskAppbarProps = {
   onBack: () => void;
   onCheck: () => void;
@@ -89,6 +92,17 @@ export default function CreateNewTaskScreen() {
   const { phaseId } = route.params;
   const [loading, setLoading] = useState(false);
   const { eventId } = route.params;
+  const perm = useWeddingPermissions();
+
+  useFocusEffect(
+    useCallback(() => {
+      if (perm.isObserver) {
+        Alert.alert("Chỉ xem", "Vai trò Observer không thể thêm công việc.", [
+          { text: "OK", onPress: () => navigation.goBack() },
+        ]);
+      }
+    }, [perm.isObserver, navigation])
+  );
   // const eventId = "68c29283931d7e65bd3ad689"; // lưu ý đây là fix cứng tạm thời sau khi hoàn thành login và chọn sự kiện
   // const userId = "6892b8a2aa0f1640e5c173f2"; //fix cứng tạm thời
   // const creatorId = useSelector((state: RootState) => state.weddingEvent.getWeddingEvent.weddingEvent.creatorId);
@@ -113,7 +127,12 @@ export default function CreateNewTaskScreen() {
         // actualBudget: actualBudget === null ? 0 : actualBudget, // Nếu actualBudget là null, gửi 0
       };
       setLoading(true);
-      await createTask(phaseId, taskData, dispatch);
+      const created = await createTask(phaseId, taskData, dispatch);
+      const tid = (created as { task?: { _id?: string } } | undefined)?.task
+        ?._id;
+      if (tid) {
+        await perm.noteAssistantCreated("task", String(tid));
+      }
       await getPhases(eventId, dispatch);
       setLoading(false);
       MixpanelService.track("Added Task", {
@@ -276,7 +295,8 @@ const styles = StyleSheet.create({
   },
   appbarTitle: {
     color: "#333",
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(16),
     fontWeight: "700",
     textAlign: "center",
@@ -297,14 +317,16 @@ const styles = StyleSheet.create({
     marginBottom: responsiveHeight(10),
   },
   sectionTitle: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(13),
     color: "#831843",
     marginLeft: 8,
   },
   textInput: {
     backgroundColor: "#FFFFFF",
-    fontFamily: "Montserrat-Regular",
+    fontFamily: "Roboto",
+    fontWeight: "400",
     color: "#000000",
   },
   textArea: {
@@ -329,12 +351,14 @@ const styles = StyleSheet.create({
     marginBottom: responsiveHeight(10),
   },
   memberTitle: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(13),
     color: "#333333",
   },
   memberDescription: {
-    fontFamily: "Montserrat-Regular",
+    fontFamily: "Roboto",
+    fontWeight: "400",
     fontSize: responsiveFont(10),
     color: "#6B7280",
   },

@@ -1291,7 +1291,8 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: responsiveFont(20),
-    fontFamily: "MavenPro",
+    fontFamily: "Roboto",
+    fontWeight: "400",
     color: "#fff",
     fontWeight: "700",
     letterSpacing: 0.2,

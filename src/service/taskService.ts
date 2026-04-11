@@ -46,6 +46,7 @@ export const createTask = async (
       taskData
     );
     dispatch(createTaskSuccess(response.data as any));
+    return response.data as { task?: { _id?: string }; message?: string };
   } catch (error: any) {
     const message =
       error.response && error.response.data && error.response.data.message

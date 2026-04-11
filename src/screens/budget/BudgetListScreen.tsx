@@ -1,4 +1,4 @@
-﻿import React, { memo, use, useCallback, useEffect, useState } from "react";
+import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   StyleSheet,
   View,
@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   SafeAreaView,
   Platform,
+  Alert,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
@@ -30,7 +31,7 @@ import {
   responsiveHeight,
   responsiveWidth,
 } from "../../../assets/styles/utils/responsive";
-import { NavigationProp, useNavigation, useFocusEffect } from "@react-navigation/native";
+import { NavigationProp, useNavigation } from "@react-navigation/native";
 import { RootStackParamList } from "../../navigation/types";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useDispatch, useSelector } from "react-redux";
@@ -54,6 +55,13 @@ import { selectCurrentUser } from "../../store/authSlice";
 import SuccessDialog from "../../components/SuccessDialog";
 import ErrorDialog from "../../components/ErrorDialog";
 import { MixpanelService } from "../../service/mixpanelService";
+import {
+  analyzeBudgetWithAi,
+  buildBudgetAiPayload,
+  type BudgetAiResult,
+} from "../../service/budgetAiService";
+import { getAccountLimits, getUpgradeMessage } from "../../utils/accountLimits";
+import { useWeddingPermissions } from "../../hooks/useWeddingPermissions";
 
 type ListFooterProps = {
   modalVisible: boolean;
@@ -64,6 +72,8 @@ type ListFooterProps = {
   loading?: boolean;
   groupActivities?: any[];
   eventId?: string;
+  canAddGroup?: boolean;
+  canEditGroups?: boolean;
 };
 const ListFooter = memo(
   ({
@@ -75,12 +85,15 @@ const ListFooter = memo(
     loading,
     groupActivities,
     eventId,
+    canAddGroup = true,
+    canEditGroups = true,
   }: ListFooterProps) => {
     const navigation = useNavigation<NavigationProp<RootStackParamList>>();
     return (
       <>
         {groupActivities && groupActivities.length > 0 && (
           <>
+            {canAddGroup && (
             <TouchableOpacity
               onPress={() => setModalVisible(true)}
               style={styles.addStageButton}
@@ -98,6 +111,8 @@ const ListFooter = memo(
                 </Text>
               </View>
             </TouchableOpacity>
+            )}
+            {canEditGroups && (
             <TouchableOpacity
               onPress={() =>
                 navigation.navigate("EditBudgetGroupScreen", {
@@ -119,6 +134,7 @@ const ListFooter = memo(
                 </Text>
               </View>
             </TouchableOpacity>
+            )}
           </>
         )}
         <Modal
@@ -203,6 +219,7 @@ export default function BudgetListScreen() {
   const [errorMessage, setErrorMessage] = useState("");
 
   const dispatch = useDispatch<AppDispatch>();
+  const perm = useWeddingPermissions();
   useEffect(() => {
     MixpanelService.track("Viewed Budget List");
   }, []);
@@ -278,6 +295,9 @@ export default function BudgetListScreen() {
         expectedBudget: activity.expectedBudget,
         actualBudget: activity.actualBudget,
         payer: activity.payer,
+        createdBy: activity.createdBy
+          ? String(activity.createdBy)
+          : undefined,
       })),
       totalExpectedBudget: groupActivity.activities.reduce(
         (acc: number, activity: any) => acc + (activity.expectedBudget || 0),
@@ -330,6 +350,100 @@ export default function BudgetListScreen() {
       ),
     0
   );
+
+  const dataSignature = useMemo(
+    () => buildBudgetAiPayload(groupActivities, totalBudget ?? null),
+    [groupActivities, totalBudget]
+  );
+
+  const hasBudgetLines = useMemo(
+    () =>
+      (groupActivities || []).some((g) => (g.activities || []).length > 0),
+    [groupActivities]
+  );
+
+  const [budgetAiResult, setBudgetAiResult] = useState<BudgetAiResult | null>(
+    null
+  );
+  const [budgetAiLoading, setBudgetAiLoading] = useState(false);
+  const [budgetAiError, setBudgetAiError] = useState<string | null>(null);
+  const lastSuccessSigRef = useRef<string | null>(null);
+  /** Tránh request cũ ghi đè kết quả đúng khi Redux làm groupActivities đổi reference liên tục. */
+  const budgetAiFetchGenRef = useRef(0);
+  const groupActivitiesRef = useRef(groupActivities);
+  const totalBudgetRef = useRef(totalBudget);
+  groupActivitiesRef.current = groupActivities;
+  totalBudgetRef.current = totalBudget;
+
+  useEffect(() => {
+    if (
+      lastSuccessSigRef.current != null &&
+      lastSuccessSigRef.current !== dataSignature
+    ) {
+      lastSuccessSigRef.current = null;
+    }
+  }, [dataSignature]);
+
+  const fetchBudgetAiFromApi = useCallback(async () => {
+    if (perm.isObserver) {
+      Alert.alert("Chỉ xem", "Vai trò Observer không dùng được phân tích ngân sách bằng AI.");
+      return;
+    }
+    const limits = getAccountLimits(user.accountType);
+    if (!limits.canAccessChecklistAi) {
+      Alert.alert("Nâng cấp tài khoản", getUpgradeMessage("budgetAi"), [
+        { text: "Hủy", style: "cancel" },
+        {
+          text: "Nâng cấp",
+          onPress: () => navigation.navigate("UpgradeAccountScreen"),
+        },
+      ]);
+      return;
+    }
+    if (!hasBudgetLines) return;
+    const runId = ++budgetAiFetchGenRef.current;
+    setBudgetAiLoading(true);
+    setBudgetAiError(null);
+    try {
+      const r = await analyzeBudgetWithAi(
+        groupActivitiesRef.current,
+        totalBudgetRef.current ?? null
+      );
+      if (runId !== budgetAiFetchGenRef.current) return;
+      setBudgetAiResult(r);
+      lastSuccessSigRef.current = dataSignature;
+      MixpanelService.track("Budget AI analyzed");
+    } catch (e: any) {
+      if (runId !== budgetAiFetchGenRef.current) return;
+      setBudgetAiError(e?.message || "Không thể phân tích AI.");
+    } finally {
+      if (runId === budgetAiFetchGenRef.current) {
+        setBudgetAiLoading(false);
+      }
+    }
+  }, [
+    user.accountType,
+    hasBudgetLines,
+    dataSignature,
+    navigation,
+    perm.isObserver,
+  ]);
+
+  // Gọi AI khi đã có hạng mục — không chỉ dựa vào focus (lúc focus dữ liệu Redux thường chưa tải xong).
+  useEffect(() => {
+    if (perm.isObserver) return;
+    const limits = getAccountLimits(user.accountType);
+    if (!limits.canAccessChecklistAi || !hasBudgetLines) return;
+    if (lastSuccessSigRef.current === dataSignature) return;
+    void fetchBudgetAiFromApi();
+  }, [
+    user.accountType,
+    hasBudgetLines,
+    dataSignature,
+    fetchBudgetAiFromApi,
+    perm.isObserver,
+  ]);
+
   // Xử lý sự kiện mở/đóng accordion
   const handleAccordionPress = (id: string) => {
     setExpandedAccordions((prev) =>
@@ -341,7 +455,11 @@ export default function BudgetListScreen() {
     if (!groupName.trim()) return;
     try {
       setActionLoading(true);
-      await createGroupActivity(eventId, groupName, dispatch);
+      const created = await createGroupActivity(eventId, groupName, dispatch);
+      const gid = (created as { _id?: string } | undefined)?._id;
+      if (gid) {
+        await perm.noteAssistantCreated("groupActivity", String(gid));
+      }
       MixpanelService.track("Created Budget Group", {
         "Group Name": groupName,
         Method: "Manual",
@@ -388,6 +506,10 @@ export default function BudgetListScreen() {
     }
   };
   const renderHiddenItem = (data: any, rowMap: any) => {
+    const row = data.item;
+    if (!perm.canMutateResource("activity", row.id, row.createdBy)) {
+      return <View style={{ flex: 1, backgroundColor: "transparent" }} />;
+    }
     const showConfirm = (taskId: string) => {
       setSelectedTaskId(taskId);
       setConfirmVisible(true);
@@ -608,7 +730,7 @@ export default function BudgetListScreen() {
           renderItem={(data, rowMap) => renderTaskItem(data, rowMap, stage.id)}
           renderHiddenItem={renderHiddenItem}
           rightOpenValue={-150}
-          disableRightSwipe
+          disableRightSwipe={perm.isObserver}
           keyExtractor={(item: { id: string }) => item.id}
           contentContainerStyle={{ paddingBottom: 10 }}
           scrollEnabled={false}
@@ -616,6 +738,10 @@ export default function BudgetListScreen() {
         <TouchableOpacity
           style={{ backgroundColor: "#FFF" }}
           onPress={() => {
+            if (!perm.canAddPlanContent) {
+              Alert.alert("Chỉ xem", "Bạn không có quyền thêm hạng mục ngân sách.");
+              return;
+            }
             MixpanelService.track("Clicked Add Budget Button", {
               "Group ID": stage.id,
               "Group Name": stage.title,
@@ -626,7 +752,12 @@ export default function BudgetListScreen() {
             });
           }}
         >
-          <View style={styles.addTaskButton}>
+          <View
+            style={[
+              styles.addTaskButton,
+              { opacity: perm.canAddPlanContent ? 1 : 0.45 },
+            ]}
+          >
             <Entypo name="plus" size={24} />
             <Text style={styles.addTaskButtonLabel}>Thêm ngân sách</Text>
           </View>
@@ -646,6 +777,7 @@ export default function BudgetListScreen() {
           Không có nhóm ngân sách nào.{"\n"}Hãy bắt đầu bằng ngân sách mẫu của
           chúng tôi nhé!
         </Text>
+        {perm.isPrimaryCouple ? (
         <TouchableOpacity
           style={styles.sampleChecklistButton}
           onPress={handleInsertSampleBudgets}
@@ -662,21 +794,123 @@ export default function BudgetListScreen() {
             </Text>
           </View>
         </TouchableOpacity>
+        ) : null}
       </View>
     );
   };
 
-  const ListHeader = memo(() => (
-    <>
-      <View style={styles.progressSection}>
-        <BudgetProgressBar
-          totalBudget={totalBudget}
-          totalExpectedBudget={totalExpectedBudget}
-          totalActualBudget={totalActualBudget}
-        />
-      </View>
-    </>
-  ));
+  const canBudgetAi = getAccountLimits(user.accountType).canAccessChecklistAi;
+
+  const renderListHeader = useCallback(
+    () => (
+      <>
+        <View style={styles.progressSection}>
+          <BudgetProgressBar
+            totalBudget={totalBudget}
+            totalExpectedBudget={totalExpectedBudget}
+            totalActualBudget={totalActualBudget}
+          />
+        </View>
+        <View style={styles.budgetInsightCard}>
+          <Text style={styles.budgetInsightTitle}>Gợi ý từ AI</Text>
+          {!canBudgetAi ? (
+            <>
+              <Text style={styles.budgetInsightCompareLine}>
+                Tài khoản VIP/PRO mới dùng được phân tích ngân sách bằng AI.
+              </Text>
+              <TouchableOpacity
+                onPress={() =>
+                  Alert.alert(
+                    "Nâng cấp tài khoản",
+                    getUpgradeMessage("budgetAi"),
+                    [
+                      { text: "Hủy", style: "cancel" },
+                      {
+                        text: "Nâng cấp",
+                        onPress: () =>
+                          navigation.navigate("UpgradeAccountScreen"),
+                      },
+                    ]
+                  )
+                }
+                style={styles.budgetAiActionBtn}
+              >
+                <Text style={styles.budgetAiActionBtnLabel}>Nâng cấp</Text>
+              </TouchableOpacity>
+            </>
+          ) : !hasBudgetLines ? (
+            <Text style={styles.budgetInsightCompareLine}>
+              Thêm hạng mục ngân sách để AI so sánh dự kiến và thực tế cho bạn.
+            </Text>
+          ) : budgetAiLoading ? (
+            <View style={styles.budgetAiLoadingRow}>
+              <ActivityIndicator size="small" color="#f7577c" />
+              <Text style={styles.budgetInsightCompareLine}>
+                Đang phân tích…
+              </Text>
+            </View>
+          ) : budgetAiError ? (
+            <>
+              <Text style={styles.budgetAiErrorText}>{budgetAiError}</Text>
+              <TouchableOpacity
+                onPress={() => void fetchBudgetAiFromApi()}
+                style={styles.budgetAiActionBtn}
+              >
+                <Text style={styles.budgetAiActionBtnLabel}>Thử lại</Text>
+              </TouchableOpacity>
+            </>
+          ) : budgetAiResult ? (
+            <>
+              <Text style={styles.budgetInsightCompareLine}>
+                {budgetAiResult.comparison}
+              </Text>
+              {budgetAiResult.suggestions.length === 0 ? (
+                <Text style={styles.budgetAiHint}>
+                  (Chưa có danh sách gợi ý tách riêng — nội dung chính nằm ở dòng
+                  so sánh phía trên.)
+                </Text>
+              ) : (
+                budgetAiResult.suggestions.map((line, i) => (
+                  <Text key={i} style={styles.budgetAiHint}>
+                    • {line}
+                  </Text>
+                ))
+              )}
+              <TouchableOpacity
+                onPress={() => void fetchBudgetAiFromApi()}
+                style={styles.budgetAiSecondaryBtn}
+              >
+                <Text style={styles.budgetAiSecondaryBtnLabel}>
+                  Phân tích lại
+                </Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            <TouchableOpacity
+              onPress={() => void fetchBudgetAiFromApi()}
+              style={styles.budgetAiActionBtn}
+            >
+              <Text style={styles.budgetAiActionBtnLabel}>
+                Phân tích với AI
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </>
+    ),
+    [
+      totalBudget,
+      totalExpectedBudget,
+      totalActualBudget,
+      canBudgetAi,
+      hasBudgetLines,
+      budgetAiLoading,
+      budgetAiError,
+      budgetAiResult,
+      fetchBudgetAiFromApi,
+      navigation,
+    ]
+  );
 
   return (
     <View style={styles.safeArea}>
@@ -689,6 +923,12 @@ export default function BudgetListScreen() {
       ) : (
         <FlatList
           data={stages}
+          extraData={{
+            budgetAiResult,
+            budgetAiLoading,
+            budgetAiError,
+            hasBudgetLines,
+          }}
           renderItem={renderStage}
           keyExtractor={(item) => item.id}
           getItemLayout={(data, index) => ({
@@ -696,7 +936,7 @@ export default function BudgetListScreen() {
             offset: 200 * index,
             index,
           })}
-          ListHeaderComponent={ListHeader}
+          ListHeaderComponent={renderListHeader}
           ListFooterComponent={
             <ListFooter
               modalVisible={modalVisible}
@@ -707,6 +947,8 @@ export default function BudgetListScreen() {
               loading={actionLoading}
               groupActivities={groupActivities}
               eventId={eventId}
+              canAddGroup={perm.canAddPlanContent}
+              canEditGroups={perm.isPrimaryCouple}
             />
           }
           contentContainerStyle={[
@@ -746,7 +988,8 @@ const styles = StyleSheet.create({
   },
   appbarTitle: {
     color: "#ffffff",
-    fontFamily: "MavenPro",
+    fontFamily: "Roboto",
+    fontWeight: "400",
     fontSize: responsiveFont(16),
     fontWeight: "700",
     textAlign: "center",
@@ -757,12 +1000,87 @@ const styles = StyleSheet.create({
   progressSection: {
     marginBottom: responsiveHeight(20),
   },
+  budgetInsightCard: {
+    backgroundColor: "#fef3f2",
+    borderRadius: 12,
+    padding: responsiveWidth(14),
+    marginBottom: responsiveHeight(16),
+    borderWidth: 1,
+    borderColor: "#f5c4ce",
+  },
+  budgetInsightTitle: {
+    fontFamily: "Roboto",
+    fontWeight: "400",
+    fontSize: responsiveFont(15),
+    fontWeight: "700",
+    color: "#f7577c",
+  },
+  budgetInsightCompareLine: {
+    fontFamily: "Roboto",
+    fontWeight: "400",
+    fontSize: responsiveFont(11),
+    lineHeight: responsiveFont(16),
+    color: "#333",
+    marginTop: 8,
+    marginBottom: 10,
+  },
+  budgetAiHint: {
+    fontFamily: "Roboto",
+    fontWeight: "400",
+    fontSize: responsiveFont(10),
+    lineHeight: responsiveFont(15),
+    color: "#555",
+    marginBottom: 8,
+  },
+  budgetAiLoadingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginTop: 8,
+  },
+  budgetAiErrorText: {
+    fontFamily: "Roboto",
+    fontWeight: "400",
+    fontSize: responsiveFont(11),
+    color: "#c62828",
+    marginTop: 8,
+    marginBottom: 8,
+  },
+  budgetAiActionBtn: {
+    marginTop: 10,
+    alignSelf: "flex-start",
+    backgroundColor: "#f7577c",
+    paddingVertical: responsiveHeight(10),
+    paddingHorizontal: responsiveWidth(18),
+    borderRadius: 8,
+  },
+  budgetAiActionBtnLabel: {
+    fontFamily: "Roboto",
+    fontWeight: "400",
+    fontSize: responsiveFont(12),
+    fontWeight: "600",
+    color: "#fff",
+  },
+  budgetAiSecondaryBtn: {
+    marginTop: 12,
+    alignSelf: "flex-start",
+    paddingVertical: responsiveHeight(8),
+    paddingHorizontal: responsiveWidth(12),
+  },
+  budgetAiSecondaryBtnLabel: {
+    fontFamily: "Roboto",
+    fontWeight: "400",
+    fontSize: responsiveFont(11),
+    fontWeight: "600",
+    color: "#f7577c",
+  },
   progressInfo: {
     alignItems: "center",
     marginVertical: responsiveHeight(13),
   },
   progressText: {
-    fontFamily: "MavenPro",
+    fontFamily: "Roboto",
+    fontWeight: "400",
     color: "#333333",
     fontSize: responsiveFont(12),
   },
@@ -778,18 +1096,21 @@ const styles = StyleSheet.create({
     backgroundColor: "#fef3f2",
   },
   accordionTitle: {
-    fontFamily: "MavenPro",
+    fontFamily: "Roboto",
+    fontWeight: "400",
     fontSize: responsiveFont(14),
     fontWeight: "700",
     color: "#f7577c",
   },
   accordionDescription: {
-    fontFamily: "MavenPro",
+    fontFamily: "Roboto",
+    fontWeight: "400",
     fontSize: responsiveFont(10),
     color: "#000000",
   },
   taskText: {
-    fontFamily: "MavenPro",
+    fontFamily: "Roboto",
+    fontWeight: "400",
     color: "#000000",
   },
   taskTextCompleted: {
@@ -805,7 +1126,8 @@ const styles = StyleSheet.create({
   addTaskButtonLabel: {
     fontSize: responsiveFont(14),
     marginLeft: responsiveWidth(4),
-    fontFamily: "MavenPro",
+    fontFamily: "Roboto",
+    fontWeight: "400",
     color: "#000000",
   },
   addStageButton: {
@@ -819,7 +1141,8 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginLeft: 4,
     marginTop: responsiveHeight(5),
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     color: "#ffffff",
   },
   sampleChecklistButton: {
@@ -837,7 +1160,8 @@ const styles = StyleSheet.create({
   },
   sampleChecklistButtonText: {
     fontSize: responsiveFont(15),
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     color: "#D95D74",
     marginLeft: responsiveWidth(8),
     fontWeight: "600",
@@ -874,7 +1198,8 @@ const styles = StyleSheet.create({
   },
   backTextWhite: {
     color: "#FFF",
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     fontWeight: "600",
   },
   modalOverlay: {
@@ -935,7 +1260,8 @@ const styles = StyleSheet.create({
   phaseEmptyText: {
     fontSize: responsiveFont(14),
     color: "#888",
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     marginTop: 8,
     textAlign: "center",
   },

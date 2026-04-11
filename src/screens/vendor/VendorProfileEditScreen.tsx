@@ -32,6 +32,7 @@ import {
   subscribeVendorProfile,
   deleteVendorProfile,
 } from "../../service/vendorService";
+import { VENDOR_CATEGORY_FULL_LIST } from "../../constants/vendorServiceCategories";
 import { auth, storage } from "../../service/firebase";
 import { logoutVendor } from "../../service/vendorAuthService";
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
@@ -128,27 +129,7 @@ export default function VendorProfileEditScreen() {
     return CITY_OPTIONS.filter((c) => c.toLowerCase().includes(q));
   }, [CITY_OPTIONS, cityQuery]);
 
-  const CATEGORY_OPTIONS = useMemo(
-    () => [
-      "Wedding Planner (Tổ chức/Điều phối)",
-      "Địa điểm & Tiệc cưới",
-      "Trang trí & Decor",
-      "Chụp ảnh cưới",
-      "Quay phim/Phóng sự cưới",
-      "Trang điểm & Làm tóc",
-      "Áo cưới/Váy cưới",
-      "Vest chú rể",
-      "Hoa cưới",
-      "Thiệp cưới",
-      "Xe hoa",
-      "MC & Ban nhạc",
-      "Mâm quả/Tráp cưới",
-      "Bánh cưới",
-      "Âm thanh & Ánh sáng",
-      "Backdrop & Photobooth",
-    ],
-    []
-  );
+  const CATEGORY_OPTIONS = useMemo(() => [...VENDOR_CATEGORY_FULL_LIST], []);
 
   const filteredCategories = useMemo(() => {
     if (!categoryQuery.trim()) return CATEGORY_OPTIONS;
@@ -697,7 +678,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
   },
   modalTitle: {
-    fontFamily: "MavenPro",
+    fontFamily: "Roboto",
+    fontWeight: "400",
     fontSize: responsiveFont(16),
     fontWeight: "700",
     color: "#111827",
@@ -717,7 +699,8 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     fontSize: responsiveFont(13),
     color: "#111827",
   },

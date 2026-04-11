@@ -207,12 +207,14 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
   },
   title: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     color: COLORS.textPrimary,
     fontSize: responsiveFont(15),
   },
   label: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     fontSize: responsiveFont(13),
     color: COLORS.textPrimary,
     marginBottom: responsiveHeight(12),
@@ -241,7 +243,8 @@ const styles = StyleSheet.create({
     paddingVertical: responsiveHeight(24),
   },
   successText: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     fontSize: responsiveFont(14),
     color: COLORS.textPrimary,
     marginTop: responsiveHeight(12),

@@ -253,7 +253,8 @@ const styles = StyleSheet.create({
   },
   appbarTitle: {
     color: "#333",
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(16),
     fontWeight: "700",
     textAlign: "center",
@@ -272,14 +273,16 @@ const styles = StyleSheet.create({
     elevation: 0,
   },
   searchBarInput: {
-    fontFamily: "Montserrat-Regular",
+    fontFamily: "Roboto",
+    fontWeight: "400",
     color: "#000000",
   },
   listTitle: {
     fontSize: responsiveFont(13),
     fontWeight: "700",
     color: "#4B5563",
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     marginBottom: responsiveHeight(12),
   },
   emptyContainer: {
@@ -293,7 +296,8 @@ const styles = StyleSheet.create({
     fontSize: responsiveFont(13),
     fontWeight: "400",
     color: "#9CA3AF",
-    fontFamily: "Montserrat-Regular",
+    fontFamily: "Roboto",
+    fontWeight: "400",
     marginTop: responsiveHeight(10),
   },
   selectedContainer: {
@@ -316,12 +320,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   memberTitle: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(13),
     color: "#333333",
   },
   memberDescription: {
-    fontFamily: "Montserrat-Regular",
+    fontFamily: "Roboto",
+    fontWeight: "400",
     fontSize: responsiveFont(11),
     color: "#6B7280",
   },

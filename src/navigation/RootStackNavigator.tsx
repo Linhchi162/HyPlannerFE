@@ -41,9 +41,11 @@ import * as Notifications from "expo-notifications";
 import {
   addNotificationResponseListener,
   removeNotificationSubscription,
+  registerForPushNotificationsAsync,
 } from "../utils/pushNotification";
 import { showNotification } from "../utils/pushNotification";
 import { subscribeChatsByParticipant, type ChatSummary } from "../service/chatService";
+import { updateUserFcmToken } from "../service/userPushService";
 
 // Redux
 import { selectCurrentUser, selectRememberMe } from "../store/authSlice";
@@ -65,6 +67,8 @@ import InviteOrCreateScreen from "../screens/auth/InviteOrCreateScreen";
 import ProfileScreen from "../screens/profile/ProfileScreen";
 import EditProfileScreen from "../screens/profile/EditProfileScreen";
 import EditWeddingInfoScreen from "../screens/wedding-setup/EditWeddingInfoScreen";
+import AssignWeddingRolesScreen from "../screens/profile/AssignWeddingRolesScreen";
+import WeddingJoinRequestsScreen from "../screens/profile/WeddingJoinRequestsScreen";
 import InvitationLettersScreen from "../screens/invitation/InvitationLetterScreen";
 import CreateWeddingSiteScreen from "../screens/invitation/CreateWeddingSiteScreen";
 import EditCoupleInfoScreen from "../screens/invitation/EditCoupleInfoScreen";
@@ -73,6 +77,7 @@ import UpgradeAccountScreen from "../screens/payment/UpgradeAccountScreen";
 import PaymentSuccessScreen from "../screens/payment/PaymentSuccessScreen";
 import PaymentCancelledScreen from "../screens/payment/PaymentCancelledScreen";
 import TaskListScreen from "../screens/tasks/TaskListScreen";
+import ChecklistAiInsightScreen from "../screens/tasks/ChecklistAiInsightScreen";
 import CreateNewTaskScreen from "../screens/tasks/CreateNewTaskScreen";
 import EditTaskScreen from "../screens/tasks/EditTaskScreen";
 import AddMemberScreen from "../screens/profile/AddMemberScreen";
@@ -108,6 +113,9 @@ import GroomColorScreen from "../screens/groom/GroomColorScreen";
 import GroomAccessoriesLapelScreen from "../screens/groom/GroomAccessoriesLapelScreen";
 import VendorListScreen from "../screens/vendor/VendorListScreen";
 import VendorDetailScreen from "../screens/vendor/VendorDetailScreen";
+import PromotionDealsScreen from "../screens/vendor/PromotionDealsScreen";
+import PromotionDetailScreen from "../screens/vendor/PromotionDetailScreen";
+import SavedPromotionOffersScreen from "../screens/vendor/SavedPromotionOffersScreen";
 import VendorDashboardScreen from "../screens/vendor/VendorDashboardScreen";
 import VendorAuthScreen from "../screens/vendor/VendorAuthScreen";
 import VendorOnboardingScreen from "../screens/vendor/VendorOnboardingScreen";
@@ -115,9 +123,12 @@ import VendorProfileEditScreen from "../screens/vendor/VendorProfileEditScreen";
 import VendorChangePasswordScreen from "../screens/vendor/VendorChangePasswordScreen";
 import VendorServicesScreen from "../screens/vendor/VendorServicesScreen";
 import VendorRequestsScreen from "../screens/vendor/VendorRequestsScreen";
+import VendorPromotionsScreen from "../screens/vendor/VendorPromotionsScreen";
+import VendorPromotionEditScreen from "../screens/vendor/VendorPromotionEditScreen";
 import ChatListScreen from "../screens/chat/ChatListScreen";
 import ChatDetailScreen from "../screens/chat/ChatDetailScreen";
 import AssistantScreen from "../screens/chat/AssistantScreen";
+import AssistantHomeScreen from "../screens/chat/AssistantHomeScreen";
 import GroomAccessoriesPocketSquareScreen from "../screens/groom/GroomAccessoriesPocketSquareScreen";
 import GroomAccessoriesDecorScreen from "../screens/groom/GroomAccessoriesDecorScreen";
 import BrideAoDaiStyleScreen from "../screens/bride/BrideAoDaiStyleScreen";
@@ -229,6 +240,23 @@ const RootStackNavigator = () => {
       dispatch(fetchUserInvitation());
     }
   }, [user, dispatch]);
+
+  // Ensure user push token is always synced (even when auto-login by rememberMe).
+  useEffect(() => {
+    const userId =
+      (user as any)?.id || (user as any)?._id || (user as any)?.uid || null;
+    if (!userId) return;
+    const syncPushToken = async () => {
+      try {
+        const token = await registerForPushNotificationsAsync();
+        if (!token) return;
+        await updateUserFcmToken(String(userId), token);
+      } catch {
+        // Silent fail: app should continue even if push registration fails.
+      }
+    };
+    void syncPushToken();
+  }, [user]);
 
   // Local notification for new vendor messages (when app is running)
   useEffect(() => {
@@ -397,6 +425,16 @@ const RootStackNavigator = () => {
             options={{ headerShown: false }}
           />
           <Stack.Screen
+            name="AssignWeddingRoles"
+            component={AssignWeddingRolesScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="WeddingJoinRequests"
+            component={WeddingJoinRequestsScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
             name="InvitationLettersScreen"
             component={InvitationLettersScreen}
             options={{ headerShown: false }}
@@ -431,6 +469,11 @@ const RootStackNavigator = () => {
           <Stack.Screen
             name="TaskList"
             component={TaskListScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="ChecklistAiInsight"
+            component={ChecklistAiInsightScreen}
             options={{ headerShown: false }}
           />
           <Stack.Screen
@@ -646,6 +689,21 @@ const RootStackNavigator = () => {
             options={{ headerShown: false }}
           />
           <Stack.Screen
+            name="PromotionDeals"
+            component={PromotionDealsScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="PromotionDetail"
+            component={PromotionDetailScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="SavedPromotionOffers"
+            component={SavedPromotionOffersScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
             name="VendorDetail"
             component={VendorDetailScreen}
             options={{ headerShown: false }}
@@ -681,6 +739,16 @@ const RootStackNavigator = () => {
             options={{ headerShown: false }}
           />
           <Stack.Screen
+            name="VendorPromotions"
+            component={VendorPromotionsScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="VendorPromotionEdit"
+            component={VendorPromotionEditScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
             name="VendorRequests"
             component={VendorRequestsScreen}
             options={{ headerShown: false }}
@@ -693,6 +761,11 @@ const RootStackNavigator = () => {
           <Stack.Screen
             name="ChatDetail"
             component={ChatDetailScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="AssistantHome"
+            component={AssistantHomeScreen}
             options={{ headerShown: false }}
           />
           <Stack.Screen
@@ -799,7 +872,8 @@ const RootStackNavigator = () => {
                         style={{
                           color: "#ff6b9d",
                           fontSize: responsiveFont(14),
-                          fontFamily: "Montserrat-SemiBold",
+                          fontFamily: "Roboto",
+                          fontWeight: "600",
                         }}
                       >
                         Xem tất cả
@@ -849,7 +923,8 @@ const RootStackNavigator = () => {
 const headerStyles = StyleSheet.create({
   title: {
     fontSize: responsiveFont(20),
-    fontFamily: "MavenPro-Bold",
+    fontFamily: "Roboto",
+    fontWeight: "700",
     color: "#ff6b9d",
   },
   notificationButton: {
@@ -892,7 +967,8 @@ const modalStyles = StyleSheet.create({
     borderBottomColor: "#f3f4f6",
   },
   title: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(18),
     color: "#1f2937",
   },
@@ -901,7 +977,8 @@ const modalStyles = StyleSheet.create({
     alignItems: "center",
   },
   loadingText: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     fontSize: responsiveFont(14),
     color: "#6b7280",
     marginTop: responsiveHeight(12),
@@ -911,7 +988,8 @@ const modalStyles = StyleSheet.create({
     alignItems: "center",
   },
   emptyText: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     fontSize: responsiveFont(14),
     color: "#9ca3af",
     marginTop: responsiveHeight(12),
@@ -929,13 +1007,15 @@ const modalStyles = StyleSheet.create({
     borderColor: "#e5e7eb",
   },
   itemTitle: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(15),
     color: "#1f2937",
     marginBottom: responsiveHeight(8),
   },
   itemMessage: {
-    fontFamily: "Montserrat-Regular",
+    fontFamily: "Roboto",
+    fontWeight: "400",
     fontSize: responsiveFont(13),
     color: "#6b7280",
     lineHeight: responsiveHeight(22),

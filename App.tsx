@@ -22,6 +22,7 @@ import { updatePushToken } from "./src/service/authService";
 import { selectCurrentToken, selectCurrentUser } from "./src/store/authSlice";
 import { updateUserFcmToken } from "./src/service/userPushService";
 import { useAppInitialization } from "./src/hooks/useAppInitialization";
+import { ChecklistAutoNotifier } from "./src/hooks/useChecklistAutoNotifier";
 import ErrorBoundary from "./src/components/ErrorBoundary";
 
 // Component to handle push token registration after auth
@@ -81,7 +82,8 @@ export default function App() {
       "Gwendolyn-Regular": require("./assets/fonts/Gwendolyn-Regular.ttf"),
       "Charm-Regular": require("./assets/fonts/Charm-Regular.ttf"),
       "Charm-Bold": require("./assets/fonts/Charm-Bold.ttf"),
-      MavenPro: require("./assets/fonts/MavenPro-VariableFont_wght.ttf"),
+      MavenPro: require("./assets/fonts/MavenPro-Regular.ttf"),
+      "MavenPro-Bold": require("./assets/fonts/MavenPro-Bold.ttf"),
       Roboto: require("./assets/fonts/Roboto-VariableFont_wdth,wght.ttf"),
       "Roboto-Italic": require("./assets/fonts/Roboto-Italic-VariableFont_wdth,wght.ttf"),
     }).then(() => setFontsLoaded(true));
@@ -132,6 +134,7 @@ export default function App() {
               <PersistGate loading={null} persistor={persistor}>
                 <PushTokenRegistrar />
                 <AppDataInitializer />
+                <ChecklistAutoNotifier />
                 <SelectionProvider>
                   <AlbumCreationProvider>
                     <RootStackNavigator />

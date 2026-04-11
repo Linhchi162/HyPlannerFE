@@ -1,16 +1,16 @@
-﻿import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
   Image,
-  StatusBar,
   Platform,
+  StatusBar,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { ChevronLeft } from "lucide-react-native";
 import { useNavigation, useRoute, useFocusEffect } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
@@ -98,8 +98,17 @@ export default function ChatListScreen() {
     }, {});
   }, [vendors]);
 
+  useFocusEffect(
+    useCallback(() => {
+      StatusBar.setBarStyle("light-content");
+      StatusBar.setBackgroundColor("#f7577c");
+      if (Platform.OS === "android") StatusBar.setTranslucent(false);
+      return () => {};
+    }, [])
+  );
+
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <ChevronLeft size={24} color="#ffffff" />
@@ -188,24 +197,26 @@ export default function ChatListScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#f8f9fa",
+    backgroundColor: "#f7577c",
   },
   header: {
     backgroundColor: "#f7577c",
     paddingHorizontal: responsiveWidth(16),
-    paddingVertical: responsiveHeight(12),
-    height: responsiveHeight(56),
+    paddingVertical: responsiveHeight(10),
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
   },
   headerTitle: {
-    fontFamily: "MavenPro",
+    fontFamily: "Roboto",
+    fontWeight: "400",
     fontSize: responsiveFont(18),
     fontWeight: "700",
     color: "#ffffff",
   },
   content: {
+    flexGrow: 1,
+    backgroundColor: "#f8f9fa",
     padding: responsiveWidth(16),
     paddingBottom: responsiveHeight(120),
     gap: responsiveHeight(10),
@@ -245,7 +256,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffe4ea",
   },
   avatarText: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(14),
     color: "#f7577c",
   },
@@ -258,7 +270,8 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   cardTitle: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(14),
     color: "#111827",
   },
@@ -279,7 +292,8 @@ const styles = StyleSheet.create({
   unreadText: {
     color: "#ffffff",
     fontSize: responsiveFont(10),
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
   },
   emptyText: {
     textAlign: "center",

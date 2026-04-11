@@ -4,6 +4,21 @@
 
 export type AccountType = "FREE" | "VIP" | "PRO";
 
+/**
+ * API / Redux có thể trả "vip", "VIP", "premium" — map về key trong ACCOUNT_LIMITS.
+ * Nếu không chuẩn hóa, ACCOUNT_LIMITS["vip"] là undefined và app áp dụng nhầm giới hạn FREE.
+ */
+export const normalizeAccountType = (
+  raw: string | undefined | null
+): AccountType => {
+  if (raw == null || raw === "") return "FREE";
+  const u = String(raw).trim().toUpperCase();
+  if (u === "VIP" || u === "PREMIUM") return "VIP";
+  if (u === "PRO") return "PRO";
+  if (u === "FREE") return "FREE";
+  return "FREE";
+};
+
 export interface AccountLimits {
   maxAlbums: number | null; // null = unlimited
   maxInvitationTemplates: number | null; // null = all templates
@@ -12,6 +27,8 @@ export interface AccountLimits {
   canAccessWhoIsNext: boolean;
   canAccessTableArrangement: boolean;
   canBoostPost: boolean; // Đẩy bài 24h
+  /** Phân tích checklist bằng AI (phụ thuộc, chậm tiến độ, nếu–thì) */
+  canAccessChecklistAi: boolean;
 }
 
 const ACCOUNT_LIMITS: Record<AccountType, AccountLimits> = {
@@ -23,6 +40,7 @@ const ACCOUNT_LIMITS: Record<AccountType, AccountLimits> = {
     canAccessWhoIsNext: false,
     canAccessTableArrangement: false,
     canBoostPost: false,
+    canAccessChecklistAi: false,
   },
   VIP: {
     maxAlbums: 12,
@@ -32,6 +50,7 @@ const ACCOUNT_LIMITS: Record<AccountType, AccountLimits> = {
     canAccessWhoIsNext: true,
     canAccessTableArrangement: true,
     canBoostPost: false,
+    canAccessChecklistAi: true,
   },
   PRO: {
     maxAlbums: null, // unlimited
@@ -41,6 +60,7 @@ const ACCOUNT_LIMITS: Record<AccountType, AccountLimits> = {
     canAccessWhoIsNext: true,
     canAccessTableArrangement: true,
     canBoostPost: true,
+    canAccessChecklistAi: true,
   },
 };
 
@@ -48,9 +68,10 @@ const ACCOUNT_LIMITS: Record<AccountType, AccountLimits> = {
  * Get account limits for a specific account type
  */
 export const getAccountLimits = (
-  accountType: AccountType = "FREE"
+  accountType: string | undefined | null = "FREE"
 ): AccountLimits => {
-  return ACCOUNT_LIMITS[accountType] || ACCOUNT_LIMITS.FREE;
+  const key = normalizeAccountType(accountType);
+  return ACCOUNT_LIMITS[key];
 };
 
 /**
@@ -58,7 +79,7 @@ export const getAccountLimits = (
  */
 export const canCreateAlbum = (
   currentAlbumCount: number,
-  accountType: AccountType = "FREE"
+  accountType: string | undefined | null = "FREE"
 ): boolean => {
   const limits = getAccountLimits(accountType);
   if (limits.maxAlbums === null) return true; // unlimited
@@ -70,7 +91,7 @@ export const canCreateAlbum = (
  */
 export const canAccessInvitationTemplate = (
   templateIndex: number,
-  accountType: AccountType = "FREE"
+  accountType: string | undefined | null = "FREE"
 ): boolean => {
   const limits = getAccountLimits(accountType);
   if (limits.maxInvitationTemplates === null) return true; // all templates
@@ -82,7 +103,7 @@ export const canAccessInvitationTemplate = (
  */
 export const canAddImageToPost = (
   currentImageCount: number,
-  accountType: AccountType = "FREE"
+  accountType: string | undefined | null = "FREE"
 ): boolean => {
   const limits = getAccountLimits(accountType);
   if (limits.maxImagesPerPost === null) return true; // unlimited
@@ -94,7 +115,7 @@ export const canAddImageToPost = (
  */
 export const canAddImageToAlbum = (
   currentImageCount: number,
-  accountType: AccountType = "FREE"
+  accountType: string | undefined | null = "FREE"
 ): boolean => {
   const limits = getAccountLimits(accountType);
   if (limits.maxImagesPerAlbum === null) return true; // unlimited
@@ -105,7 +126,7 @@ export const canAddImageToAlbum = (
  * Get maximum allowed images for post
  */
 export const getMaxImagesPerPost = (
-  accountType: AccountType = "FREE"
+  accountType: string | undefined | null = "FREE"
 ): number | null => {
   return getAccountLimits(accountType).maxImagesPerPost;
 };
@@ -114,7 +135,7 @@ export const getMaxImagesPerPost = (
  * Get maximum allowed images for album
  */
 export const getMaxImagesPerAlbum = (
-  accountType: AccountType = "FREE"
+  accountType: string | undefined | null = "FREE"
 ): number | null => {
   return getAccountLimits(accountType).maxImagesPerAlbum;
 };
@@ -136,6 +157,10 @@ export const getUpgradeMessage = (feature: string): string => {
       "Tính năng này chỉ dành cho tài khoản VIP. Vui lòng nâng cấp tài khoản.",
     tableArrangement:
       "Tính năng gợi ý bố trí bàn tiệc chỉ dành cho tài khoản VIP.",
+    checklistAi:
+      "Phân tích checklist bằng AI (theo dõi tiến độ, rủi ro, kịch bản nếu–thì) chỉ dành cho tài khoản VIP/PRO.",
+    budgetAi:
+      "Gợi ý ngân sách từ AI (so sánh dự kiến – thực tế, điều chỉnh) chỉ dành cho tài khoản VIP/PRO.",
   };
   return (
     messages[feature] || "Vui lòng nâng cấp tài khoản để sử dụng tính năng này."

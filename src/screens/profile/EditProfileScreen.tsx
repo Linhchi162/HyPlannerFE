@@ -390,7 +390,8 @@ const styles = StyleSheet.create({
     borderBottomColor: "#F0F0F0",
   },
   headerTitle: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: 20,
     fontWeight: "600",
     color: COLORS.textPrimary,
@@ -399,14 +400,16 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   inputLabel: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     fontSize: 14,
     color: COLORS.textSecondary,
     marginBottom: 8,
     fontWeight: "500",
   },
   input: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     backgroundColor: COLORS.card,
     borderRadius: 12,
     paddingVertical: 14,
@@ -424,7 +427,8 @@ const styles = StyleSheet.create({
     marginTop: 32,
   },
   saveButtonText: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: 16,
     color: "#FFFFFF",
     fontWeight: "bold",
@@ -444,7 +448,8 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   datePickerText: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     fontSize: 16,
     color: COLORS.textPrimary,
   },

@@ -76,6 +76,8 @@ export type RootStackParamList = {
     field: string;
   };
   EditWeddingInfo: { eventId: string };
+  AssignWeddingRoles: undefined;
+  WeddingJoinRequests: undefined;
   InvitationLettersScreen: undefined;
   CreateWeddingSite: { template: Template };
   WebsiteManagement: { invitation: InvitationData };
@@ -94,6 +96,7 @@ export type RootStackParamList = {
   PaymentCancelled: undefined;
   BeginScreen: undefined;
   TaskList: { eventId: string };
+  ChecklistAiInsight: undefined;
   BudgetList: undefined;
   AddTask: { phaseId: string; eventId: string };
   EditTask: { taskId: string; eventId: string };
@@ -151,14 +154,19 @@ export type RootStackParamList = {
   GuestManagementScreen: undefined;
   GuestDetailScreen: { guestId: string };
   NotificationListScreen: { weddingEventId: string };
+  PromotionDeals: undefined;
+  PromotionDetail: { promotionId: string };
+  SavedPromotionOffers: undefined;
   VendorList: undefined;
-  VendorDetail: { vendorId: string };
+  VendorDetail: { vendorId: string; promotionId?: string };
   VendorDashboard: undefined;
   VendorAuth: undefined;
   VendorOnboarding: undefined;
   VendorProfileEdit: undefined;
   VendorChangePassword: undefined;
   VendorServices: undefined;
+  VendorPromotions: undefined;
+  VendorPromotionEdit: { promotionId?: string } | undefined;
   VendorRequests: undefined;
   ChatList: { role?: "user" | "vendor" } | undefined;
   ChatDetail: {
@@ -171,6 +179,7 @@ export type RootStackParamList = {
     vendorImageUrl?: string;
     role?: "user" | "vendor";
   } | undefined;
+  AssistantHome: undefined;
   Assistant: undefined;
 };
 
@@ -183,7 +192,29 @@ export type MainTabParamList = {
   ProfileTab: undefined;
 };
 
+export type VendorStackParamList = {
+  VendorDashboard: undefined;
+  VendorProfileEdit: undefined;
+  VendorChangePassword: undefined;
+  VendorServices: undefined;
+  VendorRequests: undefined;
+  VendorPromotions: undefined;
+  VendorPromotionEdit: { promotionId?: string } | undefined;
+  ChatList: { role?: "user" | "vendor" } | undefined;
+  ChatDetail: {
+    chatId?: string;
+    userId?: string;
+    userName?: string;
+    userImageUrl?: string;
+    vendorId?: string;
+    vendorName?: string;
+    vendorImageUrl?: string;
+    role?: "user" | "vendor";
+  } | undefined;
+};
+
 export type VendorTabParamList = {
   VendorHome: undefined;
+  VendorOrders: undefined;
   VendorLeads: undefined;
 };

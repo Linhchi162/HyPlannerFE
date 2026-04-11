@@ -223,7 +223,8 @@ const styles = StyleSheet.create({
     height: responsiveHeight(56),
   },
   headerTitle: {
-    fontFamily: "MavenPro-Bold",
+    fontFamily: "Roboto",
+    fontWeight: "700",
     fontSize: responsiveFont(20),
     fontWeight: "700",
     color: COLORS.white,
@@ -271,7 +272,8 @@ const styles = StyleSheet.create({
     right: 12,
   },
   badgeText: {
-    fontFamily: "Montserrat-Medium",
+    fontFamily: "Roboto",
+    fontWeight: "500",
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: 12,
@@ -290,13 +292,15 @@ const styles = StyleSheet.create({
     padding: responsiveWidth(16),
   },
   cardTitle: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(18),
     color: COLORS.textPrimary,
     marginBottom: responsiveHeight(4),
   },
   cardDescription: {
-    fontFamily: "Montserrat-Regular",
+    fontFamily: "Roboto",
+    fontWeight: "400",
     fontSize: responsiveFont(14),
     color: COLORS.textSecondary,
     marginBottom: responsiveHeight(16),
@@ -314,7 +318,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#9333ea", // Purple for VIP/AI
   },
   buttonText: {
-    fontFamily: "Montserrat-SemiBold",
+    fontFamily: "Roboto",
+    fontWeight: "600",
     fontSize: responsiveFont(14),
     fontWeight: "600",
   },

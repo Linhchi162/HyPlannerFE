@@ -13,6 +13,7 @@ import {
   increment,
 } from "firebase/firestore";
 import { db } from "./firebase";
+import { sendExpoPushToTokens } from "./expoPushService";
 
 export type ChatRole = "user" | "vendor";
 
@@ -40,6 +41,24 @@ export type ChatMessage = {
   senderRole: ChatRole;
   createdAt?: any;
 };
+
+async function readPushTokens(
+  collectionName: "users" | "vendors",
+  id: string
+): Promise<string[]> {
+  if (!id) return [];
+  try {
+    const snap = await getDoc(doc(db, collectionName, id));
+    if (!snap.exists()) return [];
+    const raw = snap.data();
+    const arr = Array.isArray(raw?.fcmTokens) ? raw.fcmTokens : [];
+    const maybeSingle = typeof raw?.pushToken === "string" ? [raw.pushToken] : [];
+    return [...arr, ...maybeSingle];
+  } catch (error) {
+    console.error(`[chatService] readPushTokens ${collectionName}/${id}`, error);
+    return [];
+  }
+}
 
 export const getChatId = (userId: string, vendorId: string) =>
   `chat_${userId}_${vendorId}`;
@@ -89,13 +108,20 @@ export const subscribeChatsByParticipant = (
     collection(db, "chats"),
     where("participants", "array-contains", participantId)
   );
-  const unsub = onSnapshot(q, (snapshot) => {
-    const data = snapshot.docs.map((d) => ({
-      id: d.id,
-      ...(d.data() as Omit<ChatSummary, "id">),
-    }));
-    callback(data);
-  });
+  const unsub = onSnapshot(
+    q,
+    (snapshot) => {
+      const data = snapshot.docs.map((d) => ({
+        id: d.id,
+        ...(d.data() as Omit<ChatSummary, "id">),
+      }));
+      callback(data);
+    },
+    (error) => {
+      console.error("[chatService] subscribeChatsByParticipant", error);
+      callback([]);
+    }
+  );
   return unsub;
 };
 
@@ -107,13 +133,20 @@ export const subscribeChatMessages = (
     collection(db, "chats", chatId, "messages"),
     orderBy("createdAt", "asc")
   );
-  const unsub = onSnapshot(q, (snapshot) => {
-    const data = snapshot.docs.map((d) => ({
-      id: d.id,
-      ...(d.data() as Omit<ChatMessage, "id">),
-    }));
-    callback(data);
-  });
+  const unsub = onSnapshot(
+    q,
+    (snapshot) => {
+      const data = snapshot.docs.map((d) => ({
+        id: d.id,
+        ...(d.data() as Omit<ChatMessage, "id">),
+      }));
+      callback(data);
+    },
+    (error) => {
+      console.error("[chatService] subscribeChatMessages", error);
+      callback([]);
+    }
+  );
   return unsub;
 };
 
@@ -157,6 +190,32 @@ export const sendChatMessage = async (params: {
       ...(senderRole === "user" ? { userImageUrl: senderImageUrl } : {}),
       ...(senderRole === "vendor" ? { vendorImageUrl: senderImageUrl } : {}),
     });
+  }
+
+  try {
+    const chatSnap = await getDoc(doc(db, "chats", chatId));
+    if (!chatSnap.exists()) return;
+    const chat = chatSnap.data() as ChatSummary;
+    const receiverRole: ChatRole = senderRole === "user" ? "vendor" : "user";
+    const receiverId = receiverRole === "vendor" ? chat.vendorId : chat.userId;
+    const receiverName =
+      receiverRole === "vendor" ? chat.vendorName || "Nhà cung cấp" : chat.userName || "Khách hàng";
+    const tokens = await readPushTokens(
+      receiverRole === "vendor" ? "vendors" : "users",
+      receiverId
+    );
+    await sendExpoPushToTokens(tokens, {
+      title: senderRole === "user" ? "Tin nhắn từ khách hàng" : "Tin nhắn từ nhà cung cấp",
+      body: normalizedText || "Bạn nhận được một hình ảnh mới.",
+      data: {
+        type: "chat_message",
+        chatId,
+        role: receiverRole,
+        participantName: receiverName,
+      },
+    });
+  } catch (error) {
+    console.error("[chatService] push message notify", error);
   }
 };
 
