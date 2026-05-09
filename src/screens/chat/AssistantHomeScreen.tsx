@@ -117,7 +117,7 @@ export default function AssistantHomeScreen() {
             style={styles.featureCard}
             onPress={() => navigation.navigate("CommunityScreen")}
           >
-            <Megaphone size={20} color="#ff3f6c" />
+            <Megaphone size={28} color="#ff3f6c" strokeWidth={2.2} />
             <Text style={styles.featureText}>Các cặp đôi nói gì?</Text>
           </TouchableOpacity>
         </View>
@@ -131,7 +131,7 @@ export default function AssistantHomeScreen() {
             )
           }
         >
-          <HelpCircle size={20} color="#ff3f6c" />
+          <HelpCircle size={28} color="#ff3f6c" strokeWidth={2.2} />
           <Text style={styles.faqText}>Câu hỏi thường gặp</Text>
         </TouchableOpacity>
       </LinearGradient>
@@ -242,10 +242,10 @@ const styles = StyleSheet.create({
     lineHeight: responsiveHeight(22),
   },
   vipIcon: {
-    width: responsiveWidth(56),
-    height: responsiveWidth(56),
-    top: responsiveHeight(-19),
-    left: responsiveWidth(-14),
+    width: responsiveWidth(70),
+    height: responsiveWidth(70),
+    top: responsiveHeight(-24),
+    left: responsiveWidth(-16),
     transform: [{ rotate: "-15deg" }],
   },
   faqCard: {

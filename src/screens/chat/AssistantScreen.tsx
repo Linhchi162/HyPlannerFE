@@ -40,6 +40,8 @@ const INITIAL_MESSAGE: MessageItem = {
     "Xin chào, mình là trợ lý HyPlanner. Bạn có thể hỏi về timeline cưới, ngân sách, khách mời và ý tưởng tổ chức.",
 };
 
+const BOLD_SEGMENT_REGEX = /\*\*(.+?)\*\*/g;
+
 export default function AssistantScreen() {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const currentUser = useAppSelector(selectCurrentUser);
@@ -75,6 +77,40 @@ export default function AssistantScreen() {
   };
 
   const canSend = useMemo(() => input.trim().length > 0 && !loading, [input, loading]);
+
+  const renderAssistantMessage = useCallback((content: string) => {
+    const lines = (content || "").split("\n");
+    return lines.map((line, lineIndex) => {
+      const chunks: React.ReactNode[] = [];
+      let lastIndex = 0;
+      let match: RegExpExecArray | null;
+      const regex = new RegExp(BOLD_SEGMENT_REGEX);
+      while ((match = regex.exec(line)) !== null) {
+        if (match.index > lastIndex) {
+          chunks.push(line.slice(lastIndex, match.index));
+        }
+        chunks.push(
+          <Text key={`b-${lineIndex}-${match.index}`} style={styles.assistantBoldText}>
+            {match[1]}
+          </Text>
+        );
+        lastIndex = match.index + match[0].length;
+      }
+      if (lastIndex < line.length) {
+        chunks.push(line.slice(lastIndex));
+      }
+      if (chunks.length === 0) {
+        chunks.push(line);
+      }
+
+      return (
+        <React.Fragment key={`line-${lineIndex}`}>
+          {chunks}
+          {lineIndex < lines.length - 1 ? "\n" : ""}
+        </React.Fragment>
+      );
+    });
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -190,7 +226,7 @@ export default function AssistantScreen() {
                     fromUser ? styles.userBubbleText : styles.assistantBubbleText,
                   ]}
                 >
-                  {item.content}
+                  {fromUser ? item.content : renderAssistantMessage(item.content)}
                 </Text>
               </View>
             );
@@ -281,6 +317,10 @@ const styles = StyleSheet.create({
     color: "#ffffff",
   },
   assistantBubbleText: {
+    color: "#111827",
+  },
+  assistantBoldText: {
+    fontFamily: "Montserrat-SemiBold",
     color: "#111827",
   },
   inputRow: {

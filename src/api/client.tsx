@@ -1,7 +1,18 @@
 import axios, { AxiosHeaders } from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const DEFAULT_BASE_URL = "https://hyplanner-be.vercel.app";
+const DEFAULT_BASE_URL = "https://hy-planner-be.vercel.app";
+const ALT_BASE_URL = "https://hyplanner-be.vercel.app";
+
+const normalizeBase = (raw?: string) => (raw || "").replace(/\/+$/, "");
+
+const getAlternateBaseUrl = (current?: string) => {
+  const normalized = normalizeBase(current);
+  if (!normalized) return ALT_BASE_URL;
+  if (normalized === normalizeBase(DEFAULT_BASE_URL)) return ALT_BASE_URL;
+  if (normalized === normalizeBase(ALT_BASE_URL)) return DEFAULT_BASE_URL;
+  return DEFAULT_BASE_URL;
+};
 
 const apiClient = axios.create({
   baseURL: process.env.EXPO_PUBLIC_BASE_URL || DEFAULT_BASE_URL,
@@ -46,9 +57,18 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
+    const originalConfig = error?.config as any;
     if (error.response) {
       return Promise.reject(error.response.data);
     } else if (error.request) {
+      // Retry one time with alternate base URL when no response received.
+      if (originalConfig && !originalConfig.__retryWithAltBaseUrl) {
+        originalConfig.__retryWithAltBaseUrl = true;
+        originalConfig.baseURL = getAlternateBaseUrl(
+          originalConfig.baseURL || apiClient.defaults.baseURL
+        );
+        return apiClient.request(originalConfig);
+      }
       return Promise.reject({
         success: false,
         message: "Network error - No response from server",

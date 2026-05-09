@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef } from "react";
+﻿import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   SafeAreaView,
   View,
@@ -19,7 +19,11 @@ import {
   ArrowLeft,
   CheckCircle,
 } from "lucide-react-native";
-import { useNavigation, NavigationProp } from "@react-navigation/native";
+import {
+  useNavigation,
+  NavigationProp,
+  useFocusEffect,
+} from "@react-navigation/native";
 import * as Linking from "expo-linking";
 import apiClient from "../../api/client";
 import { useAppDispatch } from "../../store/hooks";
@@ -30,6 +34,7 @@ import { MixpanelService } from "../../service/mixpanelService";
 import logger from "../../utils/logger";
 import { pinkHeaderStyles } from "../../styles/pinkHeader";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { normalizeAccountType } from "../../utils/accountLimits";
 
 export default function UpgradeAccountScreen() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
@@ -45,72 +50,84 @@ export default function UpgradeAccountScreen() {
   const [activeUpgradeTab, setActiveUpgradeTab] = useState("VIP");
   const [isProcessing, setIsProcessing] = useState(false);
   const [showSuccessOverlay, setShowSuccessOverlay] = useState(false);
+  const pendingPaymentSyncRef = useRef(false);
+
+  const fetchAccountStatus = useCallback(
+    async (opts?: { silent?: boolean; skipLoading?: boolean }) => {
+      try {
+        if (!opts?.skipLoading) {
+          setIsLoadingStatus(true);
+        }
+        const response = await apiClient.get("/auth/status");
+        const accountType = normalizeAccountType(response.data?.accountType);
+        setCurrentUserAccountType(accountType);
+        dispatch(updateUserField({ field: "accountType", value: accountType }));
+        return accountType as string;
+      } catch (error) {
+        logger.error("Không thể lấy trạng thái tài khoản:", error);
+        if (!opts?.silent) {
+          Alert.alert("Lỗi", "Không thể tải thông tin tài khoản của bạn.");
+        }
+        return null;
+      } finally {
+        if (!opts?.skipLoading) {
+          setIsLoadingStatus(false);
+        }
+      }
+    },
+    [dispatch]
+  );
 
   // useEffect để gọi API lấy trạng thái user khi vào màn hình
   useEffect(() => {
-    const fetchAccountStatus = async () => {
-      try {
-        setIsLoadingStatus(true);
-        const response = await apiClient.get("/auth/status");
-        setCurrentUserAccountType(response.data.accountType);
-        MixpanelService.track("Viewed Upgrade Screen", {
-          "Current Account Type": response.data.accountType,
-        });
-      } catch (error) {
-        logger.error("Không thể lấy trạng thái tài khoản:", error);
-        Alert.alert("Lỗi", "Không thể tải thông tin tài khoản của bạn.");
-      } finally {
-        setIsLoadingStatus(false);
-      }
-    };
-
-    fetchAccountStatus();
-  }, []); // Mảng rỗng để chỉ chạy 1 lần khi màn hình được mount
+    fetchAccountStatus().then((accountType) => {
+      if (!accountType) return;
+      MixpanelService.track("Viewed Upgrade Screen", {
+        "Current Account Type": accountType,
+      });
+    });
+  }, [fetchAccountStatus]);
 
   const url = Linking.useURL();
   const processedUrlRef = useRef<string | null>(null);
 
-  // ✅ Function để fetch lại account status từ backend và cập nhật Redux
-  const fetchAccountStatusAfterPayment = async () => {
+  // ✅ Đồng bộ trạng thái gói sau khi thanh toán thành công (đợi webhook backend)
+  const syncAccountStatusAfterPayment = async () => {
     try {
-      // ⏰ Đợi 2 giây để webhook có thời gian xử lý
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      // Đợi chút để backend nhận callback thanh toán
+      await new Promise((resolve) => setTimeout(resolve, 1500));
 
-      // 🔄 Retry mechanism: Thử tối đa 5 lần với delay 2s giữa mỗi lần
-      let retryCount = 0;
-      const maxRetries = 5;
-      let newAccountType = currentUserAccountType;
+      const maxRetries = 20;
+      const delayMs = 1500;
+      let latestType = normalizeAccountType(currentUserAccountType);
 
-      while (retryCount < maxRetries) {
-        const response = await apiClient.get("/auth/status");
-        newAccountType = response.data.accountType;
-
-        // Nếu accountType đã được cập nhật (không còn là FREE), thoát vòng lặp
-        if (
-          newAccountType !== "FREE" &&
-          newAccountType !== currentUserAccountType
-        ) {
-          break;
+      for (let i = 0; i < maxRetries; i++) {
+        const next = await fetchAccountStatus({ silent: true, skipLoading: true });
+        if (next) {
+          latestType = normalizeAccountType(next);
         }
-
-        // Nếu chưa update, đợi 2s rồi thử lại
-        if (retryCount < maxRetries - 1) {
-          await new Promise((resolve) => setTimeout(resolve, 2000));
+        if (latestType === "VIP" || latestType === "PRO") {
+          pendingPaymentSyncRef.current = false;
+          return latestType;
         }
-        retryCount++;
+        if (i < maxRetries - 1) {
+          await new Promise((resolve) => setTimeout(resolve, delayMs));
+        }
       }
-
-      // Cập nhật state local
-      setCurrentUserAccountType(newAccountType);
-
-      // ✅ Cập nhật Redux store
-      dispatch(
-        updateUserField({ field: "accountType", value: newAccountType })
-      );
+      return latestType;
     } catch (error) {
-      // Silently fail
+      return currentUserAccountType;
     }
   };
+
+  useFocusEffect(
+    useCallback(() => {
+      void fetchAccountStatus({ silent: true, skipLoading: true });
+      if (pendingPaymentSyncRef.current) {
+        void syncAccountStatusAfterPayment();
+      }
+    }, [fetchAccountStatus])
+  );
 
   useEffect(() => {
     if (url && url !== processedUrlRef.current) {
@@ -120,8 +137,9 @@ export default function UpgradeAccountScreen() {
         const status = (queryParams.status as string).toLowerCase();
         const orderCode = queryParams.orderCode as string;
         if (status === "paid" || status === "success") {
+          pendingPaymentSyncRef.current = true;
           // ✅ Fetch lại account status từ backend và cập nhật Redux
-          fetchAccountStatusAfterPayment();
+          void syncAccountStatusAfterPayment();
 
           dispatch(fetchUserInvitation());
           setShowSuccessOverlay(true);
@@ -142,14 +160,14 @@ export default function UpgradeAccountScreen() {
         }
       }
     }
-  }, [url, dispatch, activeUpgradeTab]);
+  }, [url, dispatch]);
 
   const handleUpgrade = async (packageType: string) => {
     setIsProcessing(true);
     let orderDetails = {};
     let price = 0;
     if (packageType === "VIP") {
-      price = 59000;
+      price = 79000;
       orderDetails = {
         description: "Nang cap VIP HyPlanner",
         price: price,
@@ -174,6 +192,7 @@ export default function UpgradeAccountScreen() {
       );
       const { checkoutUrl } = response.data;
       if (checkoutUrl) {
+        pendingPaymentSyncRef.current = true;
         await Linking.openURL(checkoutUrl);
       }
     } catch (error: any) {
@@ -191,70 +210,64 @@ export default function UpgradeAccountScreen() {
     {
       label: "Giá",
       free: "Miễn phí",
-      vip: "59.000 đ/tháng",
+      vip: "79.000 đ/tháng",
       pro: "110.000 đ/3 tháng",
       isPrice: true,
-      oldVipPrice: "79.000 đ", // Giữ nguyên hoặc xóa tùy logic hiển thị của bạn
+      oldVipPrice: "",
       oldProPrice: "139.000 đ", // Giữ nguyên hoặc xóa tùy logic hiển thị của bạn
     },
     {
-      label: "Đổi giao diện đếm ngược thời gian",
-      free: "Mặc định",
-      vip: "Đổi tối đa 7 lần",
+      label: "Lập kế hoạch cưới tổng thể",
+      free: "Checklist 11 giai đoạn dựa trên quy trình cưới Việt Nam",
+      vip: "Checklist + cảnh báo chậm tiến độ bằng AI và mô phỏng thay đổi kế hoạch",
       pro: "Không giới hạn số lần đổi",
     },
     {
-      label: "Thời hạn Website được công khai",
-      free: "3 tháng",
-      vip: "12 tháng",
+      label: "Vai trò cộng tác",
+      free: "Hỷ Partner: quyền tương đương chủ kế hoạch (tối đa 1). Hỷ Assistant: hỗ trợ xem/thêm và sửa dữ liệu do mình tạo (tối đa 1). Hỷ Observer: chỉ theo dõi kế hoạch, không chỉnh sửa (tối đa 1).",
+      vip: "Giữ nguyên các vai trò cộng tác như ở gói Free",
       pro: "Trọn đời",
     },
     {
-      label: "Số lượng Album được tạo",
-      free: "5",
-      vip: "12",
+      label: "Theo dõi & kiểm soát ngân sách",
+      free: "Theo dõi chi tiêu theo từng hạng mục",
+      vip: "Phân tích chênh lệch ngân sách, cảnh báo vượt chi và gợi ý điều chỉnh",
       pro: <Infinity color="#666" size={18} />,
     },
     {
-      label: "Loại bỏ quảng cáo",
-      free: <X color="#e74c3c" size={20} />,
-      vip: <Check color="#2ecc71" size={20} />,
+      label: "Quản lý khách mời & RSVP",
+      free: "Tạo danh sách khách mời và theo dõi RSVP",
+      vip: "Gợi ý sắp xếp số bàn dựa trên dữ liệu RSVP; theo dõi quà mừng và quà đáp lễ",
       pro: <Check color="#2ecc71" size={20} />,
     },
     {
-      label: "Số lượng thiệp cưới online có thể truy cập",
-      free: "3",
-      vip: "15",
+      label: "Tìm kiếm & lựa chọn vendor",
+      free: "Tìm kiếm, lọc và chọn vendor",
+      vip: "Đề xuất vendor bằng AI; chat trực tiếp với vendor",
       pro: "Toàn bộ",
     },
     {
-      label: "Tính năng chia sẻ với người hỗ trợ",
-      free: "1",
-      vip: "5",
+      label: "Thiệp cưới & giao tiếp với khách",
+      free: "Thiệp cưới/website cưới online dùng template có sẵn",
+      vip: "Nội dung thiệp/website được AI cá nhân hóa và chia sẻ linh hoạt hơn",
       pro: "10",
     },
     {
-      label: "Bài đăng kèm ảnh của cộng đồng",
-      free: "Giới hạn 2 ảnh và nội dung một bài post",
-      vip: "Không giới hạn số lượng ảnh và nội dung trong bài post",
+      label: "Định hình & lưu trữ phong cách",
+      free: "Tối đa 5 album",
+      vip: "Tối đa 12 album",
       pro: "Không giới hạn số lượng ảnh, đẩy bài 24h",
     },
     {
-      label: "Số lượng ảnh tự up lên trong mỗi album",
-      free: "6",
-      vip: <Infinity color="#666" size={18} />,
+      label: "Chia sẻ trải nghiệm cộng đồng",
+      free: "Giới hạn số bài đăng và hình ảnh",
+      vip: "Không giới hạn nội dung, bao gồm cả video",
       pro: <Infinity color="#666" size={18} />,
     },
     {
-      label: "Ai sẽ là người tiếp theo?",
-      free: <X color="#e74c3c" size={20} />,
-      vip: <Check color="#2ecc71" size={20} />,
-      pro: <Check color="#2ecc71" size={20} />,
-    },
-    {
-      label: "Gợi ý bố trí bàn tiệc",
-      free: <X color="#e74c3c" size={20} />,
-      vip: <Check color="#2ecc71" size={20} />,
+      label: "Tương tác trong ngày cưới",
+      free: "Không có",
+      vip: "Mini-game tương tác",
       pro: <Check color="#2ecc71" size={20} />,
     },
     // {
@@ -437,7 +450,9 @@ export default function UpgradeAccountScreen() {
               <View style={styles.featureCell}>
                 {feature.isPrice ? (
                   <>
-                    <Text style={styles.oldPrice}>{feature.oldVipPrice}</Text>
+                    {feature.oldVipPrice ? (
+                      <Text style={styles.oldPrice}>{feature.oldVipPrice}</Text>
+                    ) : null}
                     <Text style={styles.price}>{feature.vip}</Text>
                   </>
                 ) : (

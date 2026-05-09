@@ -19,6 +19,7 @@ import { useRoute, useNavigation, RouteProp } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { ArrowLeft, ImagePlus, X } from "lucide-react-native";
 import * as ImagePicker from "expo-image-picker";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { AppDispatch, RootState } from "../../store";
 import {
   createNewPost,
@@ -38,6 +39,7 @@ import {
   canAddImageToPost,
   getMaxImagesPerPost,
   getUpgradeMessage,
+  normalizeAccountType,
 } from "../../utils/accountLimits";
 
 type CreatePostScreenRouteProp = RouteProp<
@@ -66,10 +68,83 @@ const CreatePostScreen = () => {
   const [images, setImages] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [uploadingImages, setUploadingImages] = useState(false);
+  const accountType = normalizeAccountType(currentUser?.accountType);
 
-  const maxImagesPerPost = getMaxImagesPerPost(
-    currentUser?.accountType || "FREE"
-  );
+  const uploadPostImagesWithFetch = async (
+    files: Array<{ uri: string; name: string; type: string }>
+  ): Promise<string[]> => {
+    const token = await AsyncStorage.getItem("appToken");
+    const configuredBase = (process.env.EXPO_PUBLIC_BASE_URL || "").replace(
+      /\/+$/,
+      ""
+    );
+    const fallbackBases = [
+      configuredBase,
+      "https://hy-planner-be.vercel.app",
+      "https://hyplanner-be.vercel.app",
+    ].filter((x, idx, arr): x is string => !!x && arr.indexOf(x) === idx);
+
+    let lastError = "";
+    for (const base of fallbackBases) {
+      const formData = new FormData();
+      files.forEach((f) => {
+        formData.append("images", {
+          uri: f.uri,
+          name: f.name,
+          type: f.type,
+        } as any);
+      });
+      try {
+        const res = await fetch(`${base}/upload/post-images`, {
+          method: "POST",
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: formData,
+        });
+
+        const raw = await res.text();
+        let payload: any = {};
+        try {
+          payload = raw ? JSON.parse(raw) : {};
+        } catch {
+          payload = {};
+        }
+
+        if (!res.ok) {
+          lastError =
+            payload?.message ||
+            `Upload thất bại (${res.status}) tại ${base}`;
+          continue;
+        }
+
+        const urls = Array.isArray(payload?.imageUrls)
+          ? payload.imageUrls
+          : Array.isArray(payload?.urls)
+          ? payload.urls
+          : typeof payload?.imageUrl === "string"
+          ? [payload.imageUrl]
+          : typeof payload?.url === "string"
+          ? [payload.url]
+          : typeof payload?.secure_url === "string"
+          ? [payload.secure_url]
+          : [];
+
+        if (urls.length > 0) {
+          return urls;
+        }
+        lastError = "Máy chủ upload không trả về URL ảnh.";
+      } catch (error: any) {
+        lastError =
+          error?.message ||
+          (typeof error === "string" ? error : "") ||
+          `Không kết nối được ${base}`;
+      }
+    }
+    throw new Error(lastError || "Network error - No response from server");
+  };
+
+  const maxImagesPerPost = getMaxImagesPerPost(accountType);
   const canAddMoreImages =
     maxImagesPerPost === null
       ? true
@@ -95,10 +170,6 @@ const CreatePostScreen = () => {
   const handlePickImages = async () => {
     try {
       // Lấy thông tin user
-      const state = require("../../store").store.getState();
-      const user = selectCurrentUser(state);
-      const accountType = user?.accountType || "FREE";
-
       // Kiểm tra giới hạn ảnh
       const maxImages = getMaxImagesPerPost(accountType);
       if (!canAddImageToPost(images.length, accountType)) {
@@ -128,44 +199,89 @@ const CreatePostScreen = () => {
           ? maxImages - images.length
           : Math.max(1, 30 - images.length);
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ["images"],
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsMultipleSelection: true,
+        orderedSelection: true,
+        allowsEditing: false,
         selectionLimit: remainingSlots > 0 ? remainingSlots : 1,
         quality: 0.8,
       });
 
       if (!result.canceled && result.assets.length > 0) {
         setUploadingImages(true);
+        const selectedAssets = result.assets.slice(0, Math.max(1, remainingSlots));
+        const uploadedUrls: string[] = [];
+        let failedUploads = 0;
+        let firstUploadErrorMessage = "";
+        const uploadBatchSize = 5; // BE giới hạn /upload/post-images tối đa 5 ảnh/request
 
-        // Upload từng ảnh lên Cloudinary
-        const formData = new FormData();
+        for (let i = 0; i < selectedAssets.length; i += uploadBatchSize) {
+          const batch = selectedAssets.slice(i, i + uploadBatchSize);
 
-        result.assets.forEach((asset, index) => {
-          const filename = asset.uri.split("/").pop() || `image-${index}.jpg`;
-          const match = /\.(\w+)$/.exec(filename);
-          const type = match ? `image/${match[1]}` : "image/jpeg";
+          try {
+            const files = batch.map((asset, batchIndex) => {
+              const fallbackName =
+                asset.uri.split("/").pop() || `image-${i + batchIndex}.jpg`;
+              const originalName = asset.fileName || fallbackName;
+              const match = /\.(\w+)$/.exec(originalName);
+              const mimeType = (asset as any)?.mimeType;
+              const type =
+                typeof mimeType === "string" && mimeType
+                  ? mimeType
+                  : match
+                  ? `image/${match[1]}`
+                  : "image/jpeg";
+              return {
+                uri: asset.uri,
+                name: originalName,
+                type,
+              };
+            });
+            const urls = await uploadPostImagesWithFetch(files);
+            if (urls.length > 0) {
+              uploadedUrls.push(...urls);
+            } else {
+              failedUploads += batch.length;
+              if (!firstUploadErrorMessage) {
+                firstUploadErrorMessage = "Máy chủ upload không trả về URL ảnh.";
+              }
+            }
+          } catch (err: any) {
+            failedUploads += batch.length;
+            if (!firstUploadErrorMessage) {
+              firstUploadErrorMessage =
+                err?.message ||
+                err?.error ||
+                err?.data?.message ||
+                (typeof err === "string" ? err : "") ||
+                "Upload ảnh thất bại.";
+            }
+          }
+        }
 
-          formData.append("images", {
-            uri: asset.uri,
-            name: filename,
-            type: type,
-          } as any);
-        });
+        if (!uploadedUrls.length) {
+          throw new Error(
+            firstUploadErrorMessage || "Không nhận được URL ảnh từ máy chủ."
+          );
+        }
 
-        const response = await apiClient.post("/upload/post-images", formData, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        });
-
-        const cloudinaryUrls = response.data.imageUrls;
-        setImages([...images, ...cloudinaryUrls]);
-
-        Alert.alert("Thành công", `Đã thêm ${cloudinaryUrls.length} ảnh`);
+        setImages((prev) => [...prev, ...uploadedUrls]);
+        if (failedUploads > 0) {
+          Alert.alert(
+            "Tải ảnh chưa hoàn tất",
+            `Đã thêm ${uploadedUrls.length} ảnh, ${failedUploads} ảnh bị lỗi mạng. Bạn có thể chọn lại ảnh lỗi.`
+          );
+        } else {
+          Alert.alert("Thành công", `Đã thêm ${uploadedUrls.length} ảnh`);
+        }
       }
     } catch (error: any) {
       console.error("Lỗi upload ảnh:", error);
-      Alert.alert("Lỗi", "Không thể tải ảnh lên. Vui lòng thử lại.");
+      const message =
+        error?.message ||
+        (typeof error === "string" ? error : "") ||
+        "Không thể tải ảnh lên. Vui lòng thử lại.";
+      Alert.alert("Lỗi upload ảnh", message);
     } finally {
       setUploadingImages(false);
     }

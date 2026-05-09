@@ -59,7 +59,7 @@ export const MainTabNavigator = () => {
     <Tab.Navigator
       screenOptions={({ route }) => ({
         tabBarIcon: ({ color, size, focused }) => {
-          const iconSize = focused ? responsiveWidth(50) : responsiveWidth(56);
+          const iconSize = focused ? responsiveWidth(34) : responsiveWidth(32);
           let iconSource;
 
           if (route.name === "Home")
@@ -117,12 +117,13 @@ export const MainTabNavigator = () => {
           marginHorizontal: responsiveWidth(20),
         },
         tabBarItemStyle: {
-          paddingVertical: responsiveHeight(4),
+          paddingTop: responsiveHeight(2),
+          paddingBottom: responsiveHeight(3),
           marginHorizontal: 0,
           minWidth: responsiveWidth(68),
           backgroundColor: "transparent",
         },
-        tabBarIconStyle: { marginBottom: responsiveHeight(2) },
+        tabBarIconStyle: { marginBottom: responsiveHeight(1) },
         headerShown: false,
       })}
     >
@@ -141,21 +142,19 @@ export const MainTabNavigator = () => {
         component={CommunityScreen}
         options={{ tabBarLabel: "Cộng đồng" }}
       />
-      {isPrimaryCouple && (
-        <Tab.Screen
-          name="WebsiteTab"
-          component={WebsiteManagementScreen}
-          options={{ tabBarLabel: "Website" }}
-          listeners={{
-            tabPress: (e) => {
-              if (!userInvitation) {
-                e.preventDefault();
-                navigation.navigate("InvitationLettersScreen");
-              }
-            },
-          }}
-        />
-      )}
+      <Tab.Screen
+        name="WebsiteTab"
+        component={WebsiteManagementScreen}
+        options={{ tabBarLabel: "Website" }}
+        listeners={{
+          tabPress: (e) => {
+            if (!userInvitation) {
+              e.preventDefault();
+              navigation.navigate("InvitationLettersScreen");
+            }
+          },
+        }}
+      />
       <Tab.Screen
         name="ProfileTab"
         component={ProfileScreen}

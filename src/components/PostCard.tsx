@@ -27,6 +27,7 @@ import { ImageViewer } from "./ImageViewer";
 import { SavePostButton } from "./SavePostButton";
 
 const { width } = Dimensions.get("window");
+const URL_REGEX = /^https?:\/\/[^\s]+$/i;
 
 interface PostCardProps {
   post: Post;
@@ -100,6 +101,41 @@ const PostCardComponent: React.FC<PostCardProps> = ({
   const handleImagePress = (index: number) => {
     setSelectedImageIndex(index);
     setViewerVisible(true);
+  };
+
+  const renderPostContent = (text: string) => {
+    const lines = (text || "").split("\n");
+    return lines.map((line, lineIndex) => {
+      const parts = line.split(/(https?:\/\/[^\s]+)/g);
+      return (
+        <React.Fragment key={`line-${lineIndex}`}>
+          {parts.map((part, partIndex) => {
+            if (URL_REGEX.test(part)) {
+              return (
+                <Text
+                  key={`link-${lineIndex}-${partIndex}`}
+                  style={styles.linkText}
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    Linking.openURL(part).catch((err) =>
+                      console.error("Failed to open URL:", err)
+                    );
+                  }}
+                >
+                  {part}
+                </Text>
+              );
+            }
+            return (
+              <React.Fragment key={`text-${lineIndex}-${partIndex}`}>
+                {part}
+              </React.Fragment>
+            );
+          })}
+          {lineIndex < lines.length - 1 ? "\n" : ""}
+        </React.Fragment>
+      );
+    });
   };
 
   // Render images theo layout thông minh
@@ -289,28 +325,7 @@ const PostCardComponent: React.FC<PostCardProps> = ({
 
       {/* Content */}
       <TouchableOpacity onPress={onPress} activeOpacity={0.9}>
-        <Text style={styles.content}>
-          {post.content.split(/\s+/).map((word, index) => {
-            const urlRegex = /(https?:\/\/[^\s]+)/g;
-            if (urlRegex.test(word)) {
-              return (
-                <Text
-                  key={index}
-                  style={styles.linkText}
-                  onPress={(e) => {
-                    e.stopPropagation();
-                    Linking.openURL(word).catch((err) =>
-                      console.error("Failed to open URL:", err)
-                    );
-                  }}
-                >
-                  {word}{" "}
-                </Text>
-              );
-            }
-            return word + " ";
-          })}
-        </Text>
+        <Text style={styles.content}>{renderPostContent(post.content || "")}</Text>
       </TouchableOpacity>
 
       {/* Images with smart layout */}
